@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Balloon Pop Deluxe</string>
+    <string name="title_campaign">STORY CAMPAIGN</string>
+    <string name="subtitle_campaign">50 Stages • Star Rewards</string>
+    <string name="title_endless">ENDLESS</string>
+    <string name="title_daily_spin">DAILY SPIN</string>
+    <string name="title_shop">SHOP</string>
+    <string name="title_quests">QUESTS</string>
+    <string name="mode_classic">Classic</string>
+    <string name="mode_classic_desc">3 Lives • Increasing Speed</string>
+    <string name="mode_time">Time Rush</string>
+    <string name="mode_time_desc">60 Seconds • Fast Spawns</string>
+    <string name="mode_arcade">Arcade Frenzy</string>
+    <string name="mode_arcade_desc">Power-ups &amp; Bomb Waves</string>
+    <string name="mode_zen">Zen Popping</string>
+    <string name="mode_zen_desc">No Bombs • Relaxing Popping</string>
+</resources>
