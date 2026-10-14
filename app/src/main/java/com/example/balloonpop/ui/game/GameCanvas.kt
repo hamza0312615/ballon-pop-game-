@@ -35,9 +35,12 @@ fun GameCanvas(
     ambients: List<AmbientElement> = emptyList(),
     equippedFrame: PlayFrame,
     equippedTheme: ThemeConfig = GameConstants.SHOP_THEMES.first(),
+    lightningBolts: List<LightningBolt> = emptyList(),
+    screenFlashAlpha: Float = 0f,
     screenShake: () -> Float = { 0f },
     isFreezeActive: Boolean,
     isMultiplierActive: Boolean,
+    currentLevel: Int = 1,
     onStepFrame: (Float) -> Unit = {},
     onPointerInput: (Float, Float, Boolean) -> Unit,
     onCanvasSizeChanged: (Float, Float) -> Unit,
@@ -118,10 +121,18 @@ fun GameCanvas(
         if (size.width != cachedWidth || size.height != cachedHeight || cachedBgBrush == null) {
             cachedWidth = size.width
             cachedHeight = size.height
-            val themeColors = if (equippedTheme.gradientColors.size >= 2) {
-                equippedTheme.gradientColors
+            val themeColors = if (equippedTheme.id == "theme_sunset_twilight" || equippedTheme.gradientColors.size < 2) {
+                listOf(
+                    Color(0xFF1B0B38), // Deep purple
+                    Color(0xFF330D52), // Rich twilight violet
+                    Color(0xFF5A1466), // Magenta plum
+                    Color(0xFF8C1D5D), // Sunset berry
+                    Color(0xFFC43345), // Coral crimson
+                    Color(0xFFE65100), // Sunset amber
+                    Color(0xFFFFA726)  // Warm golden orange
+                )
             } else {
-                listOf(Color(0xFF1B0E3D), Color(0xFF2E1764), Color(0xFF130930))
+                equippedTheme.gradientColors
             }
             cachedBgBrush = Brush.verticalGradient(themeColors)
             cachedOrb1 = Brush.radialGradient(
@@ -137,16 +148,80 @@ fun GameCanvas(
         }
 
         val currentShake = screenShake()
-        val shakeX = if (currentShake > 0.5f) (Random.nextFloat() - 0.5f) * currentShake * 1.6f else 0f
-        val shakeY = if (currentShake > 0.5f) (Random.nextFloat() - 0.5f) * currentShake * 1.6f else 0f
+        val shakeOffset = com.example.balloonpop.util.ScreenShakeUtility.calculateVisualDisplacement(currentShake)
 
         drawContext.canvas.save()
-        if (shakeX != 0f || shakeY != 0f) {
-            drawContext.canvas.translate(shakeX, shakeY)
+        if (shakeOffset.x != 0f || shakeOffset.y != 0f) {
+            drawContext.canvas.translate(shakeOffset.x, shakeOffset.y)
         }
 
-        // 1. Draw Luminous Radiant Gradient Background using cached brush
-        cachedBgBrush?.let { drawRect(brush = it) }
+        val w = size.width
+        val h = size.height
+        val timeSec = (frameTick % 100_000_000_000L) / 1_000_000_000f
+
+        // 1. Draw Vibrant High-Contrast Gameplay Background (Deep Purple to Warm Orange Sunset Gradient)
+        drawRect(
+            brush = cachedBgBrush ?: Brush.verticalGradient(
+                listOf(
+                    Color(0xFF1B0B38),
+                    Color(0xFF330D52),
+                    Color(0xFF5A1466),
+                    Color(0xFF8C1D5D),
+                    Color(0xFFC43345),
+                    Color(0xFFE65100),
+                    Color(0xFFFFA726)
+                )
+            )
+        )
+
+        // Radial ambient glow orbs for depth
+        cachedOrb1?.let { drawRect(brush = it) }
+        cachedOrb2?.let { drawRect(brush = it) }
+
+        // Drifting soft twilight clouds
+        for (c in 0..3) {
+            val cx = ((w * (c * 0.38f + timeSec * 0.025f)) % (w + 240f)) - 120f
+            val cy = h * (0.16f + c * 0.18f)
+            val cloudColor = if (c % 2 == 0) Color(0x24F472B6) else Color(0x1EFDBA74)
+            drawCircle(color = cloudColor, radius = 55f, center = Offset(cx, cy))
+            drawCircle(color = cloudColor, radius = 40f, center = Offset(cx - 40f, cy + 8f))
+            drawCircle(color = cloudColor, radius = 44f, center = Offset(cx + 40f, cy + 6f))
+        }
+
+        // Sparkling twilight stars in upper sky
+        for (s in 0 until 18) {
+            val sx = (w * (s * 0.055f + 0.04f)) % w
+            val sy = (h * ((s * 0.045f) % 0.45f))
+            val twinkle = (sin((timeSec * 3.5 + s * 1.5).toDouble()).toFloat() * 0.45f + 0.55f).coerceIn(0.2f, 1f)
+            drawCircle(
+                color = Color.White.copy(alpha = twinkle * 0.75f),
+                radius = if (s % 3 == 0) 2.5f else 1.5f,
+                center = Offset(sx, sy)
+            )
+        }
+
+        // 2. Distant Floating Balloon Silhouettes in the Parallax Background
+        for (bgB in 0..4) {
+            val bgY = (h * ((bgB * 0.22f - timeSec * 0.035f) % 1.0f + 1.0f) % 1.0f)
+            val bgX = w * (0.15f + bgB * 0.18f + sin(bgY * 0.015f) * 0.04f)
+            val bgCol = when (bgB % 4) {
+                0 -> Color(0x2238BDF8)
+                1 -> Color(0x22F43F5E)
+                2 -> Color(0x22FBBF24)
+                else -> Color(0x22A855F7)
+            }
+            drawOval(
+                color = bgCol,
+                topLeft = Offset(bgX - 16f, bgY - 22f),
+                size = Size(32f, 44f)
+            )
+            drawLine(
+                color = bgCol.copy(alpha = 0.15f),
+                start = Offset(bgX, bgY + 22f),
+                end = Offset(bgX, bgY + 45f),
+                strokeWidth = 1.2f
+            )
+        }
 
         // Ambient Luminous Neon Orbs for Depth and Polish
         cachedOrb1?.let {
@@ -272,6 +347,60 @@ fun GameCanvas(
             }
         }
 
+        // 5.5 Draw Lightning Bolts (Thunder strikes & Electric arcs)
+        synchronized(lightningBolts) {
+            for (bolt in lightningBolts) {
+                if (bolt.points.size >= 2) {
+                    val boltAlpha = bolt.alpha.coerceIn(0f, 1f)
+                    val pts = bolt.points
+                    // Outer electric cyan glow
+                    for (i in 1 until pts.size) {
+                        drawLine(
+                            color = bolt.color.copy(alpha = boltAlpha * 0.75f),
+                            start = Offset(pts[i - 1].first, pts[i - 1].second),
+                            end = Offset(pts[i].first, pts[i].second),
+                            strokeWidth = 10f * boltAlpha,
+                            cap = StrokeCap.Round
+                        )
+                    }
+                    // Inner electric pure white core
+                    for (i in 1 until pts.size) {
+                        drawLine(
+                            color = Color.White.copy(alpha = boltAlpha * 0.95f),
+                            start = Offset(pts[i - 1].first, pts[i - 1].second),
+                            end = Offset(pts[i].first, pts[i].second),
+                            strokeWidth = 3.5f * boltAlpha,
+                            cap = StrokeCap.Round
+                        )
+                    }
+                    // Branching electric forks
+                    for (branch in bolt.branchPoints) {
+                        for (j in 1 until branch.size) {
+                            drawLine(
+                                color = bolt.color.copy(alpha = boltAlpha * 0.6f),
+                                start = Offset(branch[j - 1].first, branch[j - 1].second),
+                                end = Offset(branch[j].first, branch[j].second),
+                                strokeWidth = 4f * boltAlpha,
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
+                    // Electric spark at the strike impact point
+                    val endPt = pts.last()
+                    drawCircle(
+                        color = Color.White.copy(alpha = boltAlpha),
+                        radius = 16f * boltAlpha,
+                        center = Offset(endPt.first, endPt.second)
+                    )
+                    drawCircle(
+                        color = bolt.color.copy(alpha = boltAlpha * 0.5f),
+                        radius = 32f * boltAlpha,
+                        center = Offset(endPt.first, endPt.second)
+                    )
+                }
+            }
+        }
+
         // 6. Draw Floating Score/Combo Texts
         synchronized(floatingTexts) {
             for (ft in floatingTexts) {
@@ -306,6 +435,13 @@ fun GameCanvas(
                     center = Offset(size.width / 2f, size.height / 2f),
                     radius = size.maxDimension / 1.5f
                 )
+            )
+        }
+
+        // 8.5 Screen Thunder Flash
+        if (screenFlashAlpha > 0f) {
+            drawRect(
+                color = Color.White.copy(alpha = screenFlashAlpha.coerceIn(0f, 0.7f))
             )
         }
 
@@ -358,6 +494,33 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
             center = Offset(x, y + r * 1.35f)
         )
     }
+
+    // Subtle luminous outer glow to maintain high visibility and pop against the background
+    val glowColor = when (b.type) {
+        BalloonType.BOMB -> Color(0xFFFF3B30) // High-contrast crimson glow for dark bombs
+        BalloonType.GOLDEN, BalloonType.GOLDEN_PIGGY -> Color(0xFFFFD700)
+        BalloonType.RAINBOW -> Color(0xFF38BDF8)
+        BalloonType.FREEZE -> Color(0xFF67E8F9)
+        BalloonType.MEGA_BOSS -> Color(0xFFFF007F)
+        BalloonType.ELECTRIC_STORM -> Color(0xFFFACC15)
+        BalloonType.HEART -> Color(0xFFFF2A75)
+        else -> b.color
+    }
+
+    // Outer Glow: Diffuse luminous aura
+    drawOval(
+        color = glowColor.copy(alpha = 0.32f * curAlpha),
+        topLeft = Offset(x - r * 1.05f, y - r * 1.25f),
+        size = Size(r * 2.1f, r * 2.5f)
+    )
+
+    // Outer Glow: Crisp luminous rim stroke for clean silhouette definition
+    drawOval(
+        color = Color.White.copy(alpha = 0.38f * curAlpha),
+        topLeft = Offset(x - r * 0.93f, y - r * 1.13f),
+        size = Size(r * 1.86f, r * 2.26f),
+        style = Stroke(width = 2.2f)
+    )
 
     // Soft Shadow
     drawOval(
@@ -522,41 +685,38 @@ private fun DrawScope.drawFaceExpressionsZeroAlloc(b: Balloon) {
             )
         }
         BalloonShapeStyle.SMILEY -> {
-            // Happy arched eyes drawn with smooth arcs (zero allocation)
-            drawArc(
-                color = Color.Black,
-                startAngle = 180f,
-                sweepAngle = 180f,
-                useCenter = false,
-                topLeft = Offset(x - r * 0.42f, y - r * 0.28f),
-                size = Size(r * 0.32f, r * 0.24f),
-                style = Stroke(width = 3.5f, cap = StrokeCap.Round)
-            )
-            drawArc(
-                color = Color.Black,
-                startAngle = 180f,
-                sweepAngle = 180f,
-                useCenter = false,
-                topLeft = Offset(x + r * 0.1f, y - r * 0.28f),
-                size = Size(r * 0.32f, r * 0.24f),
-                style = Stroke(width = 3.5f, cap = StrokeCap.Round)
-            )
+            val eyeY = y - r * 0.10f
+            val eyeR = r * 0.11f
+            // Left sparkle eye
+            drawCircle(Color(0xFF1E0A12), radius = eyeR, center = Offset(x - r * 0.28f, eyeY))
+            drawCircle(Color.White, radius = eyeR * 0.42f, center = Offset(x - r * 0.25f, eyeY - eyeR * 0.25f))
+            drawCircle(Color.White, radius = eyeR * 0.20f, center = Offset(x - r * 0.30f, eyeY + eyeR * 0.20f))
+
+            // Right sparkle eye
+            drawCircle(Color(0xFF1E0A12), radius = eyeR, center = Offset(x + r * 0.28f, eyeY))
+            drawCircle(Color.White, radius = eyeR * 0.42f, center = Offset(x + r * 0.31f, eyeY - eyeR * 0.25f))
+            drawCircle(Color.White, radius = eyeR * 0.20f, center = Offset(x + r * 0.26f, eyeY + eyeR * 0.20f))
 
             // Rosy Blush
-            drawCircle(Color(0x80FF4081), radius = r * 0.14f, center = Offset(x - r * 0.42f, y + r * 0.08f))
-            drawCircle(Color(0x80FF4081), radius = r * 0.14f, center = Offset(x + r * 0.42f, y + r * 0.08f))
-
-            // Big smile arc
-            drawArc(
-                color = Color(0xFF3A0007),
-                startAngle = 0f,
-                sweepAngle = 180f,
-                useCenter = true,
-                topLeft = Offset(x - r * 0.36f, y + r * 0.05f),
-                size = Size(r * 0.72f, r * 0.55f)
+            drawOval(
+                color = Color(0x66FF2A75),
+                topLeft = Offset(x - r * 0.46f, y + r * 0.02f),
+                size = Size(r * 0.22f, r * 0.13f)
             )
-            // Tongue inside smile
-            drawCircle(Color(0xFFFF5252), radius = r * 0.14f, center = Offset(x, y + r * 0.36f))
+            drawOval(
+                color = Color(0x66FF2A75),
+                topLeft = Offset(x + r * 0.24f, y + r * 0.02f),
+                size = Size(r * 0.22f, r * 0.13f)
+            )
+
+            // Cute smiling open mouth with pink tongue
+            val mouthPath = Path().apply {
+                moveTo(x - r * 0.15f, y + r * 0.12f)
+                quadraticTo(x, y + r * 0.32f, x + r * 0.15f, y + r * 0.12f)
+                close()
+            }
+            drawPath(mouthPath, color = Color(0xFF1E0A12))
+            drawCircle(Color(0xFFFF5D8F), radius = r * 0.06f, center = Offset(x, y + r * 0.24f))
         }
         BalloonShapeStyle.FUNNY -> {
             // Mismatched goofy googly eyes
@@ -665,6 +825,21 @@ private fun DrawScope.drawCatBalloon(
     val x = b.x
     val y = b.y
 
+    val curAlpha = b.alpha.coerceIn(0.1f, 1.0f)
+
+    // Subtle Outer Glow for Cat Balloon
+    drawOval(
+        color = b.color.copy(alpha = 0.30f * curAlpha),
+        topLeft = Offset(x - r * 1.04f, y - r * 1.04f),
+        size = Size(r * 2.08f, r * 2.08f)
+    )
+    drawOval(
+        color = Color.White.copy(alpha = 0.38f * curAlpha),
+        topLeft = Offset(x - r * 0.93f, y - r * 0.93f),
+        size = Size(r * 1.86f, r * 1.86f),
+        style = Stroke(width = 2.2f)
+    )
+
     // Reusable Cat Ears (Path reset)
     path1.reset()
     path1.moveTo(x - r * 0.75f, y - r * 0.4f)
@@ -740,6 +915,7 @@ private fun DrawScope.drawStarBalloon(b: Balloon, starPath: Path) {
     val points = 5
     val outerR = r
     val innerR = r * 0.48f
+    val curAlpha = b.alpha.coerceIn(0.1f, 1.0f)
 
     starPath.reset()
     for (i in 0 until points * 2) {
@@ -750,6 +926,10 @@ private fun DrawScope.drawStarBalloon(b: Balloon, starPath: Path) {
         if (i == 0) starPath.moveTo(px, py) else starPath.lineTo(px, py)
     }
     starPath.close()
+
+    // Subtle Outer Glow for Star Balloon
+    drawPath(starPath, color = Color(0xFFFFD700).copy(alpha = 0.32f * curAlpha), style = Stroke(width = 8f))
+    drawPath(starPath, color = Color.White.copy(alpha = 0.40f * curAlpha), style = Stroke(width = 2.2f))
 
     drawPath(
         starPath,
@@ -783,12 +963,17 @@ private fun DrawScope.drawHeartBalloon(b: Balloon, heartPath: Path) {
     val r = b.radius
     val x = b.x
     val y = b.y - r * 0.15f
+    val curAlpha = b.alpha.coerceIn(0.1f, 1.0f)
 
     heartPath.reset()
     heartPath.moveTo(x, y + r * 0.7f)
     heartPath.cubicTo(x - r * 1.3f, y - r * 0.1f, x - r * 0.9f, y - r * 1.05f, x, y - r * 0.35f)
     heartPath.cubicTo(x + r * 0.9f, y - r * 1.05f, x + r * 1.3f, y - r * 0.1f, x, y + r * 0.7f)
     heartPath.close()
+
+    // Subtle Outer Glow for Heart Balloon
+    drawPath(heartPath, color = Color(0xFFFF2A75).copy(alpha = 0.32f * curAlpha), style = Stroke(width = 8f))
+    drawPath(heartPath, color = Color.White.copy(alpha = 0.40f * curAlpha), style = Stroke(width = 2.2f))
 
     drawPath(
         heartPath,

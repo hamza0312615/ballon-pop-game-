@@ -1,0 +1,19 @@
+{
+  "appId": "com.aistudio.balloonpop.game",
+  "appName": "Balloon Pop Deluxe",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "AdMob": {
+      "appId": "ca-app-pub-5098386592651454~7436641428",
+      "testingDevices": [],
+      "initializeForTesting": false
+    }
+  },
+  "admob": {
+    "appId": "ca-app-pub-5098386592651454~7436641428",
+    "appOpenAdUnitId": "ca-app-pub-5098386592651454/3949831719",
+    "interstitialGameOverAdUnitId": "ca-app-pub-5098386592651454/7208129455",
+    "rewardedCoinsAdUnitId": "ca-app-pub-5098386592651454/4581966114"
+  }
+}

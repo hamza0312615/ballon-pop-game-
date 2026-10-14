@@ -1,6 +1,6 @@
 {
   "name": "Balloon Pop Deluxe",
-  "description": "Fast-paced arcade balloon popping game featuring 50 campaign stages, endless modes, custom blades, themes, daily wheel spin, and dynamic synth audio.",
+  "description": "Fast-paced arcade balloon popping game featuring 200 campaign stages, custom flames, blades, frames, themes, daily wheel spin, and dynamic synth audio.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

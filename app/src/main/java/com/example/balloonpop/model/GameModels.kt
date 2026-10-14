@@ -111,6 +111,28 @@ data class BladeTrailPoint(
     val color: Color
 )
 
+data class LightningBolt(
+    val id: Long,
+    val points: List<Pair<Float, Float>>,
+    var alpha: Float = 1.0f,
+    val color: Color = Color(0xFF00F0FF),
+    val branchPoints: List<List<Pair<Float, Float>>> = emptyList()
+)
+
+enum class InGameBooster(
+    val id: String,
+    val displayName: String,
+    val icon: String,
+    val description: String,
+    val defaultCharges: Int = 3
+) {
+    THUNDER_STRIKE("booster_thunder", "Thunder Zap", "⚡", "Zaps all bombs & strikes balloons with electric thunder!"),
+    COLOR_BOMB("booster_color_bomb", "Color Bomb", "🌈", "Pops every balloon of the most popular color on screen!"),
+    HAMMER_SMASH("booster_hammer", "Lollipop Hammer", "🔨", "Giant hammer shockwave smashes balloons in a huge radius!"),
+    FREEZE_BLIZZARD("booster_freeze", "Ice Freeze", "❄️", "Freezes time & all balloons completely for 6 seconds!"),
+    TORNADO_VORTEX("booster_vortex", "Wind Vortex", "🌀", "Draws all balloons into the center in a huge combo pop!")
+}
+
 data class HammerStrikeEffect(
     val id: Long,
     val x: Float,
@@ -155,7 +177,30 @@ data class BladeItem(
     val icon: String,
     val cost: Int,
     val currency: CurrencyType,
-    val trailColor: Color
+    val trailColor: Color,
+    val secondaryColor: Color = trailColor,
+    val description: String = ""
+)
+
+data class FlameItem(
+    val id: String,
+    val name: String,
+    val icon: String,
+    val cost: Int,
+    val currency: CurrencyType,
+    val primaryColor: Color,
+    val glowColor: Color,
+    val emberColor: Color,
+    val description: String,
+    val critPopBonusPercent: Int = 10
+)
+
+data class StarMilestoneReward(
+    val starsRequired: Int,
+    val rewardCoins: Int,
+    val rewardGems: Int,
+    val bonusTitle: String,
+    val icon: String = "⭐"
 )
 
 data class ThemeConfig(
@@ -174,9 +219,33 @@ data class CampaignLevel(
     val timeLimit: Int,
     val maxBombs: Int,
     val rewardCoins: Int,
-    val rewardGems: Int
+    val rewardGems: Int,
+    val maxMissesAllowed: Int = 4
 ) {
     val isBossStage: Boolean get() = (level % 10 == 0)
+}
+
+enum class GameOverReason(val title: String, val subtitle: String, val icon: String) {
+    MISSED_LIMIT(
+        "Too Many Balloons Escaped!",
+        "Exceeded the maximum allowed missed balloons",
+        "💨"
+    ),
+    TIME_EXPIRED(
+        "Time's Up!",
+        "Ran out of time before popping the target balloons",
+        "⏱️"
+    ),
+    LIVES_DEPLETED(
+        "No Lives Remaining!",
+        "Ran out of lives in classic mode",
+        "💔"
+    ),
+    BOMB_DETONATION(
+        "Bomb Detonated!",
+        "Accidentally tapped a hazardous bomb",
+        "💣"
+    )
 }
 
 enum class GameMode(val displayName: String, val desc: String, val icon: String) {
@@ -196,7 +265,8 @@ enum class GameState {
 }
 
 enum class SkillType(val id: String, val title: String, val icon: String) {
-    CONTINUOUS_SLICE("skill_slice", "Laser Blade Stream", "⚡"),
+    HAMMER_SLIDE("skill_slice", "Hammer Slide", "🔨⚡"),
+    CONTINUOUS_SLICE("skill_slice", "Hammer Slide", "🔨⚡"),
     TIME_FREEZE("skill_freeze", "Chrono Stasis", "⏱️"),
     MAGNET_PULL("skill_magnet", "Vortex Magnet", "🧲"),
     SHOCKWAVE("skill_shockwave", "Supernova Blast", "💥")
@@ -241,6 +311,9 @@ data class WorldZone(
 ) {
     val title: String get() = name
     val accentColor: Color get() = islandColor
+    val primaryColor: Color get() = islandColor
+    val secondaryColor: Color get() = pathGlowColor
+    val gradientColors: List<Color> get() = bgGradient
     val levelsRange: IntRange get() = startLevel..endLevel
     val milestoneChestLevel: Int get() = endLevel
 }
@@ -252,9 +325,26 @@ data class WheelSegment(
     val color: Color
 )
 
+enum class QuestCategory(val displayName: String, val icon: String) {
+    DAILY("Daily Challenges", "📅"),
+    WEEKLY("Weekly Hero", "🏆")
+}
+
 data class QuestItem(
     val id: String,
     val title: String,
+    val target: Int,
+    val rewardCoins: Int,
+    val rewardGems: Int,
+    val category: QuestCategory = QuestCategory.DAILY,
+    val icon: String = "🎯"
+)
+
+data class AchievementItem(
+    val id: String,
+    val title: String,
+    val description: String,
+    val icon: String,
     val target: Int,
     val rewardCoins: Int,
     val rewardGems: Int
@@ -440,34 +530,128 @@ object GameConstants {
     )
 
     val SHOP_BLADES = listOf(
-        BladeItem("blade_classic", "Classic Pointer", "🖐️", 0, CurrencyType.COINS, Color(0xFF00F0FF)),
-        BladeItem("blade_laser", "Laser Sabre", "⚔️", 500, CurrencyType.COINS, Color(0xFF00F0FF)),
-        BladeItem("blade_flame", "Flame Blade", "🔥", 1000, CurrencyType.COINS, Color(0xFFFF5722)),
-        BladeItem("blade_wand", "Magic Wand", "🪄", 2000, CurrencyType.COINS, Color(0xFF9D4EDD)),
-        BladeItem("blade_cyber", "Cyber Pulse", "⚡", 30, CurrencyType.GEMS, Color(0xFF06D6A0))
+        BladeItem("blade_classic", "Classic Pointer", "🖐️", 0, CurrencyType.COINS, Color(0xFF00F0FF), Color(0xFF80D8FF), "Standard responsive pointer touch trail."),
+        BladeItem("blade_katana", "Shadow Katana", "🗡️", 350, CurrencyType.COINS, Color(0xFFFF1744), Color(0xFFFF8A80), "Swift sharp edge leaving sleek crimson cuts."),
+        BladeItem("blade_laser", "Laser Sabre", "⚔️", 500, CurrencyType.COINS, Color(0xFF00F0FF), Color(0xFF00B0FF), "Blinding sci-fi laser slicing energy beam."),
+        BladeItem("blade_flame", "Flame Blaster", "🔥⚔️", 800, CurrencyType.COINS, Color(0xFFFF5722), Color(0xFFFFAB40), "Searing ignited blade that burns rising balloons."),
+        BladeItem("blade_frost", "Glacial Frostbite", "❄️🗡️", 1200, CurrencyType.COINS, Color(0xFF00E5FF), Color(0xFFB388FF), "Sub-zero chilled rapier with freezing trails."),
+        BladeItem("blade_wand", "Cosmic Magic Wand", "🪄", 1800, CurrencyType.COINS, Color(0xFF9D4EDD), Color(0xFFE040FB), "Arcane sorcerer's wand radiating mystical stardust."),
+        BladeItem("blade_cyber", "Cyber Scythe", "⚡", 2500, CurrencyType.COINS, Color(0xFF06D6A0), Color(0xFF00E676), "Futuristic hyper-tech neon scythe."),
+        BladeItem("blade_dragon", "Dragon Fang Blade", "🐉🗡️", 30, CurrencyType.GEMS, Color(0xFFFF9100), Color(0xFFFF3D00), "Forged from an elder dragon's tooth with ember bursts."),
+        BladeItem("blade_celestial", "Celestial God Cleaver", "👑⚔️", 65, CurrencyType.GEMS, Color(0xFFFFD700), Color(0xFFFFF176), "Divine mythical weapon bathed in blinding gold."),
+        BladeItem("blade_void", "Void Reaper Edge", "🌑🗡️", 90, CurrencyType.GEMS, Color(0xFFE040FB), Color(0xFF3D0066), "Abyssal cosmic blade slicing through dark matter.")
+    )
+
+    val SHOP_FLAMES = listOf(
+        FlameItem(
+            id = "flame_ember",
+            name = "Crimson Ember",
+            icon = "🔥",
+            cost = 0,
+            currency = CurrencyType.COINS,
+            primaryColor = Color(0xFFFF4500),
+            glowColor = Color(0xFFFF8C00),
+            emberColor = Color(0xFFFFD700),
+            description = "Flickering fiery ember sparks on every tap.",
+            critPopBonusPercent = 5
+        ),
+        FlameItem(
+            id = "flame_phoenix",
+            name = "Phoenix Blazing Fire",
+            icon = "🦅🔥",
+            cost = 450,
+            currency = CurrencyType.COINS,
+            primaryColor = Color(0xFFFF3D00),
+            glowColor = Color(0xFFFF9100),
+            emberColor = Color(0xFFFFE57F),
+            description = "Mythic bird's immortal flame with soaring golden sparks.",
+            critPopBonusPercent = 10
+        ),
+        FlameItem(
+            id = "flame_cyber_plasma",
+            name = "Cyber Plasma Fire",
+            icon = "⚡🔥",
+            cost = 900,
+            currency = CurrencyType.COINS,
+            primaryColor = Color(0xFF00F0FF),
+            glowColor = Color(0xFF7000FF),
+            emberColor = Color(0xFF00E5FF),
+            description = "Electric neon blue-violet high temperature plasma arc.",
+            critPopBonusPercent = 15
+        ),
+        FlameItem(
+            id = "flame_soul_fire",
+            name = "Ghost Soul Flame",
+            icon = "👻🔥",
+            cost = 1600,
+            currency = CurrencyType.COINS,
+            primaryColor = Color(0xFF00FFCC),
+            glowColor = Color(0xFF0077B6),
+            emberColor = Color(0xFF90E0EF),
+            description = "Ethereal cyan phantom flame burning with mystical energy.",
+            critPopBonusPercent = 20
+        ),
+        FlameItem(
+            id = "flame_dragon_fury",
+            name = "Dragon Infernal Fury",
+            icon = "🐉🔥",
+            cost = 25,
+            currency = CurrencyType.GEMS,
+            primaryColor = Color(0xFFFF0055),
+            glowColor = Color(0xFFFF5400),
+            emberColor = Color(0xFFFFD000),
+            description = "Ancient dragon fire that scorches balloons with radiant flares.",
+            critPopBonusPercent = 25
+        ),
+        FlameItem(
+            id = "flame_solar_flare",
+            name = "Solar Flare Corona",
+            icon = "☀️🔥",
+            cost = 50,
+            currency = CurrencyType.GEMS,
+            primaryColor = Color(0xFFFFEE00),
+            glowColor = Color(0xFFFF3300),
+            emberColor = Color(0xFFFFFFFF),
+            description = "Blinding solar tempest radiating golden coronal mass.",
+            critPopBonusPercent = 35
+        ),
+        FlameItem(
+            id = "flame_void_abyss",
+            name = "Void Abyssal Flame",
+            icon = "🌌🔥",
+            cost = 75,
+            currency = CurrencyType.GEMS,
+            primaryColor = Color(0xFFBF00FF),
+            glowColor = Color(0xFF1D0047),
+            emberColor = Color(0xFFE0AAFF),
+            description = "Cosmic dark matter flame pulling starlight into oblivion.",
+            critPopBonusPercent = 50
+        )
     )
 
     val SHOP_THEMES = listOf(
-        ThemeConfig("theme_neon", "Neon Arcade", "🎆", 0, CurrencyType.COINS, listOf(Color(0xFF1B0E3D), Color(0xFF2E1764), Color(0xFF130930))),
-        ThemeConfig("theme_sunset", "Sunset Aurora", "🌇", 300, CurrencyType.COINS, listOf(Color(0xFF381232), Color(0xFF5D1D45), Color(0xFF260D25))),
-        ThemeConfig("theme_ocean", "Prism Lagoon", "🌊", 600, CurrencyType.COINS, listOf(Color(0xFF0F2B48), Color(0xFF134E6F), Color(0xFF0A1E33))),
-        ThemeConfig("theme_galaxy", "Celestial Nebula", "🌌", 1500, CurrencyType.COINS, listOf(Color(0xFF200F3E), Color(0xFF3B1869), Color(0xFF150A2D)))
+        ThemeConfig("theme_sunset_twilight", "Sunset Twilight", "🌅", 0, CurrencyType.COINS, listOf(Color(0xFF1B0B38), Color(0xFF330D52), Color(0xFF5A1466), Color(0xFF8C1D5D), Color(0xFFC43345), Color(0xFFE65100), Color(0xFFFFA726))),
+        ThemeConfig("theme_obsidian", "Midnight Obsidian", "🖤", 0, CurrencyType.COINS, listOf(Color(0xFF000000), Color(0xFF07070C), Color(0xFF0F0F1A), Color(0xFF05050A))),
+        ThemeConfig("theme_neon_cyber", "Cyberpunk Neon", "⚡", 300, CurrencyType.COINS, listOf(Color(0xFF050508), Color(0xFF0A101C), Color(0xFF16091D), Color(0xFF020205))),
+        ThemeConfig("theme_crimson_black", "Crimson Eclipse", "🔴", 400, CurrencyType.COINS, listOf(Color(0xFF0C0206), Color(0xFF1F040E), Color(0xFF2D0714), Color(0xFF080104))),
+        ThemeConfig("theme_dark_galaxy", "Cosmic Galaxy", "🌌", 600, CurrencyType.COINS, listOf(Color(0xFF030008), Color(0xFF0C051B), Color(0xFF140827), Color(0xFF020006))),
+        ThemeConfig("theme_golden_onyx", "Royal Golden Onyx", "👑", 1500, CurrencyType.COINS, listOf(Color(0xFF050401), Color(0xFF141006), Color(0xFF1A1303), Color(0xFF060501)))
     )
 
     val AVAILABLE_SKILLS = listOf(
         PlayerSkill(
             id = "skill_slice",
-            type = SkillType.CONTINUOUS_SLICE,
-            name = "Laser Stream Slice",
-            icon = "⚡",
-            description = "Glide your finger smoothly across the screen to slice and pop all balloons continuously without lifting!",
-            unlockCostCoins = 200,
-            unlockCostGems = 0,
+            type = SkillType.HAMMER_SLIDE,
+            name = "Hammer Slide",
+            icon = "🔨⚡",
+            description = "Supercharge your hammer! Allows you to freely slide and smash balloons continuously across the screen for 5 seconds!",
+            unlockCostCoins = 800,
+            unlockCostGems = 10,
             maxLevel = 3,
             currentLevel = 1,
-            energyCostPerSec = 22f,
-            cooldownSeconds = 0f,
-            accentColor = Color(0xFF00F0FF)
+            energyCostPerSec = 20f,
+            cooldownSeconds = 18f,
+            accentColor = Color(0xFFFFD700)
         ),
         PlayerSkill(
             id = "skill_freeze",
@@ -475,12 +659,12 @@ object GameConstants {
             name = "Chrono Stasis",
             icon = "⏱️",
             description = "Slow down all rising balloons by 75% for 6 seconds to execute precision combos and chain pops.",
-            unlockCostCoins = 450,
-            unlockCostGems = 5,
+            unlockCostCoins = 1800,
+            unlockCostGems = 25,
             maxLevel = 3,
             currentLevel = 1,
             energyCostPerSec = 0f,
-            cooldownSeconds = 15f,
+            cooldownSeconds = 20f,
             accentColor = Color(0xFF00E5FF)
         ),
         PlayerSkill(
@@ -489,12 +673,12 @@ object GameConstants {
             name = "Vortex Magnet",
             icon = "🧲",
             description = "Create a magnetic singularity that pulls golden and rainbow balloons directly to your touch point!",
-            unlockCostCoins = 800,
-            unlockCostGems = 12,
+            unlockCostCoins = 3200,
+            unlockCostGems = 45,
             maxLevel = 3,
             currentLevel = 1,
             energyCostPerSec = 0f,
-            cooldownSeconds = 18f,
+            cooldownSeconds = 24f,
             accentColor = Color(0xFFFF2A75)
         ),
         PlayerSkill(
@@ -503,24 +687,24 @@ object GameConstants {
             name = "Supernova Blast",
             icon = "💥",
             description = "Release a massive radial shockwave clearing all standard balloons on screen and showering bonus coins!",
-            unlockCostCoins = 1500,
-            unlockCostGems = 25,
+            unlockCostCoins = 6000,
+            unlockCostGems = 80,
             maxLevel = 3,
             currentLevel = 1,
             energyCostPerSec = 0f,
-            cooldownSeconds = 25f,
+            cooldownSeconds = 30f,
             accentColor = Color(0xFFFFB703)
         )
     )
 
     val DAILY_STREAK_TIMELINE = listOf(
-        DailyStreakDay(1, 100, 0, "Day 1"),
-        DailyStreakDay(2, 250, 1, "Day 2"),
-        DailyStreakDay(3, 400, 3, "Day 3"),
-        DailyStreakDay(4, 600, 5, "Day 4"),
-        DailyStreakDay(5, 850, 8, "Day 5"),
-        DailyStreakDay(6, 1200, 15, "Day 6"),
-        DailyStreakDay(7, 3000, 50, "Day 7 JACKPOT 🎉", isJackpot = true)
+        DailyStreakDay(1, 200, 2, "Day 1"),
+        DailyStreakDay(2, 400, 5, "Day 2"),
+        DailyStreakDay(3, 650, 8, "Day 3"),
+        DailyStreakDay(4, 950, 12, "Day 4"),
+        DailyStreakDay(5, 1400, 18, "Day 5"),
+        DailyStreakDay(6, 2000, 25, "Day 6"),
+        DailyStreakDay(7, 5000, 60, "Day 7 JACKPOT 🎉", isJackpot = true)
     )
 
     val WORLD_ZONES = listOf(
@@ -538,40 +722,118 @@ object GameConstants {
         WorldZone(12, "Thunder Spire", "Stages 111 - 120", 111, 120, Color(0xFFF72585), Color(0xFF4361EE), listOf(Color(0xFF1B1B3A), Color(0xFF2F2F64), Color(0xFF101026)), "🌩️"),
         WorldZone(13, "Emerald Jungle", "Stages 121 - 130", 121, 130, Color(0xFF38B000), Color(0xFF70E000), listOf(Color(0xFF0B2E13), Color(0xFF144D21), Color(0xFF061C0B)), "🌴"),
         WorldZone(14, "Cosmic Void", "Stages 131 - 140", 131, 140, Color(0xFFB5179E), Color(0xFF7209B7), listOf(Color(0xFF220538), Color(0xFF3B0861), Color(0xFF130221)), "🪐"),
-        WorldZone(15, "Celestial Ascension", "Stages 141 - 150", 141, 150, Color(0xFFFFD700), Color(0xFF00FFFF), listOf(Color(0xFF29104D), Color(0xFF481A85), Color(0xFF1A0A33)), "👑")
+        WorldZone(15, "Celestial Ascension", "Stages 141 - 150", 141, 150, Color(0xFFFFD700), Color(0xFF00FFFF), listOf(Color(0xFF29104D), Color(0xFF481A85), Color(0xFF1A0A33)), "👑"),
+        WorldZone(16, "Molten Core", "Stages 151 - 160", 151, 160, Color(0xFFFF5722), Color(0xFFFF9100), listOf(Color(0xFF350B05), Color(0xFF541208), Color(0xFF200703)), "☄️"),
+        WorldZone(17, "Neon Abyss", "Stages 161 - 170", 161, 170, Color(0xFF00E5FF), Color(0xFF7C4DFF), listOf(Color(0xFF05172E), Color(0xFF0C2448), Color(0xFF020E1F)), "🧬"),
+        WorldZone(18, "Olympus Gates", "Stages 171 - 180", 171, 180, Color(0xFFFFD700), Color(0xFFFFF176), listOf(Color(0xFF2C2204), Color(0xFF473607), Color(0xFF191302)), "🏛️"),
+        WorldZone(19, "Dragon's Lair", "Stages 181 - 190", 181, 190, Color(0xFFFF1744), Color(0xFFFF9100), listOf(Color(0xFF3E0812), Color(0xFF5D0D1B), Color(0xFF25050B)), "🐲"),
+        WorldZone(20, "Grand Pantheon", "Stages 191 - 200", 191, 200, Color(0xFFFF007F), Color(0xFFFFD700), listOf(Color(0xFF240438), Color(0xFF420866), Color(0xFF150221)), "🏆")
     )
 
-    val CAMPAIGN_LEVELS: List<CampaignLevel> = (1..150).map { lvl ->
+    val CAMPAIGN_LEVELS: List<CampaignLevel> = (1..200).map { lvl ->
         val isBossStage = (lvl % 10 == 0)
         val isFrenzyStage = (lvl % 5 == 0 && !isBossStage)
+        // Generous rewards matching deep playtime
+        val baseCoins = if (lvl <= 5) 250 + lvl * 50 else 300 + lvl * 30
+        val baseGems = when {
+            isBossStage -> 30 + (lvl / 10) * 8
+            isFrenzyStage -> 12 + (lvl / 20) * 2
+            lvl <= 5 -> 5
+            else -> 6 + (lvl / 20)
+        }
+
+        // Calibrated deep session playtime in seconds so levels provide rich engagement
+        val time = when {
+            isBossStage -> (80 + (lvl / 10) * 4).coerceIn(80, 120) // Epic extended boss battle
+            isFrenzyStage -> (50 + (lvl / 10) * 2).coerceIn(50, 75)
+            lvl == 1 -> 45
+            lvl == 2 -> 48
+            lvl == 3 -> 50
+            lvl == 4 -> 54
+            else -> (45 + (lvl % 10) * 3).coerceIn(45, 75)
+        }
+
+        // Calibrated target pops for satisfying combo chaining and multi-wave feel
+        val targetPops = when {
+            isBossStage -> (60 + (lvl / 5) * 4).coerceIn(60, 110) // Includes Boss Multi-HP pops!
+            isFrenzyStage -> (50 + (lvl / 6) * 3).coerceIn(50, 85)
+            lvl == 1 -> 35
+            lvl == 2 -> 40
+            lvl == 3 -> 44
+            lvl == 4 -> 48
+            else -> (36 + (lvl * 2)).coerceIn(36, 80)
+        }
+
+        val maxMisses = when {
+            isBossStage -> 7
+            lvl <= 3 -> 6
+            lvl <= 20 -> 5
+            lvl > 100 -> 4
+            else -> 5
+        }
+
         CampaignLevel(
             level = lvl,
-            targetPops = if (isBossStage) 30 + lvl * 2 else if (isFrenzyStage) 25 + lvl * 2 else 15 + lvl * 2,
-            targetScore = if (isBossStage) 500 + lvl * 200 else 200 + lvl * 140,
-            timeLimit = if (isBossStage) 45 else (60 - (lvl / 8)).coerceIn(30, 60),
-            maxBombs = if (isBossStage) (lvl / 8).coerceIn(2, 6) else (lvl / 10).coerceIn(0, 10),
-            rewardCoins = 50 + lvl * 15,
-            rewardGems = if (isBossStage) 10 else if (isFrenzyStage) 5 else 1
+            targetPops = targetPops,
+            targetScore = if (isBossStage) 1500 + lvl * 350 else 500 + targetPops * 40,
+            timeLimit = time,
+            maxBombs = if (isBossStage) (lvl / 8).coerceIn(2, 6) else (lvl / 10).coerceIn(0, 8),
+            rewardCoins = if (isBossStage) baseCoins + 1000 else baseCoins,
+            rewardGems = baseGems,
+            maxMissesAllowed = maxMisses
         )
     }
 
+    val STAR_MILESTONES = listOf(
+        StarMilestoneReward(15, 500, 5, "Novice Explorer", "🌟"),
+        StarMilestoneReward(30, 1000, 10, "Star Chaser", "⭐"),
+        StarMilestoneReward(60, 2000, 20, "Constellation Hero", "✨"),
+        StarMilestoneReward(100, 3500, 35, "Glade Master", "🏆"),
+        StarMilestoneReward(150, 5000, 50, "Astral Voyager", "🌌"),
+        StarMilestoneReward(220, 7500, 75, "Cosmic Champion", "👑"),
+        StarMilestoneReward(300, 10000, 100, "Mythic Ascendant", "🪐"),
+        StarMilestoneReward(400, 15000, 150, "Celestial Legend", "⚡"),
+        StarMilestoneReward(500, 20000, 200, "Sky Sovereign", "🔥"),
+        StarMilestoneReward(600, 35000, 350, "Grand Galaxy God", "🏆👑")
+    )
+
     val WHEEL_SEGMENTS = listOf(
-        WheelSegment("100 🪙", 100, 0, Color(0xFFFF2A75)),
+        WheelSegment("250 🪙", 250, 0, Color(0xFFFF2A75)),
         WheelSegment("500 🪙", 500, 0, Color(0xFF9D4EDD)),
-        WheelSegment("5 💎", 0, 5, Color(0xFF00F0FF)),
-        WheelSegment("250 🪙", 250, 0, Color(0xFFFFB703)),
-        WheelSegment("1,000 🪙", 1000, 0, Color(0xFF06D6A0)),
-        WheelSegment("10 💎", 0, 10, Color(0xFFFF758C))
+        WheelSegment("10 💎", 0, 10, Color(0xFF00F0FF)),
+        WheelSegment("750 🪙", 750, 0, Color(0xFFFFB703)),
+        WheelSegment("1,500 🪙", 1500, 0, Color(0xFF06D6A0)),
+        WheelSegment("25 💎", 0, 25, Color(0xFFFF758C))
     )
 
     val DEFAULT_QUESTS = listOf(
-        QuestItem("quest_pop_50", "Pop 50 Balloons", 50, 100, 0),
-        QuestItem("quest_pop_200", "Pop 200 Balloons", 200, 300, 2),
-        QuestItem("quest_combo_5", "Reach 5x Combo", 5, 150, 1),
-        QuestItem("quest_combo_10", "Reach 10x Combo", 10, 350, 5),
-        QuestItem("quest_stage_5", "Clear Stage 5", 5, 250, 3),
-        QuestItem("quest_stage_10", "Clear Stage 10", 10, 500, 8),
-        QuestItem("quest_spin_wheel", "Spin the Daily Wheel", 1, 100, 1)
+        // Rotating Daily Challenges
+        QuestItem("quest_pop_50", "Pop 40 Balloons", 40, 200, 1, QuestCategory.DAILY, "🎈"),
+        QuestItem("quest_combo_5", "Reach 5x Combo", 5, 250, 2, QuestCategory.DAILY, "🔥"),
+        QuestItem("quest_spin_wheel", "Spin the Daily Wheel", 1, 200, 2, QuestCategory.DAILY, "🎡"),
+        QuestItem("quest_stage_clear_3star", "Clear Any Stage with 3 Stars", 1, 350, 3, QuestCategory.DAILY, "⭐"),
+        QuestItem("quest_special_pop_10", "Pop 10 Special/Golden Balloons", 10, 300, 3, QuestCategory.DAILY, "🪙"),
+        // Weekly Hero Challenges
+        QuestItem("quest_pop_200", "Pop 250 Total Balloons", 250, 800, 8, QuestCategory.WEEKLY, "💥"),
+        QuestItem("quest_combo_10", "Unleash a 10x Mega Combo", 10, 1000, 10, QuestCategory.WEEKLY, "⚡"),
+        QuestItem("quest_stage_5", "Conquer 5 Campaign Stages", 5, 600, 6, QuestCategory.WEEKLY, "🗺️"),
+        QuestItem("quest_stage_10", "Conquer 10 Campaign Stages", 10, 1200, 15, QuestCategory.WEEKLY, "🏆"),
+        QuestItem("quest_stars_15", "Collect 15 Campaign Stars", 15, 1500, 20, QuestCategory.WEEKLY, "🌟")
+    )
+
+    val ACHIEVEMENTS = listOf(
+        AchievementItem("ach_first_pop", "First Pop!", "Pop your first balloon ever", "🎈", 1, 150, 2),
+        AchievementItem("ach_pops_100", "Balloon Apprentice", "Pop 100 balloons across all modes", "🥉", 100, 400, 4),
+        AchievementItem("ach_pops_500", "Balloon Master", "Pop 500 balloons across all modes", "🥈", 500, 1200, 12),
+        AchievementItem("ach_pops_2000", "Sky Legend", "Pop 2,000 balloons across all modes", "👑", 2000, 3500, 40),
+        AchievementItem("ach_combo_6", "Flow State", "Reach a 6x pop combo", "🔥", 6, 350, 4),
+        AchievementItem("ach_combo_12", "Combo God", "Reach a 12x pop combo", "⚡", 12, 1500, 15),
+        AchievementItem("ach_stars_10", "Stargazer", "Earn 10 stars in Campaign", "⭐", 10, 500, 5),
+        AchievementItem("ach_stars_30", "Constellation Explorer", "Earn 30 stars in Campaign", "🌟", 30, 1500, 15),
+        AchievementItem("ach_stars_75", "Galaxy Conqueror", "Earn 75 stars in Campaign", "✨", 75, 3000, 35),
+        AchievementItem("ach_wheel_5", "Lucky Spinner", "Spin the Daily Wheel 5 times", "🎡", 5, 500, 5),
+        AchievementItem("ach_stage_10", "Glade Champion", "Complete 10 Campaign stages", "🏆", 10, 800, 10),
+        AchievementItem("ach_stage_30", "Mesa Veteran", "Complete 30 Campaign stages", "🏰", 30, 2000, 25)
     )
 
     val DIAMOND_STORE_PACKS = listOf(

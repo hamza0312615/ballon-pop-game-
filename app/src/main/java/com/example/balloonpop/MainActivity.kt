@@ -1,22 +1,31 @@
 package com.example.balloonpop
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.balloonpop.ads.AdMobManager
 import com.example.balloonpop.model.GameConstants
 import com.example.balloonpop.model.GameState
+import com.example.balloonpop.notification.DailyNotificationHelper
 import com.example.balloonpop.ui.components.TopBar
 import com.example.balloonpop.ui.dialogs.SettingsDialog
 import com.example.balloonpop.ui.screens.*
@@ -32,9 +41,35 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Initialize Google AdMob SDK and preload ad units
+        AdMobManager.initialize(this)
+
+        // Schedule once-per-day mobile notification reminder
+        DailyNotificationHelper.scheduleDailyNotification(this)
+
         setContent {
             BalloonPopTheme {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                // Request POST_NOTIFICATIONS permission on Android 13+ (API 33+)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val notifLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.RequestPermission()
+                    ) { isGranted ->
+                        if (isGranted) {
+                            DailyNotificationHelper.scheduleDailyNotification(this@MainActivity)
+                        }
+                    }
+                    LaunchedEffect(Unit) {
+                        if (ContextCompat.checkSelfPermission(
+                                this@MainActivity,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                }
 
                 // Active background theme colors
                 val currentTheme = GameConstants.SHOP_THEMES.find { it.id == uiState.equippedThemeId }
@@ -45,7 +80,7 @@ class MainActivity : ComponentActivity() {
                     ?: GameConstants.SHOP_FRAMES.first()
 
                 // Handle Back Button
-                BackHandler(enabled = uiState.isSettingsOpen || uiState.currentScreen != CurrentScreen.HOME) {
+                BackHandler(enabled = uiState.isSettingsOpen || (uiState.currentScreen != CurrentScreen.HOME && uiState.currentScreen != CurrentScreen.SPLASH)) {
                     if (uiState.isSettingsOpen) {
                         viewModel.closeSettings()
                     } else if (uiState.currentScreen == CurrentScreen.GAMEPLAY) {
@@ -72,8 +107,8 @@ class MainActivity : ComponentActivity() {
                             .padding(innerPadding)
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            // Persistent Top Bar on non-gameplay and non-home screens
-                            if (uiState.currentScreen != CurrentScreen.GAMEPLAY && uiState.currentScreen != CurrentScreen.HOME && uiState.currentScreen != CurrentScreen.CAMPAIGN_MAP) {
+                            // Persistent Top Bar on non-gameplay, non-splash, and non-home screens
+                            if (uiState.currentScreen != CurrentScreen.GAMEPLAY && uiState.currentScreen != CurrentScreen.HOME && uiState.currentScreen != CurrentScreen.CAMPAIGN_MAP && uiState.currentScreen != CurrentScreen.SPLASH) {
                                 TopBar(
                                     coins = uiState.coins,
                                     gems = uiState.gems,
@@ -86,18 +121,35 @@ class MainActivity : ComponentActivity() {
                             // Active Screen Container
                             Box(modifier = Modifier.weight(1f)) {
                                 when (uiState.currentScreen) {
+                                    CurrentScreen.SPLASH -> {
+                                        SplashScreen(
+                                            onSplashFinished = {
+                                                AdMobManager.showAppOpenAd(this@MainActivity) {
+                                                    viewModel.navigateTo(CurrentScreen.HOME)
+                                                }
+                                            }
+                                        )
+                                    }
                                     CurrentScreen.HOME -> {
+                                        val nextUnlockedLevel = ((uiState.completedLevels.keys.maxOrNull() ?: 0) + 1).coerceIn(1, 200)
+                                        val currentZoneName = GameConstants.WORLD_ZONES.find { nextUnlockedLevel in it.startLevel..it.endLevel }?.name ?: "Neon Glade"
                                         HomeScreen(
                                             coins = uiState.coins,
                                             gems = uiState.gems,
                                             lives = uiState.lives,
+                                            currentLevel = nextUnlockedLevel,
+                                            zoneName = currentZoneName,
                                             onOpenCampaign = { viewModel.navigateTo(CurrentScreen.CAMPAIGN_MAP) },
                                             onOpenSkillVault = { viewModel.navigateTo(CurrentScreen.SKILL_VAULT) },
                                             onOpenEndless = { viewModel.navigateTo(CurrentScreen.ENDLESS_SELECT) },
                                             onOpenDailySpin = { viewModel.navigateTo(CurrentScreen.DAILY_WHEEL) },
                                             onOpenShop = { viewModel.navigateTo(CurrentScreen.SHOP) },
                                             onOpenQuests = { viewModel.navigateTo(CurrentScreen.QUESTS) },
-                                            onOpenSettings = { viewModel.openSettings() }
+                                            onOpenRanks = { viewModel.navigateTo(CurrentScreen.RANKS) },
+                                            onOpenSettings = { viewModel.openSettings() },
+                                            onStartCustomChallenge = { time, pops, misses ->
+                                                viewModel.startCustomChallenge(time, pops, misses)
+                                            }
                                         )
                                     }
                                     CurrentScreen.SKILL_VAULT -> {
@@ -117,17 +169,24 @@ class MainActivity : ComponentActivity() {
                                         CampaignScreen(
                                             completedLevels = uiState.completedLevels,
                                             claimedMilestoneChests = uiState.claimedMilestoneChests,
+                                            claimedStarMilestones = uiState.claimedStarMilestones,
                                             coins = uiState.coins,
                                             gems = uiState.gems,
+                                            lives = uiState.lives,
                                             onSelectLevel = { levelNum, _ ->
-                                                viewModel.startCampaignStage(levelNum)
+                                                viewModel.startLevelTransition(levelNum)
+                                                viewModel.navigateTo(CurrentScreen.GAMEPLAY)
                                             },
                                             onClaimMilestoneChest = { milestoneLevel ->
                                                 viewModel.claimMilestoneChest(milestoneLevel)
                                             },
+                                            onClaimStarMilestone = { milestone ->
+                                                viewModel.claimStarMilestone(milestone)
+                                            },
                                             onOpenSkillVault = { viewModel.navigateTo(CurrentScreen.SKILL_VAULT) },
                                             onOpenDailySpin = { viewModel.navigateTo(CurrentScreen.DAILY_WHEEL) },
                                             onOpenShop = { viewModel.navigateTo(CurrentScreen.SHOP) },
+                                            onOpenEndless = { viewModel.navigateTo(CurrentScreen.ENDLESS_SELECT) },
                                             onOpenQuests = { viewModel.navigateTo(CurrentScreen.QUESTS) },
                                             onOpenSettings = { viewModel.openSettings() },
                                             onClose = { viewModel.navigateTo(CurrentScreen.HOME) }
@@ -135,6 +194,9 @@ class MainActivity : ComponentActivity() {
                                     }
                                     CurrentScreen.ENDLESS_SELECT -> {
                                         EndlessModeScreen(
+                                            lives = uiState.lives,
+                                            coins = uiState.coins,
+                                            gems = uiState.gems,
                                             onStartMode = { mode ->
                                                 viewModel.startEndlessMode(mode)
                                             },
@@ -148,13 +210,38 @@ class MainActivity : ComponentActivity() {
                                             equippedHammerId = uiState.equippedHammerId,
                                             equippedFrameId = uiState.equippedFrameId,
                                             equippedBladeId = uiState.equippedBladeId,
+                                            equippedFlameId = uiState.equippedFlameId,
+                                            equippedThemeId = uiState.equippedThemeId,
                                             unlockedHammers = uiState.unlockedHammers,
                                             unlockedFrames = uiState.unlockedFrames,
                                             unlockedBlades = uiState.unlockedBlades,
+                                            unlockedFlames = uiState.unlockedFlames,
+                                            unlockedThemes = uiState.unlockedThemes,
                                             onBuyHammer = { hammer -> viewModel.buyHammer(hammer) },
                                             onBuyFrame = { frame -> viewModel.buyFrame(frame) },
                                             onBuyBlade = { blade -> viewModel.buyBlade(blade) },
-                                            onClaimDiamondPack = { pack -> viewModel.claimDiamondPack(pack) },
+                                            onBuyFlame = { flame -> viewModel.buyFlame(flame) },
+                                            onBuyTheme = { theme -> viewModel.buyTheme(theme) },
+                                            onClaimDiamondPack = { pack ->
+                                                if (pack.isAdReward) {
+                                                    AdMobManager.showRewardedAd(
+                                                        this@MainActivity,
+                                                        onRewardEarned = {
+                                                            viewModel.claimDiamondPack(pack)
+                                                        }
+                                                    )
+                                                } else {
+                                                    viewModel.claimDiamondPack(pack)
+                                                }
+                                            },
+                                            onWatchAdForCoins = {
+                                                AdMobManager.showRewardedAd(
+                                                    this@MainActivity,
+                                                    onRewardEarned = {
+                                                        viewModel.rewardAdCoinsAndGems(250, 10)
+                                                    }
+                                                )
+                                            },
                                             bannerMessage = uiState.bannerMessage,
                                             onClose = {
                                                 viewModel.clearBannerMessage()
@@ -169,8 +256,28 @@ class MainActivity : ComponentActivity() {
                                             wonSegment = uiState.wheelWonSegment,
                                             dailyStreakDay = uiState.dailyStreakDay,
                                             remainingMillis = viewModel.getDailySpinRemainingMillis(),
-                                            onSpinFree = { viewModel.spinFortuneWheel(isFreeSpin = true) },
+                                            onSpinFree = {
+                                                AdMobManager.showRewardedAd(
+                                                    this@MainActivity,
+                                                    onRewardEarned = {
+                                                        viewModel.spinFortuneWheel(isFreeSpin = true)
+                                                    },
+                                                    onDismiss = {
+                                                        if (!uiState.isWheelSpinning && uiState.wheelWonSegment == null) {
+                                                            viewModel.spinFortuneWheel(isFreeSpin = true)
+                                                        }
+                                                    }
+                                                )
+                                            },
                                             onSpinInstant = { viewModel.spinFortuneWheel(isFreeSpin = false) },
+                                            onWatchAdForSpin = {
+                                                AdMobManager.showRewardedAd(
+                                                    this@MainActivity,
+                                                    onRewardEarned = {
+                                                        viewModel.spinFortuneWheel(isFreeSpin = true)
+                                                    }
+                                                )
+                                            },
                                             onClose = { viewModel.navigateTo(CurrentScreen.HOME) }
                                         )
                                     }
@@ -185,6 +292,13 @@ class MainActivity : ComponentActivity() {
                                             onClose = { viewModel.navigateTo(CurrentScreen.HOME) }
                                         )
                                     }
+                                    CurrentScreen.RANKS -> {
+                                        RanksScreen(
+                                            currentScore = uiState.lifetimeHighScore,
+                                            currentLevel = uiState.currentLevel,
+                                            onClose = { viewModel.navigateTo(CurrentScreen.HOME) }
+                                        )
+                                    }
                                     CurrentScreen.GAMEPLAY -> {
                                         GamePlayScreen(
                                             gameState = uiState.gameState,
@@ -194,6 +308,9 @@ class MainActivity : ComponentActivity() {
                                             lives = uiState.lives,
                                             timeLeft = uiState.timeLeft,
                                             poppedCount = uiState.poppedCount,
+                                            missedCount = uiState.missedCount,
+                                            maxMissesAllowed = uiState.maxMissesAllowed,
+                                            gameOverReason = uiState.gameOverReason,
                                             targetPops = uiState.targetPops,
                                             combo = uiState.combo,
                                             maxCombo = uiState.maxCombo,
@@ -212,9 +329,18 @@ class MainActivity : ComponentActivity() {
                                             ambients = viewModel.ambients,
                                             equippedFrame = equippedFrame,
                                             equippedTheme = currentTheme,
+                                            lightningBolts = viewModel.lightningBolts,
+                                            screenFlashAlpha = uiState.screenFlashAlpha,
+                                            boosterCounts = uiState.boosterCounts,
+                                            candyPraise = uiState.candyPraise,
+                                            onTriggerBooster = { booster -> viewModel.triggerInGameBooster(booster) },
+                                            coins = uiState.coins,
                                             equippedSkillId = uiState.equippedSkillId,
                                             skillEnergy = uiState.skillEnergy,
                                             skillCooldownRemaining = uiState.skillCooldownRemaining,
+                                            isHammerSlideActive = uiState.isHammerSlideActive,
+                                            hammerSlideTimeRemaining = uiState.hammerSlideTimeRemaining,
+                                            stageBoosterUsesCount = uiState.stageBoosterUsesCount,
                                             onActivateSkill = { viewModel.activateSkill() },
                                             onStepFrame = { dt -> viewModel.stepFrame(dt) },
                                             onPointerInput = { x, y, isTap -> viewModel.handlePointerInput(x, y, isTap) },
@@ -228,7 +354,12 @@ class MainActivity : ComponentActivity() {
                                             onNextLevel = { viewModel.nextLevel() },
                                             onStageMenu = { viewModel.navigateTo(CurrentScreen.CAMPAIGN_MAP) },
                                             onQuitToMenu = { viewModel.navigateTo(CurrentScreen.HOME) },
-                                            onOpenSettings = { viewModel.openSettings() }
+                                            onOpenSettings = { viewModel.openSettings() },
+                                            isNewHighScore = uiState.isNewHighScoreAchieved,
+                                            previousHighScore = uiState.previousHighScore,
+                                            isTransitioningLevel = uiState.isTransitioningLevel,
+                                            transitionTargetLevel = uiState.transitionTargetLevel,
+                                            onFinishLevelTransition = { viewModel.finishLevelTransition() }
                                         )
                                     }
                                 }
@@ -240,6 +371,16 @@ class MainActivity : ComponentActivity() {
                             SettingsDialog(
                                 isSoundMuted = uiState.isSoundMuted,
                                 soundVolume = uiState.soundVolume,
+                                isMusicMuted = uiState.isMusicMuted,
+                                musicVolume = uiState.musicVolume,
+                                isSfxMuted = uiState.isSfxMuted,
+                                sfxVolume = uiState.sfxVolume,
+                                currentMusicTheme = uiState.currentMusicTheme,
+                                onToggleMusicMute = { viewModel.toggleMusicMute() },
+                                onChangeMusicVolume = { viewModel.setMusicVolume(it) },
+                                onToggleSfxMute = { viewModel.toggleSfxMute() },
+                                onChangeSfxVolume = { viewModel.setSfxVolume(it) },
+                                onSelectMusicTheme = { viewModel.setMusicTheme(it) },
                                 isVibrationEnabled = uiState.isVibrationEnabled,
                                 isScreenShakeEnabled = uiState.isScreenShakeEnabled,
                                 graphicsQuality = uiState.graphicsQuality,
@@ -257,6 +398,38 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        viewModel.onAppForegrounded()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.onAppForegrounded()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.onAppBackgrounded()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        viewModel.onAppBackgrounded()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        viewModel.onAppDestroyed()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (!hasFocus && isFinishing) {
+            viewModel.onAppBackgrounded()
         }
     }
 }

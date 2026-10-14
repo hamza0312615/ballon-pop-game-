@@ -11,9 +11,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.balloonpop.audio.BackgroundMusicPlayer
 import com.example.balloonpop.audio.MusicTheme
-import com.example.balloonpop.audio.SoundSynthesizer
+import com.example.balloonpop.audio.SoundManager
 import com.example.balloonpop.data.GameRepository
 import com.example.balloonpop.model.*
+import com.example.balloonpop.util.ScreenShakeUtility
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +28,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 enum class CurrentScreen {
+    SPLASH,
     HOME,
     CAMPAIGN_MAP,
     SKILL_VAULT,
@@ -35,11 +37,12 @@ enum class CurrentScreen {
     DIAMOND_STORE,
     DAILY_WHEEL,
     QUESTS,
+    RANKS,
     GAMEPLAY
 }
 
 data class UiState(
-    val currentScreen: CurrentScreen = CurrentScreen.HOME,
+    val currentScreen: CurrentScreen = CurrentScreen.SPLASH,
     val gameState: GameState = GameState.MENU,
     val gameMode: GameMode = GameMode.CAMPAIGN,
     val currentLevel: Int = 1,
@@ -48,17 +51,24 @@ data class UiState(
     val equippedHammerId: String = "hammer_wood",
     val equippedFrameId: String = "frame_minimal",
     val equippedBladeId: String = "blade_classic",
-    val equippedThemeId: String = "theme_neon",
+    val equippedFlameId: String = "flame_ember",
+    val equippedThemeId: String = "theme_sunset_twilight",
     val unlockedHammers: Set<String> = setOf("hammer_wood"),
     val unlockedFrames: Set<String> = setOf("frame_minimal"),
     val unlockedBlades: Set<String> = setOf("blade_classic"),
-    val unlockedThemes: Set<String> = setOf("theme_neon"),
+    val unlockedFlames: Set<String> = setOf("flame_ember"),
+    val unlockedThemes: Set<String> = setOf("theme_sunset_twilight", "theme_obsidian"),
+    val claimedStarMilestones: Set<Int> = emptySet(),
     // Skills State
     val equippedSkillId: String = "skill_slice",
     val unlockedSkills: Set<String> = setOf("skill_slice"),
     val skillLevels: Map<String, Int> = mapOf("skill_slice" to 1),
     val skillEnergy: Float = 100f,
     val isSkillActive: Boolean = false,
+    val isHammerSlideActive: Boolean = false,
+    val hammerSlideTimeRemaining: Float = 0f,
+    val stageSkillUsesCount: Int = 0,
+    val stageBoosterUsesCount: Int = 0,
     val skillCooldownRemaining: Float = 0f,
     // Daily Timeline & Fortune Wheel
     val lastDailySpinTimestamp: Long = 0L,
@@ -82,6 +92,11 @@ data class UiState(
     // Settings
     val isSoundMuted: Boolean = false,
     val soundVolume: Float = 1.0f,
+    val isMusicMuted: Boolean = false,
+    val musicVolume: Float = 0.50f,
+    val isSfxMuted: Boolean = false,
+    val sfxVolume: Float = 1.0f,
+    val currentMusicTheme: MusicTheme = MusicTheme.MEADOW_JOY,
     val isVibrationEnabled: Boolean = true,
     val isScreenShakeEnabled: Boolean = true,
     val graphicsQuality: String = "BALANCED", // "ULTRA", "BALANCED", "BATTERY_SAVER"
@@ -97,23 +112,57 @@ data class UiState(
     val earnedCoinsThisSession: Int = 0,
     val earnedGemsThisSession: Int = 0,
     val earnedStarsThisLevel: Int = 0,
+    val missedCount: Int = 0,
+    val maxMissesAllowed: Int = 4,
+    val gameOverReason: GameOverReason = GameOverReason.TIME_EXPIRED,
     // Banner Message / Toast
-    val bannerMessage: String? = null
+    val bannerMessage: String? = null,
+    // In-Game Boosters (Candy Crush Style)
+    val boosterCounts: Map<String, Int> = mapOf(
+        "booster_thunder" to 3,
+        "booster_color_bomb" to 3,
+        "booster_hammer" to 3,
+        "booster_freeze" to 3,
+        "booster_vortex" to 3
+    ),
+    val candyPraise: String? = null,
+    val screenFlashAlpha: Float = 0f,
+    // Onboarding & Milestones
+    val claimedAchievements: Set<String> = emptySet(),
+    val showTutorial: Boolean = false,
+    val tutorialStep: Int = 0,
+    // Stage Transitions & High Score Celebrations
+    val isNewHighScoreAchieved: Boolean = false,
+    val previousHighScore: Int = 0,
+    val isTransitioningLevel: Boolean = false,
+    val transitionTargetLevel: Int? = null
 )
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = GameRepository(application)
-    val sound = SoundSynthesizer(application)
-    val musicPlayer = BackgroundMusicPlayer()
+    val sound = SoundManager.getInstance(application)
+    val musicPlayer: BackgroundMusicPlayer get() = sound.musicPlayer
 
     private val vibrator: Vibrator? by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val vibratorManager = application.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
-            vibratorManager?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            application.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vibratorManager = application.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                vibratorManager?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                application.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+            }
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private val hasHardwareVibrator: Boolean by lazy {
+        try {
+            vibrator?.hasVibrator() == true
+        } catch (_: Throwable) {
+            false
         }
     }
 
@@ -128,19 +177,25 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     val hammerStrikes = mutableListOf<HammerStrikeEffect>()
     val shockwaves = mutableListOf<PopShockwave>()
     val ambients = mutableListOf<AmbientElement>()
+    val lightningBolts = mutableListOf<LightningBolt>()
 
     private var balloonIdCounter = 0L
     private var hammerEffectCounter = 0L
     private var shockwaveIdCounter = 0L
     private var ambientIdCounter = 0L
+    private var lightningIdCounter = 0L
     private var spawnAccumulator = 0f
     private var spawnIntervalSeconds = 0.75f
     private var freezeTimeRemaining = 0f
     private var multiplierTimeRemaining = 0f
     private var currentScreenShake = 0f
-    private var internalSkillEnergy = 100f
+    private var internalSkillEnergy = 0f
     private var internalSkillCooldown = 0f
+    private var hammerSlideTimeRemaining = 0f
+    private var stageBoosterUsesCount = 0
+    private var stageSkillUsesCount = 0
     private var uiSyncAccumulator = 0f
+    private var sessionBaselineHighScore = 0
 
     val currentShake: Float
         get() = if (_uiState.value.isScreenShakeEnabled) currentScreenShake else 0f
@@ -158,10 +213,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun loadSavedData() {
         val muted = repository.isSoundMuted()
         val vol = repository.getSoundVolume()
+        val musicMuted = repository.isMusicMuted()
+        val musicVol = repository.getMusicVolume()
+        val sfxMuted = repository.isSfxMuted()
+        val sfxVol = repository.getSfxVolume()
+
+        sound.setMasterVolume(vol)
         sound.setMuted(muted)
-        sound.setVolume(vol)
-        musicPlayer.setMuted(muted)
-        musicPlayer.setVolume(vol * 0.50f)
+        sound.setMusicVolume(musicVol)
+        sound.setMusicMuted(musicMuted)
+        sound.setSfxVolume(sfxVol)
+        sound.setSfxMuted(sfxMuted)
 
         val unlockedSkills = repository.getUnlockedSkills()
         val skillLevels = GameConstants.AVAILABLE_SKILLS.associate { it.id to repository.getSkillLevel(it.id) }
@@ -173,11 +235,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 equippedHammerId = repository.getEquippedHammer(),
                 equippedFrameId = repository.getEquippedFrame(),
                 equippedBladeId = repository.getEquippedBlade(),
+                equippedFlameId = repository.getEquippedFlame(),
                 equippedThemeId = repository.getEquippedTheme(),
                 unlockedHammers = repository.getUnlockedHammers(),
                 unlockedFrames = repository.getUnlockedFrames(),
                 unlockedBlades = repository.getUnlockedBlades(),
+                unlockedFlames = repository.getUnlockedFlames(),
                 unlockedThemes = repository.getUnlockedThemes(),
+                claimedStarMilestones = repository.getClaimedStarMilestones(),
                 equippedSkillId = repository.getEquippedSkill(),
                 unlockedSkills = unlockedSkills,
                 skillLevels = skillLevels,
@@ -190,26 +255,58 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 lifetimeMaxCombo = repository.getLifetimeMaxCombo(),
                 wheelSpins = repository.getWheelSpins(),
                 claimedQuests = repository.getClaimedQuests(),
+                claimedAchievements = repository.getClaimedAchievements(),
                 isSoundMuted = muted,
                 soundVolume = vol,
+                isMusicMuted = musicMuted,
+                musicVolume = musicVol,
+                isSfxMuted = sfxMuted,
+                sfxVolume = sfxVol,
+                currentMusicTheme = sound.currentMusicTheme,
                 isVibrationEnabled = repository.isVibrationEnabled(),
                 isScreenShakeEnabled = repository.isScreenShakeEnabled(),
                 graphicsQuality = repository.getGraphicsQuality(),
-                isWideAssistEnabled = repository.isWideAssistEnabled()
+                isWideAssistEnabled = repository.isWideAssistEnabled(),
+                boosterCounts = repository.getAllBoosterCounts()
             )
         }
     }
 
     fun triggerVibration(durationMs: Long = 25L) {
-        if (!_uiState.value.isVibrationEnabled) return
+        if (!_uiState.value.isVibrationEnabled || !hasHardwareVibrator) return
         try {
+            val v = vibrator ?: return
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
+                v.vibrate(VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator?.vibrate(durationMs)
+                v.vibrate(durationMs)
             }
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
+    }
+
+    /**
+     * Triggers intensity-weighted vibrations and visual displacements for popping special balloons.
+     */
+    fun triggerSpecialBalloonShake(type: BalloonType) {
+        val profile = ScreenShakeUtility.getProfileForBalloon(type)
+        if (profile.visualDisplacement > 0f) {
+            currentScreenShake = maxOf(currentScreenShake, profile.visualDisplacement)
+            if (_uiState.value.isScreenShakeEnabled) {
+                _uiState.update {
+                    it.copy(
+                        screenShake = currentScreenShake,
+                        screenFlashAlpha = if (profile.screenFlashAlpha > 0f) maxOf(it.screenFlashAlpha, profile.screenFlashAlpha) else it.screenFlashAlpha
+                    )
+                }
+            }
+        }
+        ScreenShakeUtility.triggerHapticFeedback(
+            vibrator = vibrator,
+            profile = profile,
+            isVibrationEnabled = _uiState.value.isVibrationEnabled,
+            hasHardwareVibrator = hasHardwareVibrator
+        )
     }
 
     // --- Settings Methods ---
@@ -225,16 +322,43 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleSound() {
         val newMuted = sound.toggleMute()
-        musicPlayer.setMuted(newMuted)
         repository.setSoundMuted(newMuted)
         _uiState.update { it.copy(isSoundMuted = newMuted) }
     }
 
     fun setSoundVolume(volume: Float) {
-        sound.setVolume(volume)
-        musicPlayer.setVolume(volume * 0.50f)
+        sound.setMasterVolume(volume)
         repository.setSoundVolume(volume)
         _uiState.update { it.copy(soundVolume = volume) }
+    }
+
+    fun toggleMusicMute() {
+        val newMuted = sound.toggleMusicMute()
+        repository.setMusicMuted(newMuted)
+        _uiState.update { it.copy(isMusicMuted = newMuted) }
+    }
+
+    fun setMusicVolume(volume: Float) {
+        sound.setMusicVolume(volume)
+        repository.setMusicVolume(volume)
+        _uiState.update { it.copy(musicVolume = volume) }
+    }
+
+    fun toggleSfxMute() {
+        val newMuted = sound.toggleSfxMute()
+        repository.setSfxMuted(newMuted)
+        _uiState.update { it.copy(isSfxMuted = newMuted) }
+    }
+
+    fun setSfxVolume(volume: Float) {
+        sound.setSfxVolume(volume)
+        repository.setSfxVolume(volume)
+        _uiState.update { it.copy(sfxVolume = volume) }
+    }
+
+    fun setMusicTheme(theme: MusicTheme) {
+        sound.setMusicTheme(theme)
+        _uiState.update { it.copy(currentMusicTheme = theme) }
     }
 
     fun setVibrationEnabled(enabled: Boolean) {
@@ -271,11 +395,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 equippedHammerId = "hammer_wood",
                 equippedFrameId = "frame_minimal",
                 equippedBladeId = "blade_classic",
-                equippedThemeId = "theme_neon",
+                equippedThemeId = "theme_obsidian",
                 unlockedHammers = setOf("hammer_wood"),
                 unlockedFrames = setOf("frame_minimal"),
                 unlockedBlades = setOf("blade_classic"),
-                unlockedThemes = setOf("theme_neon"),
+                unlockedThemes = setOf("theme_obsidian"),
                 completedLevels = emptyMap(),
                 lifetimePops = 0,
                 lifetimeHighScore = 0,
@@ -289,13 +413,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun navigateTo(screen: CurrentScreen) {
-        sound.playClick()
+        if (screen == CurrentScreen.HOME) {
+            sound.playDialogClose()
+        } else {
+            sound.playDialogOpen()
+        }
         _uiState.update { it.copy(currentScreen = screen) }
     }
 
     // --- Hammer System ---
     fun setEquippedHammer(hammerId: String) {
-        sound.playClick()
+        sound.playEquipSound()
         repository.setEquippedHammer(hammerId)
         _uiState.update { it.copy(equippedHammerId = hammerId) }
     }
@@ -311,7 +439,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             repository.setCoins(newCoins)
             repository.unlockHammer(hammer.id)
             repository.setEquippedHammer(hammer.id)
-            sound.playCoin()
+            sound.playPurchaseSuccess()
             _uiState.update {
                 it.copy(
                     coins = newCoins,
@@ -325,7 +453,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             repository.setGems(newGems)
             repository.unlockHammer(hammer.id)
             repository.setEquippedHammer(hammer.id)
-            sound.playCoin()
+            sound.playPurchaseSuccess()
             _uiState.update {
                 it.copy(
                     gems = newGems,
@@ -334,12 +462,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     bannerMessage = "Unlocked ${hammer.name}! 💎"
                 )
             }
+        } else {
+            sound.playPurchaseFail()
+            _uiState.update { it.copy(bannerMessage = "Not enough currency for ${hammer.name}!") }
         }
     }
 
     // --- Frame System ---
     fun setEquippedFrame(frameId: String) {
-        sound.playClick()
+        sound.playEquipSound()
         repository.setEquippedFrame(frameId)
         _uiState.update { it.copy(equippedFrameId = frameId) }
     }
@@ -355,7 +486,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             repository.setCoins(newCoins)
             repository.unlockFrame(frame.id)
             repository.setEquippedFrame(frame.id)
-            sound.playCoin()
+            sound.playPurchaseSuccess()
             _uiState.update {
                 it.copy(
                     coins = newCoins,
@@ -369,7 +500,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             repository.setGems(newGems)
             repository.unlockFrame(frame.id)
             repository.setEquippedFrame(frame.id)
-            sound.playCoin()
+            sound.playPurchaseSuccess()
             _uiState.update {
                 it.copy(
                     gems = newGems,
@@ -378,11 +509,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     bannerMessage = "Unlocked ${frame.name} Frame! 💎"
                 )
             }
+        } else {
+            sound.playPurchaseFail()
+            _uiState.update { it.copy(bannerMessage = "Not enough currency for ${frame.name}!") }
         }
     }
 
     // --- Diamond / Store ---
-    fun claimDiamondPack(pack: DiamondStorePack) {
+    fun claimDiamondPack(pack: DiamondStorePack, isPurchased: Boolean = false) {
         val state = _uiState.value
         if (pack.id == "coin_convert_pack") {
             if (state.coins >= 500) {
@@ -404,6 +538,31 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
+        if (pack.isAdReward) {
+            val newGems = state.gems + pack.diamondsAmount
+            repository.setGems(newGems)
+            sound.playStageClear()
+            triggerVibration(40L)
+            _uiState.update {
+                it.copy(
+                    gems = newGems,
+                    bannerMessage = "Ad Completed! Claimed +${pack.diamondsAmount} 💎!"
+                )
+            }
+            return
+        }
+
+        // Real-money In-App Purchase packs ($0.99, $2.99, $8.99, $19.99)
+        // Must NOT award free diamonds on click without verified Google Play Billing payment
+        if (!isPurchased) {
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "${pack.title} (${pack.priceTag}) requires Google Play In-App Billing."
+                )
+            }
+            return
+        }
+
         val newGems = state.gems + pack.diamondsAmount
         repository.setGems(newGems)
         sound.playStageClear()
@@ -411,7 +570,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update {
             it.copy(
                 gems = newGems,
-                bannerMessage = "Claimed +${pack.diamondsAmount} 💎 successfully!"
+                bannerMessage = "Purchased +${pack.diamondsAmount} 💎 successfully!"
             )
         }
     }
@@ -420,9 +579,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(bannerMessage = null) }
     }
 
+    fun rewardAdCoinsAndGems(coins: Int = 250, gems: Int = 10) {
+        val state = _uiState.value
+        val newCoins = state.coins + coins
+        val newGems = state.gems + gems
+        repository.setCoins(newCoins)
+        repository.setGems(newGems)
+        sound.playStageClear()
+        triggerVibration(50L)
+        _uiState.update {
+            it.copy(
+                coins = newCoins,
+                gems = newGems,
+                bannerMessage = "🎬 Ad Reward Claimed: +$coins 🪙 & +$gems 💎!"
+            )
+        }
+    }
+
     // --- Blade & Theme ---
     fun setEquippedBlade(bladeId: String) {
-        sound.playClick()
+        sound.playEquipSound()
         repository.setEquippedBlade(bladeId)
         _uiState.update { it.copy(equippedBladeId = bladeId) }
     }
@@ -438,7 +614,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             repository.setCoins(newCoins)
             repository.unlockBlade(blade.id)
             repository.setEquippedBlade(blade.id)
-            sound.playCoin()
+            sound.playPurchaseSuccess()
             _uiState.update {
                 it.copy(
                     coins = newCoins,
@@ -451,7 +627,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             repository.setGems(newGems)
             repository.unlockBlade(blade.id)
             repository.setEquippedBlade(blade.id)
-            sound.playCoin()
+            sound.playPurchaseSuccess()
             _uiState.update {
                 it.copy(
                     gems = newGems,
@@ -459,13 +635,109 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     equippedBladeId = blade.id
                 )
             }
+        } else {
+            sound.playPurchaseFail()
         }
     }
 
     fun setEquippedTheme(themeId: String) {
-        sound.playClick()
+        sound.playEquipSound()
         repository.setEquippedTheme(themeId)
         _uiState.update { it.copy(equippedThemeId = themeId) }
+    }
+
+    // --- Flame Items ---
+    fun setEquippedFlame(flameId: String) {
+        sound.playEquipSound()
+        repository.setEquippedFlame(flameId)
+        _uiState.update { it.copy(equippedFlameId = flameId) }
+    }
+
+    fun buyFlame(flame: FlameItem) {
+        val state = _uiState.value
+        if (state.unlockedFlames.contains(flame.id)) {
+            setEquippedFlame(flame.id)
+            return
+        }
+        if (flame.currency == CurrencyType.COINS && state.coins >= flame.cost) {
+            val newCoins = state.coins - flame.cost
+            repository.setCoins(newCoins)
+            repository.unlockFlame(flame.id)
+            repository.setEquippedFlame(flame.id)
+            sound.playPurchaseSuccess()
+            _uiState.update {
+                it.copy(
+                    coins = newCoins,
+                    unlockedFlames = repository.getUnlockedFlames(),
+                    equippedFlameId = flame.id,
+                    bannerMessage = "Unlocked ${flame.name}! 🔥"
+                )
+            }
+        } else if (flame.currency == CurrencyType.GEMS && state.gems >= flame.cost) {
+            val newGems = state.gems - flame.cost
+            repository.setGems(newGems)
+            repository.unlockFlame(flame.id)
+            repository.setEquippedFlame(flame.id)
+            sound.playPurchaseSuccess()
+            _uiState.update {
+                it.copy(
+                    gems = newGems,
+                    unlockedFlames = repository.getUnlockedFlames(),
+                    equippedFlameId = flame.id,
+                    bannerMessage = "Unlocked ${flame.name}! 🔥"
+                )
+            }
+        } else {
+            sound.playPurchaseFail()
+            _uiState.update { it.copy(bannerMessage = "Not enough currency for ${flame.name}!") }
+        }
+    }
+
+    // --- Star Road Milestones ---
+    fun claimStarMilestone(milestone: StarMilestoneReward) {
+        val claimed = repository.getClaimedStarMilestones()
+        if (claimed.contains(milestone.starsRequired)) return
+
+        repository.claimStarMilestone(milestone.starsRequired)
+        val newCoins = _uiState.value.coins + milestone.rewardCoins
+        val newGems = _uiState.value.gems + milestone.rewardGems
+        repository.setCoins(newCoins)
+        repository.setGems(newGems)
+
+        sound.playClaimReward()
+        triggerVibration(60L)
+        _uiState.update {
+            it.copy(
+                claimedStarMilestones = repository.getClaimedStarMilestones(),
+                coins = newCoins,
+                gems = newGems,
+                bannerMessage = "Claimed ${milestone.bonusTitle}! +${milestone.rewardCoins}🪙 +${milestone.rewardGems}💎 ⭐"
+            )
+        }
+    }
+
+    // --- Loss Aversion: Second Chance Revive ---
+    fun reviveSession() {
+        if (_uiState.value.gameState != GameState.GAMEOVER) return
+        val currentCoins = _uiState.value.coins
+        val reviveCost = 50
+        val newCoins = if (currentCoins >= reviveCost) currentCoins - reviveCost else currentCoins
+        if (currentCoins >= reviveCost) {
+            repository.setCoins(newCoins)
+        }
+        sound.playStageClear()
+        triggerVibration(50L)
+        _uiState.update {
+            it.copy(
+                gameState = GameState.PLAYING,
+                timeLeft = it.timeLeft + 12, // +12 seconds bonus
+                missedCount = (it.missedCount - 2).coerceAtLeast(0), // forgives 2 missed balloons
+                lives = 2,
+                coins = newCoins,
+                bannerMessage = "❤️ SECOND CHANCE REVIVE! +12s & 2 Misses Restored!"
+            )
+        }
+        startTimer()
     }
 
     fun buyTheme(theme: ThemeConfig) {
@@ -508,6 +780,35 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 targetPops = lvl.targetPops,
                 targetScore = lvl.targetScore,
                 timeLeft = lvl.timeLimit,
+                maxMissesAllowed = lvl.maxMissesAllowed,
+                missedCount = 0,
+                currentScreen = CurrentScreen.GAMEPLAY
+            )
+        }
+        initGameSession()
+    }
+
+    /**
+     * Custom Challenge Lab where players can input custom seconds, balloon target, and missed balloon limit.
+     */
+    fun startCustomChallenge(timeSeconds: Int, targetBalloons: Int, maxMisses: Int) {
+        musicPlayer.setTheme(MusicTheme.TROPICAL_BOP)
+        musicPlayer.resume()
+        initAmbientsForZone(1)
+
+        val clampedTime = timeSeconds.coerceIn(5, 120)
+        val clampedPops = targetBalloons.coerceIn(5, 150)
+        val clampedMisses = maxMisses.coerceIn(1, 20)
+
+        _uiState.update {
+            it.copy(
+                gameMode = GameMode.CAMPAIGN,
+                currentLevel = 0, // 0 denotes Custom Challenge
+                targetPops = clampedPops,
+                targetScore = clampedPops * 25,
+                timeLeft = clampedTime,
+                maxMissesAllowed = clampedMisses,
+                missedCount = 0,
                 currentScreen = CurrentScreen.GAMEPLAY
             )
         }
@@ -528,6 +829,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 gameMode = mode,
                 timeLeft = if (mode == GameMode.TIME_RUSH) 60 else 0,
+                missedCount = 0,
                 currentScreen = CurrentScreen.GAMEPLAY
             )
         }
@@ -548,17 +850,71 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun restartGame() {
         sound.playClick()
+        val state = _uiState.value
+        val levelNum = state.currentLevel
+        val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(levelNum - 1)
+        if (state.gameMode == GameMode.CAMPAIGN && lvl != null && levelNum > 0) {
+            _uiState.update {
+                it.copy(
+                    timeLeft = lvl.timeLimit,
+                    maxMissesAllowed = lvl.maxMissesAllowed,
+                    targetPops = lvl.targetPops,
+                    missedCount = 0
+                )
+            }
+        } else {
+            _uiState.update {
+                it.copy(
+                    missedCount = 0
+                )
+            }
+        }
         initGameSession()
     }
 
+    fun playOnRevive() {
+        sound.playRainbowBlast()
+        musicPlayer.resume()
+        _uiState.update {
+            it.copy(
+                gameState = GameState.PLAYING,
+                timeLeft = it.timeLeft + 15,
+                missedCount = 0,
+                lives = 3
+            )
+        }
+        startTimer()
+    }
+
     fun nextLevel() {
-        sound.playClick()
+        sound.playLevelWarp()
         val nextLvl = _uiState.value.currentLevel + 1
-        if (nextLvl <= 150) {
-            startCampaignStage(nextLvl)
+        if (nextLvl <= com.example.balloonpop.data.SecurityGuard.MAX_CAMPAIGN_LEVEL) {
+            startLevelTransition(nextLvl)
         } else {
             navigateTo(CurrentScreen.CAMPAIGN_MAP)
         }
+    }
+
+    fun startLevelTransition(levelNum: Int) {
+        sound.playLevelWarp()
+        _uiState.update {
+            it.copy(
+                isTransitioningLevel = true,
+                transitionTargetLevel = levelNum
+            )
+        }
+    }
+
+    fun finishLevelTransition() {
+        val target = _uiState.value.transitionTargetLevel ?: (_uiState.value.currentLevel + 1)
+        _uiState.update {
+            it.copy(
+                isTransitioningLevel = false,
+                transitionTargetLevel = null
+            )
+        }
+        startCampaignStage(target)
     }
 
     private fun initAmbientsForZone(zoneNum: Int) {
@@ -608,16 +964,31 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         synchronized(swipeTrail) { swipeTrail.clear() }
         synchronized(hammerStrikes) { hammerStrikes.clear() }
         synchronized(shockwaves) { shockwaves.clear() }
+        synchronized(lightningBolts) { lightningBolts.clear() }
 
         spawnAccumulator = 0f
-        spawnIntervalSeconds = if (state.gameMode == GameMode.TIME_RUSH) 0.45f else 0.68f
+        spawnIntervalSeconds = when {
+            state.gameMode == GameMode.CAMPAIGN -> {
+                // Calibrate spawn tempo so target balloon count spawns comfortably within the time limit
+                val popsNeeded = state.targetPops.coerceAtLeast(10)
+                val seconds = state.timeLeft.coerceAtLeast(10)
+                val ideal = (seconds.toFloat() / (popsNeeded.toFloat() * 1.55f)).coerceIn(0.28f, 0.45f)
+                ideal
+            }
+            state.gameMode == GameMode.TIME_RUSH -> 0.35f
+            else -> 0.50f
+        }
         freezeTimeRemaining = 0f
         multiplierTimeRemaining = 0f
         currentScreenShake = 0f
-        internalSkillEnergy = 100f
+        internalSkillEnergy = 0f
         internalSkillCooldown = 0f
+        hammerSlideTimeRemaining = 0f
+        stageBoosterUsesCount = 0
+        stageSkillUsesCount = 0
         uiSyncAccumulator = 0f
         lastPopTime = 0L
+        sessionBaselineHighScore = repository.getLifetimeHighScore()
 
         _uiState.update {
             it.copy(
@@ -625,13 +996,23 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 score = 0,
                 lives = 3,
                 poppedCount = 0,
+                missedCount = 0,
                 combo = 0,
                 maxCombo = 1,
                 isFreezeActive = false,
                 isMultiplierActive = false,
+                isHammerSlideActive = false,
+                hammerSlideTimeRemaining = 0f,
+                stageSkillUsesCount = 0,
+                stageBoosterUsesCount = 0,
                 screenShake = 0f,
+                screenFlashAlpha = 0f,
+                candyPraise = null,
+                boosterCounts = repository.getAllBoosterCounts(),
                 earnedCoinsThisSession = 0,
-                earnedGemsThisSession = 0
+                earnedGemsThisSession = 0,
+                isNewHighScoreAchieved = false,
+                previousHighScore = sessionBaselineHighScore
             )
         }
 
@@ -666,10 +1047,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             if (state.poppedCount >= state.targetPops) {
                 stageClear()
             } else {
-                gameOver()
+                gameOver(GameOverReason.TIME_EXPIRED)
             }
         } else {
-            gameOver()
+            gameOver(GameOverReason.TIME_EXPIRED)
         }
     }
 
@@ -701,14 +1082,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // 3. Skill Energy Regen and Cooldown Recovery (Throttled UI sync to eliminate recomposition churn)
-        var triggerSync = false
-        if (!_uiState.value.isSkillActive) {
-            if (internalSkillEnergy < 100f) {
-                internalSkillEnergy = (internalSkillEnergy + dtSeconds * 8f).coerceAtMost(100f)
-                if (internalSkillEnergy >= 100f) triggerSync = true
+        // 3. Hammer Slide Duration Countdown (5 seconds active duration)
+        if (hammerSlideTimeRemaining > 0f) {
+            hammerSlideTimeRemaining -= dtSeconds
+            if (hammerSlideTimeRemaining <= 0f) {
+                hammerSlideTimeRemaining = 0f
+                _uiState.update { it.copy(isHammerSlideActive = false, hammerSlideTimeRemaining = 0f) }
+            } else {
+                _uiState.update { it.copy(isHammerSlideActive = true, hammerSlideTimeRemaining = hammerSlideTimeRemaining) }
             }
         }
+
+        // 3. Skill Cooldown Recovery (Skill energy is strictly earned via popping balloons to make skills rare!)
+        var triggerSync = false
         if (internalSkillCooldown > 0f) {
             internalSkillCooldown = (internalSkillCooldown - dtSeconds).coerceAtLeast(0f)
             if (internalSkillCooldown == 0f) triggerSync = true
@@ -764,9 +1150,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Missed balloon out of screen
                 if (b.y + b.radius < -30f) {
-                    it.remove()
-                    if (state.gameMode == GameMode.CLASSIC && b.type != BalloonType.BOMB) {
-                        onMissBalloon()
+                    if (b.type == BalloonType.MEGA_BOSS) {
+                        // Boss swoops back with thunderous fury so the battle continues!
+                        b.y = canvasHeight + b.radius + 15f
+                        b.x = canvasWidth * (0.25f + Random.nextFloat() * 0.5f)
+                        addFloatingText(b.x, canvasHeight - 80f, "⚠️ BOSS RETURNING! 👑", Color(0xFFFF3366))
+                        currentScreenShake = 16f
+                    } else {
+                        it.remove()
+                        if (b.type != BalloonType.BOMB) {
+                            onMissBalloon(b.x)
+                        }
                     }
                 }
             }
@@ -847,6 +1241,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+
+        // 13. Update Lightning Bolts
+        synchronized(lightningBolts) {
+            val it = lightningBolts.iterator()
+            while (it.hasNext()) {
+                val bolt = it.next()
+                bolt.alpha -= 0.07f * step
+                if (bolt.alpha <= 0f) {
+                    it.remove()
+                }
+            }
+        }
+
+        // 14. Screen Flash decay
+        if (_uiState.value.screenFlashAlpha > 0f) {
+            val nextFlash = (_uiState.value.screenFlashAlpha - 0.05f * step).coerceAtLeast(0f)
+            _uiState.update { it.copy(screenFlashAlpha = nextFlash) }
+        }
     }
 
     private fun spawnBalloon() {
@@ -861,7 +1273,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val isBossLevel = mode == GameMode.CAMPAIGN && (lvl % 10 == 0)
         val bossAlreadySpawned = balloons.any { it.type == BalloonType.MEGA_BOSS && !it.popped }
 
-        val type: BalloonType = if (isBossLevel && !bossAlreadySpawned && Random.nextInt(100) < 35) {
+        val type: BalloonType = if (isBossLevel && !bossAlreadySpawned && (balloons.size <= 2 || Random.nextInt(100) < 60)) {
             BalloonType.MEGA_BOSS
         } else if (mode == GameMode.ZEN) {
             val nonBombs = listOf(
@@ -872,29 +1284,35 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             nonBombs.random()
         } else {
             val roll = Random.nextInt(100)
+            val bombThreshold = when {
+                lvl >= 25 -> 88 // 12% bombs
+                lvl >= 10 -> 90 // 10% bombs
+                lvl >= 5 -> 92  // 8% bombs
+                else -> 94      // 6% bombs
+            }
             when {
-                roll < 34 -> BalloonType.STANDARD
-                roll < 44 -> BalloonType.GOLDEN
-                roll < 52 -> BalloonType.RAINBOW
-                roll < 62 -> BalloonType.FAST_ROCKET
-                roll < 70 -> BalloonType.SPLITTER
-                roll < 78 -> BalloonType.SHIELDED
-                roll < 84 -> BalloonType.ELECTRIC_STORM
-                roll < 89 -> BalloonType.MYSTERY_GIFT
-                roll < 93 -> BalloonType.GHOST_PHANTOM
-                roll < 96 -> BalloonType.GOLDEN_PIGGY
-                roll < 98 -> BalloonType.FREEZE
-                else -> BalloonType.BOMB
+                roll < 22 -> BalloonType.STANDARD
+                roll < 32 -> BalloonType.GOLDEN
+                roll < 39 -> BalloonType.RAINBOW
+                roll < 50 -> BalloonType.FAST_ROCKET
+                roll < 58 -> BalloonType.SPLITTER
+                roll < 68 -> BalloonType.SHIELDED
+                roll < 76 -> BalloonType.ELECTRIC_STORM
+                roll < 81 -> BalloonType.MYSTERY_GIFT
+                roll < 85 -> BalloonType.GHOST_PHANTOM
+                roll < 88 -> BalloonType.GOLDEN_PIGGY
+                roll < bombThreshold -> BalloonType.FREEZE
+                else -> BalloonType.BOMB // Challenging bombs requiring swift focus & accuracy!
             }
         }
 
         val baseSpeed = when {
-            type == BalloonType.MEGA_BOSS -> 1.5f
-            type == BalloonType.FAST_ROCKET -> 5.5f + Random.nextFloat() * 2.0f
-            mode == GameMode.TIME_RUSH -> 4.5f + Random.nextFloat() * 2.5f
-            mode == GameMode.ARCADE -> 4.0f + Random.nextFloat() * 2.8f
-            mode == GameMode.ZEN -> 2.2f + Random.nextFloat() * 1.5f
-            else -> 3.2f + (lvl * 0.02f).coerceAtMost(2.5f) + Random.nextFloat() * 2.0f
+            type == BalloonType.MEGA_BOSS -> 2.4f
+            type == BalloonType.FAST_ROCKET -> 7.8f + Random.nextFloat() * 3.5f
+            mode == GameMode.TIME_RUSH -> 6.2f + Random.nextFloat() * 3.0f
+            mode == GameMode.ARCADE -> 5.5f + Random.nextFloat() * 3.0f
+            mode == GameMode.ZEN -> 2.6f + Random.nextFloat() * 1.5f
+            else -> 4.8f + (lvl * 0.05f).coerceAtMost(4.5f) + Random.nextFloat() * 2.8f
         }
 
         val color = when (type) {
@@ -927,7 +1345,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         val maxHp = when (type) {
-            BalloonType.MEGA_BOSS -> 5
+            BalloonType.MEGA_BOSS -> (15 + (lvl / 10) * 5).coerceIn(15, 45)
             BalloonType.SHIELDED -> 2
             else -> 1
         }
@@ -958,36 +1376,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun handlePointerInput(x: Float, y: Float, isTap: Boolean = false) {
         if (_uiState.value.gameState != GameState.PLAYING) return
 
-        val blade = GameConstants.SHOP_BLADES.find { it.id == _uiState.value.equippedBladeId }
-            ?: GameConstants.SHOP_BLADES.first()
         val hammer = GameConstants.SHOP_HAMMERS.find { it.id == _uiState.value.equippedHammerId }
             ?: GameConstants.SHOP_HAMMERS.first()
 
-        // Swipe trail
-        synchronized(swipeTrail) {
-            if (swipeTrail.size < 30) {
-                swipeTrail.add(BladeTrailPoint(x, y, 1.0f, blade.trailColor))
-            }
-        }
+        val isHammerSlideActive = _uiState.value.isHammerSlideActive && hammerSlideTimeRemaining > 0f
 
-        val now = System.currentTimeMillis()
-
-        // Continuous Slicing vs Tap Strike
-        val isSliceSkillEquipped = _uiState.value.equippedSkillId == "skill_slice"
-        val hasEnergyForSlice = _uiState.value.skillEnergy > 2f
-        val sliceActive = !isTap && (isSliceSkillEquipped || _uiState.value.isSkillActive) && hasEnergyForSlice
-
-        if (sliceActive) {
-            // Drain small amount of slice energy per drag point without high-frequency StateFlow emission
-            internalSkillEnergy = (internalSkillEnergy - 0.35f).coerceAtLeast(0f)
-        }
-
-        // Hammer Strike Trigger on tap or paced intervals
-        if (isTap || (!sliceActive && now - lastHammerTapTime > 160L)) {
+        if (isTap) {
+            // TAP ONLY ACTION: Hammer strike at tap location
+            val now = System.currentTimeMillis()
             lastHammerTapTime = now
             sound.playHammerSmash(hammer.tier)
             synchronized(hammerStrikes) {
-                if (hammerStrikes.size < 5) {
+                if (hammerStrikes.size < 6) {
                     hammerStrikes.add(
                         HammerStrikeEffect(
                             id = ++hammerEffectCounter,
@@ -1000,38 +1400,72 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             val sparkMultiplier = when (_uiState.value.graphicsQuality) {
-                "ULTRA" -> 14
-                "BATTERY_SAVER" -> 4
-                else -> 8
+                "ULTRA" -> 16
+                "BATTERY_SAVER" -> 5
+                else -> 10
             }
-            createSparks(x, y, hammer.sparkColor, count = sparkMultiplier + hammer.tier * 2)
-        }
+            val equippedFlame = GameConstants.SHOP_FLAMES.find { it.id == _uiState.value.equippedFlameId }
+                ?: GameConstants.SHOP_FLAMES.first()
 
-        // Magnetic pull effect if Magnet skill is equipped/active
-        if (_uiState.value.equippedSkillId == "skill_magnet" && _uiState.value.isSkillActive) {
+            createSparks(x, y, hammer.sparkColor, count = sparkMultiplier + hammer.tier * 2)
+            createSparks(x, y, equippedFlame.primaryColor, count = 4)
+
+            // Hit detection for tap strike
+            val wideAssistBonus = if (_uiState.value.isWideAssistEnabled) 20f else 0f
+            val hitRadius = 26f + (hammer.tier * 4f) + wideAssistBonus
+
             synchronized(balloons) {
-                for (b in balloons) {
-                    if (b.type == BalloonType.GOLDEN || b.type == BalloonType.RAINBOW || b.type == BalloonType.MULTIPLIER) {
-                        b.x += (x - b.x) * 0.08f
-                        b.y += (y - b.y) * 0.08f
+                for (i in balloons.indices.reversed()) {
+                    val b = balloons.getOrNull(i) ?: continue
+                    if (b.popped) continue
+
+                    val dist = hypot(x - b.x, y - b.y)
+                    if (dist <= b.radius + hitRadius) {
+                        popBalloon(b)
                     }
                 }
             }
-        }
+        } else {
+            // SLIDING / DRAGGING ACTION (!isTap):
+            // The hammer ONLY works on tap option, NOT sliding!
+            // Sliding is strictly restricted unless the 5-second Hammer Slide skill is ACTIVE!
+            if (!isHammerSlideActive) {
+                return // Ignore sliding gesture! No trail, no popping balloons!
+            }
 
-        // Hit Detection against balloons with optional Wide Assist & Continuous Slice
-        val wideAssistBonus = if (_uiState.value.isWideAssistEnabled) 20f else 0f
-        val sliceRadiusBonus = if (sliceActive) 16f else 0f
-        val hitRadiusBonus = 24f + (hammer.tier * 4f) + wideAssistBonus + sliceRadiusBonus
+            // Hammer Slide Skill IS ACTIVE: slide hammer across the screen for 5s!
+            synchronized(swipeTrail) {
+                if (swipeTrail.size < 35) {
+                    swipeTrail.add(BladeTrailPoint(x, y, 1.0f, hammer.sparkColor))
+                }
+            }
 
-        synchronized(balloons) {
-            for (i in balloons.indices.reversed()) {
-                val b = balloons.getOrNull(i) ?: continue
-                if (b.popped) continue
+            // Magnetic pull effect if Magnet skill is active
+            if (_uiState.value.equippedSkillId == "skill_magnet" && _uiState.value.isSkillActive) {
+                synchronized(balloons) {
+                    for (b in balloons) {
+                        if (b.type == BalloonType.GOLDEN || b.type == BalloonType.RAINBOW || b.type == BalloonType.MULTIPLIER) {
+                            b.x += (x - b.x) * 0.08f
+                            b.y += (y - b.y) * 0.08f
+                        }
+                    }
+                }
+            }
 
-                val dist = hypot(x - b.x, y - b.y)
-                if (dist <= b.radius + hitRadiusBonus) {
-                    popBalloon(b)
+            // Hit Detection along sliding trail during active Hammer Slide
+            val wideAssistBonus = if (_uiState.value.isWideAssistEnabled) 20f else 0f
+            val slideHitRadius = 30f + (hammer.tier * 5f) + wideAssistBonus
+
+            synchronized(balloons) {
+                for (i in balloons.indices.reversed()) {
+                    val b = balloons.getOrNull(i) ?: continue
+                    if (b.popped) continue
+
+                    val dist = hypot(x - b.x, y - b.y)
+                    if (dist <= b.radius + slideHitRadius) {
+                        popBalloon(b)
+                        createSparks(x, y, hammer.sparkColor, count = 4)
+                    }
                 }
             }
         }
@@ -1042,13 +1476,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             b.hp -= 1
             sound.playShieldHit()
             triggerVibration(35L)
-            addFloatingText(b.x, b.y - 15f, "HIT! 🛡️", Color(0xFF00E5FF))
-            createSparks(b.x, b.y, Color(0xFF00E5FF), count = 8)
+            if (b.type == BalloonType.MEGA_BOSS) {
+                currentScreenShake = 16f
+                val damageText = "BOSS -1 HP! 👑 (${b.hp}/${b.maxHp})"
+                addFloatingText(b.x, b.y - 25f, damageText, Color(0xFFFFD700))
+                createParticleBurst(b.x, b.y, Color(0xFFFFD700), count = 8)
+                _uiState.update { it.copy(poppedCount = it.poppedCount + 1, score = it.score + 50) }
+            } else {
+                addFloatingText(b.x, b.y - 15f, "HIT! 🛡️", Color(0xFF00E5FF))
+                createSparks(b.x, b.y, Color(0xFF00E5FF), count = 8)
+            }
             return
         }
 
         b.popped = true
-        triggerVibration(25L)
+        triggerSpecialBalloonShake(b.type)
 
         // Spawn visual pop shockwave
         synchronized(shockwaves) {
@@ -1065,9 +1507,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // Recharge a bit of skill energy on pop!
-        internalSkillEnergy = (internalSkillEnergy + 4f).coerceAtMost(100f)
-
         val now = System.currentTimeMillis()
         var newCombo = _uiState.value.combo
         if (now - lastPopTime < 750) {
@@ -1077,6 +1516,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
         lastPopTime = now
 
+        // Flame Aura Critical Pop Bonus (Psychological variable ratio reward)
+        val flame = GameConstants.SHOP_FLAMES.find { it.id == _uiState.value.equippedFlameId }
+            ?: GameConstants.SHOP_FLAMES.first()
+        if (Random.nextInt(100) < flame.critPopBonusPercent) {
+            createSparks(b.x, b.y, flame.primaryColor, count = 10)
+            addFloatingText(b.x, b.y - 30f, "🔥 CRIT POP! +5🪙", flame.glowColor)
+            val newCoins = _uiState.value.coins + 5
+            repository.setCoins(newCoins)
+            _uiState.update { it.copy(coins = newCoins) }
+        }
+
+        // Recharge skill energy rare & earned: requires high combos and deliberate pops!
+        val energyGain = if (newCombo >= 8) 1.0f else if (newCombo >= 4) 0.5f else 0.25f
+        internalSkillEnergy = (internalSkillEnergy + energyGain).coerceAtMost(100f)
+
         val newMaxCombo = maxOf(_uiState.value.maxCombo, newCombo)
         val multMultiplier = if (_uiState.value.isMultiplierActive) 2 else 1
         val comboMult = min(newCombo, 5) * multMultiplier
@@ -1084,22 +1538,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (newCombo >= 2) {
             sound.playCombo(newCombo)
             addFloatingText(b.x, b.y - 20f, "COMBO ${newCombo}x!", Color(0xFFFFB703))
+            when (newCombo) {
+                3 -> triggerCandyPraise("NICE! 🌟")
+                5 -> triggerCandyPraise("SWEET! 🍬")
+                8 -> triggerCandyPraise("TASTY! 🍭")
+                12 -> triggerCandyPraise("DIVINE! ⚡👑")
+            }
         }
 
         when (b.type) {
             BalloonType.BOMB -> {
                 sound.playBomb()
-                triggerVibration(60L)
                 addFloatingText(b.x, b.y, "BOMB! 💥", Color(0xFFFF2A75))
-                currentScreenShake = 24f
-                if (_uiState.value.isScreenShakeEnabled) {
-                    _uiState.update { it.copy(screenShake = 24f) }
-                }
+                internalSkillEnergy = (internalSkillEnergy - 20f).coerceAtLeast(0f)
                 if (_uiState.value.gameMode != GameMode.ZEN) {
                     val remainingLives = _uiState.value.lives - 1
                     _uiState.update { it.copy(lives = remainingLives) }
                     if (remainingLives <= 0) {
-                        gameOver()
+                        gameOver(GameOverReason.BOMB_DETONATION)
                         return
                     }
                 }
@@ -1112,14 +1568,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.MULTIPLIER -> {
-                sound.playCoin()
+                sound.playMultiplierPop()
                 multiplierTimeRemaining = 5.0f
                 _uiState.update { it.copy(isMultiplierActive = true) }
                 addFloatingText(b.x, b.y, "2X BONUS! ⭐", Color(0xFFFFD700))
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.HEART -> {
-                sound.playPop(b.radius)
+                sound.playHeartPop()
                 val currentLives = _uiState.value.lives
                 if (currentLives < 3) {
                     _uiState.update { it.copy(lives = currentLives + 1) }
@@ -1130,7 +1586,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.GOLDEN -> {
-                sound.playCoin()
+                sound.playGoldenPop()
                 val addedCoins = 5
                 val newCoins = _uiState.value.coins + addedCoins
                 repository.setCoins(newCoins)
@@ -1138,7 +1594,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.RAINBOW -> {
-                sound.playPop(b.radius)
+                sound.playRainbowPop()
                 val newCoins = _uiState.value.coins + 2
                 repository.setCoins(newCoins)
                 addFloatingText(b.x, b.y, "+30 🌈 +2🪙", Color(0xFFE040FB))
@@ -1230,18 +1686,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             BalloonType.ELECTRIC_STORM -> {
                 sound.playZap()
-                currentScreenShake = 16f
-                if (_uiState.value.isScreenShakeEnabled) {
-                    _uiState.update { it.copy(screenShake = 16f) }
-                }
+                createLightningBolt(startX = b.x, startY = 0f, endX = b.x, endY = b.y)
                 addFloatingText(b.x, b.y, "THUNDER ZAP! ⚡", Color(0xFF38BDF8))
-                // Chain pop nearby balloons
+                // Chain pop nearby balloons with lightning arcs
                 synchronized(balloons) {
                     for (other in balloons) {
-                        if (!other.popped && other != b && hypot(other.x - b.x, other.y - b.y) <= 240f) {
+                        if (!other.popped && other != b && hypot(other.x - b.x, other.y - b.y) <= 280f) {
                             if (other.type != BalloonType.BOMB && other.type != BalloonType.MEGA_BOSS) {
                                 other.popped = true
-                                createParticleBurst(other.x, other.y, other.color, 6)
+                                createLightningBolt(startX = b.x, startY = b.y, endX = other.x, endY = other.y)
+                                createParticleBurst(other.x, other.y, other.color, 8)
                                 applyScoreAndPop(other, comboMult)
                             }
                         }
@@ -1250,11 +1704,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.MEGA_BOSS -> {
-                sound.playPiggyJackpot()
-                currentScreenShake = 30f
-                if (_uiState.value.isScreenShakeEnabled) {
-                    _uiState.update { it.copy(screenShake = 30f) }
-                }
+                sound.playMegaBossDefeat()
                 val newCoins = _uiState.value.coins + 30
                 val newGems = _uiState.value.gems + 5
                 repository.setCoins(newCoins)
@@ -1264,7 +1714,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 applyScoreAndPop(b, comboMult)
             }
             else -> {
-                sound.playPop(b.radius)
+                sound.playBalloonPop(b.type, b.radius)
                 val pts = b.type.points * comboMult
                 addFloatingText(b.x, b.y, "+$pts", b.color)
                 applyScoreAndPop(b, comboMult, newCombo, newMaxCombo)
@@ -1290,6 +1740,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val newScore = maxOf(0, _uiState.value.score + earnedScore)
         val newPopped = _uiState.value.poppedCount + 1
 
+        val wasHighScoreBroken = !_uiState.value.isNewHighScoreAchieved && sessionBaselineHighScore > 0 && newScore > sessionBaselineHighScore
+        if (wasHighScoreBroken) {
+            sound.playHighScoreFanfare()
+            triggerVibration(60L)
+            triggerCandyPraise("NEW HIGH SCORE! 🏆")
+            createSparks(b.x, b.y, Color(0xFFFFD700), count = 16)
+            addFloatingText(b.x, b.y - 35f, "🏆 NEW RECORD! ${newScore} PTS! 🏆", Color(0xFFFFD700))
+        }
+
         repository.addLifetimePops(1)
         repository.updateLifetimeHighScore(newScore)
 
@@ -1301,7 +1760,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 maxCombo = newMaxCombo,
                 skillEnergy = internalSkillEnergy,
                 lifetimePops = repository.getLifetimePops(),
-                lifetimeHighScore = repository.getLifetimeHighScore()
+                lifetimeHighScore = repository.getLifetimeHighScore(),
+                isNewHighScoreAchieved = it.isNewHighScoreAchieved || wasHighScoreBroken || (newScore > sessionBaselineHighScore && sessionBaselineHighScore > 0)
             )
         }
 
@@ -1313,23 +1773,363 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun onMissBalloon() {
+    private fun onMissBalloon(escapeX: Float = 150f) {
         if (_uiState.value.gameState != GameState.PLAYING) return
-        val currentLives = _uiState.value.lives - 1
+        val currentMode = _uiState.value.gameMode
+        val newMissed = _uiState.value.missedCount + 1
+        val maxAllowed = _uiState.value.maxMissesAllowed
+        val clampedX = escapeX.coerceIn(60f, (canvasWidth - 60f).coerceAtLeast(100f))
+
+        if (currentMode == GameMode.CAMPAIGN) {
+            sound.playMiss()
+            triggerVibration(35L)
+            currentScreenShake = if (newMissed > maxAllowed) 26f else 16f
+
+            if (newMissed > maxAllowed) {
+                // If the person missed more balloon than limit, it automatically game over!
+                sound.playMissWarning()
+                addFloatingText(clampedX, 70f, "❌ LIMIT EXCEEDED! ($newMissed/$maxAllowed)", Color(0xFFEF4444))
+                _uiState.update {
+                    it.copy(
+                        missedCount = newMissed,
+                        combo = 0,
+                        screenFlashAlpha = 0.35f
+                    )
+                }
+                gameOver(GameOverReason.MISSED_LIMIT)
+            } else {
+                val warningColor = if (newMissed == maxAllowed) Color(0xFFF97316) else Color(0xFFFFD166)
+                val text = "💨 MISSED ($newMissed/$maxAllowed)"
+                addFloatingText(clampedX, 70f, text, warningColor)
+                _uiState.update {
+                    it.copy(
+                        missedCount = newMissed,
+                        combo = 0,
+                        screenFlashAlpha = 0.2f
+                    )
+                }
+            }
+        } else if (currentMode == GameMode.CLASSIC) {
+            val currentLives = _uiState.value.lives - 1
+            sound.playMiss()
+            triggerVibration(40L)
+            currentScreenShake = 18f
+            addFloatingText(clampedX, 70f, "💔 -1 LIFE", Color(0xFFEF4444))
+            _uiState.update {
+                it.copy(
+                    lives = currentLives,
+                    missedCount = newMissed,
+                    combo = 0,
+                    screenFlashAlpha = 0.25f
+                )
+            }
+            if (currentLives <= 0) {
+                gameOver(GameOverReason.LIVES_DEPLETED)
+            }
+        } else {
+            currentScreenShake = 12f
+            _uiState.update {
+                it.copy(
+                    missedCount = newMissed,
+                    combo = 0
+                )
+            }
+        }
+    }
+
+    private fun createShockwave(x: Float, y: Float, color: Color, maxRadius: Float = 140f) {
+        synchronized(shockwaves) {
+            if (shockwaves.size < 12) {
+                shockwaves.add(
+                    PopShockwave(
+                        x = x,
+                        y = y,
+                        radius = 12f,
+                        maxRadius = maxRadius,
+                        color = color
+                    )
+                )
+            }
+        }
+    }
+
+    private fun createLightningBolt(startX: Float, startY: Float, endX: Float, endY: Float) {
+        val points = mutableListOf<Pair<Float, Float>>()
+        points.add(Pair(startX, startY))
+        val segments = 8
+        val dx = (endX - startX) / segments
+        val dy = (endY - startY) / segments
+
+        for (i in 1 until segments) {
+            val jitterX = (Random.nextFloat() * 48f - 24f)
+            val jitterY = (Random.nextFloat() * 16f - 8f)
+            val curX = startX + dx * i + jitterX
+            val curY = startY + dy * i + jitterY
+            points.add(Pair(curX, curY))
+        }
+        points.add(Pair(endX, endY))
+
+        // Create 1-2 branch forks
+        val branches = mutableListOf<List<Pair<Float, Float>>>()
+        if (points.size >= 4) {
+            val forkStart = points[points.size / 2]
+            val branch = mutableListOf<Pair<Float, Float>>()
+            branch.add(forkStart)
+            var bx = forkStart.first
+            var by = forkStart.second
+            for (j in 0..2) {
+                bx += (Random.nextFloat() * 50f - 25f)
+                by += 20f + Random.nextFloat() * 20f
+                branch.add(Pair(bx, by))
+            }
+            branches.add(branch)
+        }
+
+        synchronized(lightningBolts) {
+            if (lightningBolts.size < 16) {
+                lightningBolts.add(
+                    LightningBolt(
+                        id = ++lightningIdCounter,
+                        points = points,
+                        alpha = 1.0f,
+                        color = Color(0xFF00F0FF),
+                        branchPoints = branches
+                    )
+                )
+            }
+        }
+    }
+
+    fun triggerCandyPraise(text: String) {
+        sound.playPraise()
+        _uiState.update { it.copy(candyPraise = text) }
+        viewModelScope.launch {
+            delay(1600L)
+            _uiState.update {
+                if (it.candyPraise == text) it.copy(candyPraise = null) else it
+            }
+        }
+    }
+
+    fun triggerInGameBooster(booster: InGameBooster) {
+        if (_uiState.value.gameState != GameState.PLAYING) return
+
+        // Check booster inventory; deduct if available, or nominal coins if available
+        val counts = _uiState.value.boosterCounts.toMutableMap()
+        val currentCount = counts[booster.id] ?: 3
+
+        if (currentCount > 0) {
+            counts[booster.id] = currentCount - 1
+            repository.setBoosterCount(booster.id, currentCount - 1)
+        } else if (_uiState.value.coins >= 25) {
+            val newCoins = _uiState.value.coins - 25
+            repository.setCoins(newCoins)
+            _uiState.update { it.copy(coins = newCoins) }
+            addFloatingText(200f, 200f, "-25 🪙", Color(0xFFF59E0B))
+            sound.playCoinEarn()
+        }
+
+        stageBoosterUsesCount++
         _uiState.update {
             it.copy(
-                lives = currentLives,
-                combo = 0
+                boosterCounts = counts,
+                stageBoosterUsesCount = stageBoosterUsesCount
             )
         }
-        if (currentLives <= 0) {
-            gameOver()
+        triggerVibration(45L)
+
+        when (booster) {
+            InGameBooster.THUNDER_STRIKE -> {
+                sound.playThunder()
+                currentScreenShake = 22f
+                _uiState.update {
+                    it.copy(
+                        screenShake = 22f,
+                        screenFlashAlpha = 0.55f,
+                        bannerMessage = "⚡ THUNDER STRIKE UNLEASHED!"
+                    )
+                }
+
+                val bombTargets = mutableListOf<Balloon>()
+                val otherTargets = mutableListOf<Balloon>()
+                synchronized(balloons) {
+                    for (b in balloons) {
+                        if (!b.popped) {
+                            if (b.type == BalloonType.BOMB) bombTargets.add(b)
+                            else otherTargets.add(b)
+                        }
+                    }
+                }
+
+                for (b in bombTargets) {
+                    createLightningBolt(startX = b.x + (Random.nextFloat() * 80f - 40f), startY = 0f, endX = b.x, endY = b.y)
+                    b.popped = true
+                    createParticleBurst(b.x, b.y, Color(0xFF00F0FF), count = 16)
+                    createShockwave(b.x, b.y, Color(0xFF38BDF8), maxRadius = 180f)
+                    addFloatingText(b.x, b.y, "⚡ DEFUSED! +50🪙", Color(0xFFFFD700))
+                    val newCoins = _uiState.value.coins + 50
+                    repository.setCoins(newCoins)
+                    _uiState.update { it.copy(coins = newCoins) }
+                }
+
+                val chosenOthers = otherTargets.shuffled().take(8)
+                for (b in chosenOthers) {
+                    createLightningBolt(startX = Random.nextFloat() * canvasWidth, startY = 0f, endX = b.x, endY = b.y)
+                    b.popped = true
+                    applyScoreAndPop(b, comboMultiplier = 3)
+                    createParticleBurst(b.x, b.y, Color(0xFF38BDF8), count = 14)
+                    createShockwave(b.x, b.y, Color(0xFF00E5FF), maxRadius = 120f)
+                    addFloatingText(b.x, b.y, "+120 ⚡ THUNDER!", Color(0xFF00F0FF))
+                }
+
+                if (bombTargets.isEmpty() && chosenOthers.isEmpty()) {
+                    createLightningBolt(startX = canvasWidth / 2f, startY = 0f, endX = canvasWidth / 2f, endY = canvasHeight / 2f)
+                }
+
+                triggerCandyPraise("THUNDERBOLT! ⚡")
+            }
+
+            InGameBooster.COLOR_BOMB -> {
+                sound.playRainbowBlast()
+                currentScreenShake = 16f
+                _uiState.update {
+                    it.copy(
+                        screenShake = 16f,
+                        bannerMessage = "🌈 COLOR BOMB DISCO CASCADE!"
+                    )
+                }
+
+                val activeBalloons = synchronized(balloons) { balloons.filter { !it.popped && it.type != BalloonType.BOMB } }
+                if (activeBalloons.isNotEmpty()) {
+                    val grouped = activeBalloons.groupBy { it.color }
+                    val mostCommonColor = grouped.maxByOrNull { it.value.size }?.key ?: activeBalloons.first().color
+                    val targets = activeBalloons.filter { it.color == mostCommonColor }
+
+                    for (b in targets) {
+                        b.popped = true
+                        applyScoreAndPop(b, comboMultiplier = 4)
+                        createParticleBurst(b.x, b.y, b.color, count = 18)
+                        createShockwave(b.x, b.y, Color(0xFFFFD700), maxRadius = 130f)
+                        addFloatingText(b.x, b.y, "+200 🌈 COLOR CRUSH!", Color(0xFFFFB703))
+                    }
+                    triggerCandyPraise("COLOR CRUSH! 🌈")
+                } else {
+                    addFloatingText(canvasWidth / 2f, canvasHeight / 2f, "🌈 RAINBOW BURST!", Color(0xFFFF007F))
+                }
+            }
+
+            InGameBooster.HAMMER_SMASH -> {
+                sound.playHammerSmash(5)
+                currentScreenShake = 24f
+                val cx = canvasWidth / 2f
+                val cy = canvasHeight / 2f
+                createShockwave(cx, cy, Color(0xFFF59E0B), maxRadius = 320f)
+                createShockwave(cx, cy, Color.White, maxRadius = 240f)
+
+                synchronized(balloons) {
+                    for (b in balloons) {
+                        if (!b.popped && b.type != BalloonType.BOMB) {
+                            val dist = hypot(b.x - cx, b.y - cy)
+                            if (dist < 320f) {
+                                b.popped = true
+                                applyScoreAndPop(b, comboMultiplier = 3)
+                                createParticleBurst(b.x, b.y, Color(0xFFF59E0B), count = 12)
+                            }
+                        }
+                    }
+                }
+                addFloatingText(cx, cy - 80f, "🔨 SMASH! +300", Color(0xFFFACC15))
+                triggerCandyPraise("SMASHING! 🔨")
+            }
+
+            InGameBooster.FREEZE_BLIZZARD -> {
+                sound.playFreeze()
+                freezeTimeRemaining = 6.0f
+                _uiState.update {
+                    it.copy(
+                        isFreezeActive = true,
+                        bannerMessage = "❄️ BLIZZARD CHRONO STASIS!"
+                    )
+                }
+                val cx = canvasWidth / 2f
+                val cy = canvasHeight / 2f
+                createShockwave(cx, cy, Color(0xFF00E5FF), maxRadius = 280f)
+                addFloatingText(cx, cy, "❄️ TIME FROZEN!", Color(0xFF38BDF8))
+                triggerCandyPraise("ICE COLD! ❄️")
+            }
+
+            InGameBooster.TORNADO_VORTEX -> {
+                sound.playRocketSwoosh()
+                currentScreenShake = 18f
+                val cx = canvasWidth / 2f
+                val cy = canvasHeight / 2f
+                _uiState.update {
+                    it.copy(
+                        screenShake = 18f,
+                        bannerMessage = "🌀 TORNADO VORTEX ACTIVE!"
+                    )
+                }
+                createShockwave(cx, cy, Color(0xFF06D6A0), maxRadius = 300f)
+
+                synchronized(balloons) {
+                    for (b in balloons) {
+                        if (!b.popped && b.type != BalloonType.BOMB) {
+                            b.popped = true
+                            applyScoreAndPop(b, comboMultiplier = 5)
+                            createParticleBurst(b.x, b.y, Color(0xFF06D6A0), count = 10)
+                        }
+                    }
+                }
+                addFloatingText(cx, cy, "🌀 VORTEX! +400", Color(0xFF06D6A0))
+                triggerCandyPraise("VORTEX! 🌀")
+            }
+        }
+    }
+
+    fun buyBooster(boosterId: String, withGems: Boolean = false) {
+        val coinPrice = 150
+        val gemPrice = 3
+        val currentCount = _uiState.value.boosterCounts[boosterId] ?: 0
+
+        if (withGems) {
+            if (_uiState.value.gems >= gemPrice) {
+                val newGems = _uiState.value.gems - gemPrice
+                val newCount = currentCount + 1
+                repository.setGems(newGems)
+                repository.setBoosterCount(boosterId, newCount)
+                val newCounts = _uiState.value.boosterCounts.toMutableMap()
+                newCounts[boosterId] = newCount
+                _uiState.update { it.copy(gems = newGems, boosterCounts = newCounts) }
+                sound.playRewardClaim()
+            } else {
+                _uiState.update { it.copy(bannerMessage = "Need $gemPrice 💎 to buy this booster!") }
+            }
+        } else {
+            if (_uiState.value.coins >= coinPrice) {
+                val newCoins = _uiState.value.coins - coinPrice
+                val newCount = currentCount + 1
+                repository.setCoins(newCoins)
+                repository.setBoosterCount(boosterId, newCount)
+                val newCounts = _uiState.value.boosterCounts.toMutableMap()
+                newCounts[boosterId] = newCount
+                _uiState.update { it.copy(coins = newCoins, boosterCounts = newCounts) }
+                sound.playRewardClaim()
+            } else {
+                _uiState.update { it.copy(bannerMessage = "Need $coinPrice 🪙 to buy this booster!") }
+            }
         }
     }
 
     private fun stageClear() {
         timerJob?.cancel()
-        sound.playStageClear()
+
+        val currentScore = _uiState.value.score
+        val isHighScore = _uiState.value.isNewHighScoreAchieved || (currentScore > sessionBaselineHighScore && sessionBaselineHighScore > 0)
+        if (isHighScore) {
+            sound.playHighScoreFanfare()
+        } else {
+            sound.playStageClear()
+        }
 
         val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(_uiState.value.currentLevel - 1)
             ?: GameConstants.CAMPAIGN_LEVELS.first()
@@ -1355,12 +2155,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 completedLevels = repository.getCompletedLevels(),
                 earnedCoinsThisSession = lvl.rewardCoins,
                 earnedGemsThisSession = lvl.rewardGems,
-                earnedStarsThisLevel = stars
+                earnedStarsThisLevel = stars,
+                isNewHighScoreAchieved = isHighScore,
+                previousHighScore = sessionBaselineHighScore
             )
         }
     }
 
-    private fun gameOver() {
+    private fun gameOver(reason: GameOverReason = GameOverReason.TIME_EXPIRED) {
         timerJob?.cancel()
         triggerVibration(80L)
 
@@ -1372,6 +2174,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update {
             it.copy(
                 gameState = GameState.GAMEOVER,
+                gameOverReason = reason,
                 coins = newCoins,
                 earnedCoinsThisSession = earnedCoins,
                 lifetimeMaxCombo = repository.getLifetimeMaxCombo()
@@ -1443,67 +2246,129 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val skillId = _uiState.value.equippedSkillId
         val skill = GameConstants.AVAILABLE_SKILLS.find { it.id == skillId } ?: return
 
-        if (_uiState.value.skillCooldownRemaining > 0f) {
+        // Skills are rare: require full 99%+ energy gauge and no cooldown!
+        if (internalSkillEnergy < 99f || _uiState.value.skillCooldownRemaining > 0f) {
             sound.playClick()
             return
         }
 
+        // In one level: first skill use is default. Subsequent uses double the cooldown and rarity!
+        val cooldownMultiplier = 1 shl stageSkillUsesCount.coerceAtMost(3)
+        val effectiveCooldown = skill.cooldownSeconds * cooldownMultiplier
+
+        internalSkillEnergy = 0f
+        internalSkillCooldown = effectiveCooldown
+        stageSkillUsesCount++
+
+        triggerVibration(80L)
+
         when (skill.type) {
-            SkillType.CONTINUOUS_SLICE -> {
-                sound.playCombo(3)
+            SkillType.HAMMER_SLIDE, SkillType.CONTINUOUS_SLICE -> {
+                // 5-second Hammer Slide superpower!
+                hammerSlideTimeRemaining = 5.0f
+                sound.playHammerSmash(5)
+                sound.playThunder()
+                currentScreenShake = 20f
+
+                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "🔨⚡ 5s HAMMER SLIDE!", Color(0xFFFFD700))
                 _uiState.update {
                     it.copy(
-                        isSkillActive = true,
-                        skillEnergy = 100f,
-                        bannerMessage = "⚡ LASER STREAM ACTIVE! GLIDE TO POP!"
+                        isHammerSlideActive = true,
+                        hammerSlideTimeRemaining = 5.0f,
+                        skillEnergy = 0f,
+                        skillCooldownRemaining = effectiveCooldown,
+                        stageSkillUsesCount = stageSkillUsesCount,
+                        screenShake = 20f,
+                        screenFlashAlpha = 0.6f,
+                        candyPraise = "SLIDE HAMMER! 🔨⚡",
+                        bannerMessage = "⚡ HAMMER SLIDE ACTIVATED (5s)! SLIDE TO SMASH!"
                     )
                 }
             }
             SkillType.TIME_FREEZE -> {
-                sound.playFreeze()
                 freezeTimeRemaining = 6.0f
+                sound.playFreeze()
+                currentScreenShake = 12f
+                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "⏱️ CHRONO STASIS!", Color(0xFF00E5FF))
                 _uiState.update {
                     it.copy(
                         isFreezeActive = true,
-                        skillCooldownRemaining = skill.cooldownSeconds,
-                        bannerMessage = "⏱️ CHRONO STASIS ACTIVATED!"
+                        skillEnergy = 0f,
+                        skillCooldownRemaining = effectiveCooldown,
+                        stageSkillUsesCount = stageSkillUsesCount,
+                        screenShake = 12f,
+                        candyPraise = "FROZEN! ❄️",
+                        bannerMessage = "⏱️ TIME SLOWED FOR 6 SECONDS!"
                     )
                 }
             }
             SkillType.MAGNET_PULL -> {
-                sound.playCoin()
+                sound.playPop()
+                currentScreenShake = 14f
+                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "🧲 VORTEX MAGNET!", Color(0xFFFF2A75))
                 _uiState.update {
                     it.copy(
                         isSkillActive = true,
-                        skillCooldownRemaining = skill.cooldownSeconds,
+                        skillEnergy = 0f,
+                        skillCooldownRemaining = effectiveCooldown,
+                        stageSkillUsesCount = stageSkillUsesCount,
+                        screenShake = 14f,
+                        candyPraise = "MAGNETIC! 🧲",
                         bannerMessage = "🧲 VORTEX MAGNET ACTIVATED!"
                     )
                 }
-                viewModelScope.launch {
-                    delay(5000L)
-                    _uiState.update { it.copy(isSkillActive = false) }
-                }
             }
             SkillType.SHOCKWAVE -> {
-                sound.playBomb()
-                triggerVibration(70L)
-                currentScreenShake = 20f
-                _uiState.update {
-                    it.copy(
-                        skillCooldownRemaining = skill.cooldownSeconds,
-                        screenShake = 20f,
-                        bannerMessage = "💥 SUPERNOVA BLAST!"
-                    )
-                }
-                // Pop all standard on screen balloons with reward
+                sound.playStageClear()
+                currentScreenShake = 24f
+
+                // Defuse all bombs safely into coins
+                var defusedBombsCount = 0
                 synchronized(balloons) {
                     for (b in balloons) {
-                        if (!b.popped && b.type != BalloonType.BOMB) {
+                        if (!b.popped && b.type == BalloonType.BOMB) {
                             b.popped = true
+                            defusedBombsCount++
+                            createParticleBurst(b.x, b.y, Color(0xFFFFD700), count = 10)
+                        }
+                    }
+                }
+                if (defusedBombsCount > 0) {
+                    val newCoins = _uiState.value.coins + defusedBombsCount * 30
+                    repository.setCoins(newCoins)
+                    _uiState.update { it.copy(coins = newCoins) }
+                }
+
+                // Pop visible non-bomb balloons
+                var poppedOnScreen = 0
+                synchronized(balloons) {
+                    for (b in balloons) {
+                        if (!b.popped) {
+                            b.popped = true
+                            poppedOnScreen++
                             applyScoreAndPop(b, 2)
                             createParticleBurst(b.x, b.y, b.color, count = 8)
                         }
                     }
+                }
+
+                val scoreBonus = poppedOnScreen * 60
+                val newScore = _uiState.value.score + scoreBonus
+                val newPopped = _uiState.value.poppedCount + poppedOnScreen
+
+                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "💥 SUPERNOVA BLAST! +$scoreBonus PTS!", Color(0xFFFFB703))
+                _uiState.update {
+                    it.copy(
+                        score = newScore,
+                        poppedCount = newPopped,
+                        skillEnergy = 0f,
+                        skillCooldownRemaining = effectiveCooldown,
+                        stageSkillUsesCount = stageSkillUsesCount,
+                        screenShake = 24f,
+                        screenFlashAlpha = 0.7f,
+                        candyPraise = "SUPERNOVA! 💥",
+                        bannerMessage = "💥 SUPERNOVA CLEARED SCREEN! (+$scoreBonus PTS)"
+                    )
                 }
             }
         }
@@ -1593,6 +2458,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun isDailySpinReady(): Boolean {
+        if (!repository.isTimeIntegrityValid()) {
+            return false
+        }
         return getDailySpinRemainingMillis() == 0L
     }
 
@@ -1692,7 +2560,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         repository.setCoins(newCoins)
         repository.setGems(newGems)
 
-        sound.playStageClear()
+        sound.playClaimReward()
         _uiState.update {
             it.copy(
                 claimedMilestoneChests = repository.getClaimedMilestoneChests(),
@@ -1714,7 +2582,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         repository.setCoins(newCoins)
         repository.setGems(newGems)
 
-        sound.playStageClear()
+        sound.playClaimReward()
         _uiState.update {
             it.copy(
                 claimedQuests = repository.getClaimedQuests(),
@@ -1723,5 +2591,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 bannerMessage = "Claimed ${quest.title} Reward! 🎁"
             )
         }
+    }
+
+    // --- Lifecycle & Audio Focus Management ---
+    fun onAppForegrounded() {
+        sound.resumeAll()
+        musicPlayer.onActivityResume()
+    }
+
+    fun onAppBackgrounded() {
+        sound.pauseAll()
+        musicPlayer.onActivityStop()
+        if (_uiState.value.gameState == GameState.PLAYING) {
+            pauseGame()
+        }
+    }
+
+    fun onAppDestroyed() {
+        sound.release()
+        musicPlayer.release()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        onAppDestroyed()
     }
 }

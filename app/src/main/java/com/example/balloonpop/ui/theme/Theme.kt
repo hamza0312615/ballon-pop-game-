@@ -42,6 +42,7 @@ fun BalloonPopTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
+        typography = BalloonPopTypography,
         content = content
     )
 }

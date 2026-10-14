@@ -1,8 +1,12 @@
 package com.example.balloonpop.audio
 
+import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioTrack
+import android.os.Build
 import kotlinx.coroutines.*
 import kotlin.math.PI
 import kotlin.math.cos
@@ -17,7 +21,7 @@ enum class MusicTheme(val title: String) {
     BOSS_ANTHEM("Epic Boss Anthem 👑")
 }
 
-class BackgroundMusicPlayer {
+class BackgroundMusicPlayer(private val context: Context? = null) {
 
     private val sampleRate = 22050 // Low CPU footprint, smooth soft audio synthesis
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
@@ -26,9 +30,47 @@ class BackgroundMusicPlayer {
     private var audioTrack: AudioTrack? = null
     private var isPlaying = false
     private var isMuted = false
+    private var isAppInForeground = true
+    private var hasAudioFocus = true
+    private var isDucked = false
+    private var isReleased = false
     private var volume = 0.40f
 
+    private val audioManager = context?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+    private var focusRequest: AudioFocusRequest? = null
+
+    private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                // Another app took audio focus (e.g., user opened Files, YouTube, Spotify, etc.)
+                hasAudioFocus = false
+                pause()
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                // Transient loss (e.g., phone call or system media playback)
+                hasAudioFocus = false
+                pause()
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                // Duck volume down
+                isDucked = true
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                hasAudioFocus = true
+                isDucked = false
+                if (isAppInForeground && !isMuted) {
+                    resume()
+                }
+            }
+        }
+    }
+
     private var currentTheme: MusicTheme = MusicTheme.MEADOW_JOY
+    val theme: MusicTheme get() = currentTheme
+    val playing: Boolean get() = isPlaying
+    val muted: Boolean get() = isMuted
+    val currentVolume: Float get() = volume
+
     private val pregeneratedTracks = mutableMapOf<MusicTheme, ShortArray>()
 
     init {
@@ -72,38 +114,121 @@ class BackgroundMusicPlayer {
 
     fun setMuted(muted: Boolean) {
         isMuted = muted
+        if (muted) {
+            pause()
+        } else if (isAppInForeground && hasAudioFocus) {
+            resume()
+        }
     }
 
     fun setVolume(vol: Float) {
         volume = vol.coerceIn(0f, 1f)
     }
 
+    private fun requestAudioFocus(): Boolean {
+        val am = audioManager ?: return true
+        return try {
+            val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val attr = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
+                val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(attr)
+                    .setAcceptsDelayedFocusGain(false)
+                    .setOnAudioFocusChangeListener(audioFocusChangeListener)
+                    .build()
+                focusRequest = req
+                am.requestAudioFocus(req)
+            } else {
+                @Suppress("DEPRECATION")
+                am.requestAudioFocus(
+                    audioFocusChangeListener,
+                    AudioManager.STREAM_MUSIC,
+                    AudioManager.AUDIOFOCUS_GAIN
+                )
+            }
+            hasAudioFocus = (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED)
+            hasAudioFocus
+        } catch (_: Exception) {
+            true
+        }
+    }
+
+    private fun abandonAudioFocus() {
+        val am = audioManager ?: return
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                focusRequest?.let { am.abandonAudioFocusRequest(it) }
+                focusRequest = null
+            } else {
+                @Suppress("DEPRECATION")
+                am.abandonAudioFocus(audioFocusChangeListener)
+            }
+        } catch (_: Exception) {}
+        hasAudioFocus = false
+    }
+
     fun pause() {
         isPlaying = false
         try {
-            audioTrack?.pause()
+            if (audioTrack?.playState == AudioTrack.PLAYSTATE_PLAYING) {
+                audioTrack?.pause()
+            }
+            audioTrack?.flush()
         } catch (_: Exception) {}
     }
 
     fun resume() {
+        if (isReleased || !isAppInForeground || isMuted || volume <= 0.01f) return
+        if (!hasAudioFocus) {
+            if (!requestAudioFocus()) return
+        }
+        val track = ensureAudioTrack() ?: return
         if (!isPlaying) {
             isPlaying = true
             try {
-                audioTrack?.play()
+                if (track.playState != AudioTrack.PLAYSTATE_PLAYING) {
+                    track.play()
+                }
             } catch (_: Exception) {}
         }
     }
 
-    private fun startMusicLoop() {
-        musicJob?.cancel()
-        musicJob = scope.launch(Dispatchers.IO) {
+    fun onActivityPause() {
+        isAppInForeground = false
+        pause()
+    }
+
+    fun onActivityStop() {
+        isAppInForeground = false
+        pause()
+        abandonAudioFocus()
+    }
+
+    fun onActivityResume() {
+        if (isReleased) return
+        isAppInForeground = true
+        requestAudioFocus()
+        if (!isMuted && volume > 0.01f) {
+            resume()
+        }
+    }
+
+    private fun ensureAudioTrack(): AudioTrack? {
+        if (isReleased) return null
+        val existing = audioTrack
+        if (existing != null && existing.state == AudioTrack.STATE_INITIALIZED) {
+            return existing
+        }
+        return try {
             val minBufSize = AudioTrack.getMinBufferSize(
                 sampleRate,
                 AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.ENCODING_PCM_16BIT
             ).coerceAtLeast(4096)
 
-            audioTrack = AudioTrack.Builder()
+            val track = AudioTrack.Builder()
                 .setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_GAME)
@@ -120,26 +245,47 @@ class BackgroundMusicPlayer {
                 .setBufferSizeInBytes(minBufSize * 2)
                 .setTransferMode(AudioTrack.MODE_STREAM)
                 .build()
+            audioTrack = track
+            track
+        } catch (_: Exception) {
+            null
+        }
+    }
 
-            audioTrack?.play()
-            isPlaying = true
+    private fun startMusicLoop() {
+        musicJob?.cancel()
+        musicJob = scope.launch(Dispatchers.IO) {
+            val track = ensureAudioTrack()
+            if (isAppInForeground && !isMuted && !isReleased) {
+                if (requestAudioFocus()) {
+                    try {
+                        track?.play()
+                        isPlaying = true
+                    } catch (_: Exception) {}
+                }
+            }
 
             val chunk = ShortArray(1024)
             var bufferPos = 0
 
-            while (isActive) {
-                if (!isPlaying || isMuted || volume <= 0.01f) {
-                    delay(80)
+            while (isActive && !isReleased) {
+                if (!isPlaying || !isAppInForeground || !hasAudioFocus || isMuted || volume <= 0.01f) {
+                    delay(60)
                     continue
                 }
+
+                val currentTrack = audioTrack ?: run {
+                    delay(60)
+                    null
+                } ?: continue
 
                 val trackData = pregeneratedTracks[currentTheme]
                 if (trackData == null || trackData.isEmpty()) {
-                    delay(50)
+                    delay(40)
                     continue
                 }
 
-                val curVol = volume
+                val curVol = if (isDucked) volume * 0.25f else volume
 
                 for (i in chunk.indices) {
                     val sample = trackData[bufferPos % trackData.size]
@@ -148,9 +294,9 @@ class BackgroundMusicPlayer {
                 }
 
                 try {
-                    audioTrack?.write(chunk, 0, chunk.size)
+                    currentTrack.write(chunk, 0, chunk.size)
                 } catch (_: Exception) {
-                    delay(30)
+                    delay(20)
                 }
             }
         }
@@ -411,8 +557,15 @@ class BackgroundMusicPlayer {
     }
 
     fun release() {
+        isReleased = true
+        isAppInForeground = false
+        isPlaying = false
+        abandonAudioFocus()
         musicJob?.cancel()
+        scope.cancel()
         try {
+            audioTrack?.pause()
+            audioTrack?.flush()
             audioTrack?.stop()
             audioTrack?.release()
         } catch (_: Exception) {}

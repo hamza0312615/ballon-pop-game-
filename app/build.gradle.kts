@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.example.balloonpop"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.aistudio.balloonpop.game"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -53,6 +53,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.google.play.services.ads)
 
     debugImplementation(libs.androidx.ui.tooling)
 }
