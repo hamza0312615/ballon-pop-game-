@@ -24,6 +24,14 @@ val NunitoFontFamily = FontFamily(
     Font(R.font.nunito, FontWeight.ExtraBold)
 )
 
+/**
+ * Pass 4 type system — ONE font pairing (Baloo 2 display + Nunito body) and
+ * 3 tiers used on every screen:
+ *  Tier 1 (titles / hero numbers): displayLarge, displayMedium, titleLarge
+ *  Tier 2 (body / buttons / card titles): titleMedium, bodyLarge
+ *  Tier 3 (labels / badges / captions): bodyMedium, labelLarge, labelSmall
+ * Match these with DesignTokens.TypeTierTitle / TypeTierBody / TypeTierCaption.
+ */
 val BalloonPopTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = Baloo2FontFamily,

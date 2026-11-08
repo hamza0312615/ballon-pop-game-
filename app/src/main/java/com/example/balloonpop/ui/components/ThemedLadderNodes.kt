@@ -1,7 +1,6 @@
 package com.example.balloonpop.ui.components
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,30 +16,40 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.balloonpop.ui.theme.CoralPrimary
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.ZoneVisualTheme
 
 /**
- * 3D Themed Stage Node (Cleared / Locked) matching reference level design:
- * - Cleared stages: 3D circular pedestal with floating golden stars and stage number tag
- * - Locked stages: Dark circular stone disc with metallic lock icon and stage number
+ * UNIFIED LEVEL-MAP NODE SYSTEM (Quality Pass 4) — the ONLY node renderer for the
+ * campaign map, identical in every one of the 20 zones (Candy Crush / Royal Match style).
+ * Zone themes only tint the (separate) scenic background; nodes never change shape,
+ * size or colour logic per zone.
+ *
+ * Fixed slot: 108dp x 120dp, orb centred exactly on the slot centre so the winding
+ * path drawn by CampaignScreen always meets the orb centre.
+ * - Cleared  -> 62dp gold orb (DesignTokens.GoldGradient), stage number inside,
+ *               earned stars (gold) / unearned stars (grey) in a row beneath it.
+ * - Unlocked -> 62dp coral orb with the stage number (reachable but not cleared).
+ * - Locked   -> 62dp grey orb with a lock glyph, stage number in a muted pill beneath.
+ * - Current  -> see [ThemedLadderActiveHeroNode]: 68dp pulsing coral orb + Popster.
+ * Boss stages (every 10th) get a small crown badge; milestone stages a tiny gold dot.
  */
+private val MapNodeSlotWidth = 108.dp
+private val MapNodeSlotHeight = 120.dp
+private val MapOrbSize = 62.dp
+private val MapHeroOrbSize = 68.dp
+
 @Composable
 fun ThemedLadderTileNode(
     theme: ZoneVisualTheme,
@@ -60,10 +69,11 @@ fun ThemedLadderTileNode(
         label = "node_press"
     )
 
+    // Gentle bob for the earned-stars row only (kept from the previous design).
     val infiniteTransition = rememberInfiniteTransition(label = "star_float")
     val starBob by infiniteTransition.animateFloat(
-        initialValue = -2f,
-        targetValue = 2f,
+        initialValue = -1.5f,
+        targetValue = 1.5f,
         animationSpec = infiniteRepeatable(
             animation = tween(1400, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -71,191 +81,141 @@ fun ThemedLadderTileNode(
         label = "star_bob"
     )
 
-    val zoneName = theme.name.lowercase()
-    val isSakura = zoneName.contains("sakura")
-    val isFrozen = zoneName.contains("frozen") || zoneName.contains("tundra")
-    val isVolcano = zoneName.contains("volcano") || zoneName.contains("molten") || zoneName.contains("caldera")
-    val isNeon = zoneName.contains("neon") || zoneName.contains("glade")
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+    Box(
         modifier = Modifier
-            .scale(pressScale)
+            .size(width = MapNodeSlotWidth, height = MapNodeSlotHeight)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 enabled = isUnlocked
-            ) { onClick() }
+            ) { onClick() },
+        contentAlignment = Alignment.Center
     ) {
-        if (isCleared) {
-            // 1. Floating Golden Stars above the Cleared Pedestal
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .offset(y = starBob.dp)
-                    .padding(bottom = 2.dp)
-            ) {
-                val earnedStars = if (stars > 0) stars else 3
-                repeat(earnedStars) { starIdx ->
-                    val starScale = if (starIdx == 1) 1.15f else 0.95f
-                    Text(
-                        text = "⭐",
-                        fontSize = (13 * starScale).sp,
-                        modifier = Modifier.shadow(4.dp, CircleShape, spotColor = Color(0xFFFFD700))
-                    )
-                }
-            }
-
-            // 2. 3D Themed Circular / Oval Pedestal Disc
-            Box(
-                modifier = Modifier
-                    .size(width = 62.dp, height = 46.dp)
-                    .shadow(
-                        elevation = 8.dp,
-                        shape = RoundedCornerShape(23.dp),
-                        spotColor = theme.primaryAccent.copy(alpha = 0.5f)
-                    )
-                    .clip(RoundedCornerShape(23.dp))
-                    .background(
-                        when {
-                            isSakura -> Brush.verticalGradient(
-                                listOf(Color(0xFFFFF0F5), Color(0xFFFBCFE8), Color(0xFFF472B6))
-                            )
-                            isFrozen -> Brush.verticalGradient(
-                                listOf(Color(0xFFE0F2FE), Color(0xFF7DD3FC), Color(0xFF0284C7))
-                            )
-                            isVolcano -> Brush.verticalGradient(
-                                listOf(Color(0xFF26262B), Color(0xFF19191E), Color(0xFF0F0F14))
-                            )
-                            isNeon -> Brush.verticalGradient(
-                                listOf(Color(0xFFA7F3D0), Color(0xFF34D399), Color(0xFF059669))
-                            )
-                            else -> Brush.verticalGradient(theme.clearedBgColors)
-                        }
-                    )
-                    .border(
-                        width = 2.dp,
-                        brush = Brush.verticalGradient(
-                            when {
-                                isSakura -> listOf(Color.White, Color(0xFFF472B6))
-                                isFrozen -> listOf(Color(0xFFE0F2FE), Color(0xFF38BDF8))
-                                isVolcano -> listOf(Color(0xFFFF7A00), Color(0xFF991B1B))
-                                isNeon -> listOf(Color(0xFFD1FAE5), Color(0xFF10B981))
-                                else -> listOf(Color.White, theme.primaryAccent)
-                            }
-                        ),
-                        shape = RoundedCornerShape(23.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                // Top Gloss Reflection Arc for 3D glassy look
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth(0.85f)
-                        .height(14.dp)
-                        .clip(RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.White.copy(alpha = 0.65f), Color.Transparent)
-                            )
-                        )
-                )
-
-                // Volcano Lava Veins on Pedestal Surface
-                if (isVolcano) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val path = Path().apply {
-                            moveTo(size.width * 0.2f, size.height * 0.4f)
-                            lineTo(size.width * 0.45f, size.height * 0.6f)
-                            lineTo(size.width * 0.8f, size.height * 0.35f)
-                        }
-                        drawPath(path, color = Color(0xFFFF7A00), style = Stroke(width = 2.5f, cap = StrokeCap.Round))
-                        drawPath(path, color = Color(0xFFFEF08A), style = Stroke(width = 1f, cap = StrokeCap.Round))
+        // --- Orb ---
+        Box(
+            modifier = Modifier
+                .size(MapOrbSize)
+                .scale(pressScale)
+                .shadow(
+                    elevation = DesignTokens.ElevationMedium,
+                    shape = CircleShape,
+                    spotColor = when {
+                        isCleared -> DesignTokens.StarGoldGlow
+                        isUnlocked -> CoralPrimary
+                        else -> Color(0x66000000)
                     }
-                }
-            }
-
-            // 3. Stage Number Pill Tag beneath the Pedestal
-            Box(
-                modifier = Modifier
-                    .offset(y = (-4).dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xD90D1322))
-                    .border(
-                        1.dp,
-                        theme.primaryAccent.copy(alpha = 0.6f),
-                        RoundedCornerShape(12.dp)
-                    )
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "$stageNumber",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
                 )
-            }
-        } else {
-            // --- LOCKED STAGE NODE ---
-            // Sleek circular dark frosted stone disc with metallic lock icon (🔒)
+                .clip(CircleShape)
+                .background(
+                    when {
+                        isCleared -> DesignTokens.GoldGradient
+                        isUnlocked -> DesignTokens.CtaGradient
+                        else -> Brush.verticalGradient(
+                            listOf(Color(0xFF3A4356), Color(0xFF232A3A), Color(0xFF161C29))
+                        )
+                    }
+                )
+                .border(
+                    width = if (isBoss) 3.dp else 2.dp,
+                    brush = Brush.verticalGradient(
+                        when {
+                            isCleared -> listOf(Color.White, DesignTokens.StarGoldFilled, DesignTokens.PrimaryBrandDark)
+                            isUnlocked -> listOf(Color.White, CoralPrimary)
+                            else -> listOf(Color(0x66FFFFFF), Color(0xFF475569))
+                        }
+                    ),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            // Top gloss crescent for the chunky 3D orb look.
             Box(
                 modifier = Modifier
-                    .size(50.dp)
-                    .shadow(4.dp, CircleShape, spotColor = theme.primaryAccent.copy(alpha = 0.35f))
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(0.78f)
+                    .height(15.dp)
                     .clip(CircleShape)
                     .background(
-                        Brush.radialGradient(
-                            listOf(
-                                Color(0xFF2E3440),
-                                Color(0xFF1E222B),
-                                theme.primaryAccent.copy(alpha = 0.22f)
-                            )
+                        Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = 0.55f), Color.Transparent)
                         )
                     )
-                    .border(
-                        width = 1.5.dp,
-                        brush = Brush.verticalGradient(
-                            listOf(
-                                Color(0x66FFFFFF),
-                                theme.primaryAccent.copy(alpha = 0.45f),
-                                Color(0x22FFFFFF)
-                            )
-                        ),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                // Subtle top specular crescent
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth(0.8f)
-                        .height(10.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.White.copy(alpha = 0.25f), Color.Transparent)
-                            )
-                        )
-                )
+            )
 
+            if (isUnlocked) {
+                Text(
+                    text = "$stageNumber",
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.Black,
+                    color = if (isCleared) Color(0xFF451A03) else Color.White,
+                    textAlign = TextAlign.Center
+                )
+            } else {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = "Locked",
                     tint = Color(0xFF94A3B8),
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
+        }
 
-            // Locked Stage Number Tag
+        // Boss crown badge on the orb's top-right shoulder.
+        if (isBoss) {
+            Text(
+                text = "👑",
+                fontSize = 15.sp,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x = 27.dp, y = (-27).dp)
+            )
+        }
+
+        // Milestone marker: tiny gold dot on the orb's top-left shoulder.
+        if (isMilestone && !isBoss) {
             Box(
                 modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x = (-27).dp, y = (-27).dp)
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(DesignTokens.StarGoldFilled)
+                    .border(1.dp, Color.White, CircleShape)
+            )
+        }
+
+        // --- Beneath the orb: earned stars (cleared) or number pill (locked) ---
+        if (isCleared) {
+            val earnedStars = if (stars in 1..3) stars else 3
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 10.dp)
+                    .offset(y = starBob.dp)
+            ) {
+                repeat(3) { starIdx ->
+                    Text(
+                        text = "★",
+                        fontSize = if (starIdx == 1) 15.sp else 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = if (starIdx < earnedStars) {
+                            DesignTokens.StarGoldFilled
+                        } else {
+                            DesignTokens.StarEmptyGray
+                        }
+                    )
+                }
+            }
+        } else if (!isUnlocked) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 12.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(Color(0xB30B101A))
+                    .border(1.dp, Color(0x33475569), RoundedCornerShape(10.dp))
                     .padding(horizontal = 7.dp, vertical = 1.5.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -271,11 +231,14 @@ fun ThemedLadderTileNode(
 }
 
 /**
- * 3D Active / Current Hero Level Node matching reference screenshots:
- * - Elevated 3D Golden Disc Pedestal with concentric expanding ripple rings
- * - Waving golden/red victory flag planted on top
- * - Bold high-contrast stage number on the golden disc
- * - Radiant "NOW" / "CURRENT" golden banner pill underneath
+ * Current (next-to-play) stage node — same unified slot as [ThemedLadderTileNode],
+ * but enlarged and highlighted:
+ * - 68dp coral orb (DesignTokens.CtaGradient) with the stage number, ringed by two
+ *   expanding pulse halos driven by [beaconPulse].
+ * - The Popster mascot ([MascotCharacter], the same component used on Home) sits on
+ *   top of the orb, bobbing with [mascotBob].
+ * - A coral "NOW" pill beneath the orb; earned stars (if replaying) are not shown,
+ *   matching the previous hero node's behaviour.
  */
 @Composable
 fun ThemedLadderActiveHeroNode(
@@ -288,166 +251,114 @@ fun ThemedLadderActiveHeroNode(
     isBoss: Boolean,
     onClick: () -> Unit
 ) {
-    val heroTransition = rememberInfiniteTransition(label = "hero_active_pulse")
-    val flagSway by heroTransition.animateFloat(
-        initialValue = -3f,
-        targetValue = 3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "flag_sway"
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.93f else 1.0f,
+        animationSpec = DesignTokens.ButtonPressSpring,
+        label = "hero_press"
     )
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(0.dp),
+    Box(
         modifier = Modifier
-            .clickable { onClick() }
-            .testTag("active_hero_level_tile")
+            .size(width = MapNodeSlotWidth, height = MapNodeSlotHeight)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onClick() }
+            .testTag("active_hero_level_tile"),
+        contentAlignment = Alignment.Center
     ) {
-        // 1. Slender Golden Flagpole with Waving Victory Flag
+        // Expanding pulse halos behind the orb.
         Box(
             modifier = Modifier
-                .height(34.dp)
-                .width(42.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val poleX = size.width * 0.4f
-                val poleBottom = size.height
-                val poleTop = 6f
-
-                // Golden Pole
-                drawLine(
-                    color = Color(0xFFFFD700),
-                    start = Offset(poleX, poleBottom),
-                    end = Offset(poleX, poleTop),
-                    strokeWidth = 3.5f,
-                    cap = StrokeCap.Round
-                )
-                // Pole Finial Ball
-                drawCircle(
-                    color = Color(0xFFFFF9C4),
-                    radius = 3.5f,
-                    center = Offset(poleX, poleTop)
-                )
-
-                // Waving Victory Flag (Red or Gold)
-                val flagWidth = 24f
-                val flagHeight = 15f
-                val flagSwayPx = flagSway * 1.5f
-
-                val flagPath = Path().apply {
-                    moveTo(poleX, poleTop + 2f)
-                    cubicTo(
-                        poleX + flagWidth * 0.5f, poleTop + 2f + flagSwayPx,
-                        poleX + flagWidth * 0.8f, poleTop + 2f - flagSwayPx,
-                        poleX + flagWidth, poleTop + 5f
-                    )
-                    lineTo(poleX + flagWidth, poleTop + 5f + flagHeight)
-                    cubicTo(
-                        poleX + flagWidth * 0.8f, poleTop + 5f + flagHeight - flagSwayPx,
-                        poleX + flagWidth * 0.5f, poleTop + 5f + flagHeight + flagSwayPx,
-                        poleX, poleTop + 2f + flagHeight
-                    )
-                    close()
-                }
-                drawPath(
-                    path = flagPath,
-                    brush = Brush.horizontalGradient(
-                        listOf(Color(0xFFEF4444), Color(0xFFDC2626), Color(0xFFB91C1C))
-                    )
-                )
-            }
-        }
-
-        // 2. 3D Radiant Golden Disc Pedestal with Concentric Ripple Rings
+                .size(88.dp)
+                .scale(beaconPulse)
+                .clip(CircleShape)
+                .background(CoralPrimary.copy(alpha = 0.14f))
+                .border(2.dp, CoralPrimary.copy(alpha = 0.35f), CircleShape)
+        )
         Box(
-            modifier = Modifier.size(76.dp),
+            modifier = Modifier
+                .size(76.dp)
+                .scale(beaconPulse * 0.88f)
+                .clip(CircleShape)
+                .background(DesignTokens.StarGoldFilled.copy(alpha = 0.16f))
+        )
+
+        // --- Enlarged current-stage orb ---
+        Box(
+            modifier = Modifier
+                .size(MapHeroOrbSize)
+                .scale(pressScale)
+                .shadow(
+                    elevation = DesignTokens.ElevationActive,
+                    shape = CircleShape,
+                    spotColor = CoralPrimary
+                )
+                .clip(CircleShape)
+                .background(DesignTokens.CtaGradient)
+                .border(
+                    width = if (isBoss) 3.dp else 2.5.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(Color.White, DesignTokens.StarGoldFilled)
+                    ),
+                    shape = CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
-            // Concentric expanding glowing aura rings
             Box(
                 modifier = Modifier
-                    .size(72.dp)
-                    .scale(beaconPulse)
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth(0.78f)
+                    .height(17.dp)
                     .clip(CircleShape)
-                    .background(Color(0x28FFD700))
-                    .border(2.dp, Color(0x66FFD700), CircleShape)
-            )
-
-            // Inner Ripple Halo
-            Box(
-                modifier = Modifier
-                    .size(62.dp)
-                    .scale(beaconPulse * 0.85f)
-                    .clip(CircleShape)
-                    .background(Color(0x30FFA000))
-            )
-
-            // Main 3D Elevated Golden Disc
-            Box(
-                modifier = Modifier
-                    .size(width = 66.dp, height = 52.dp)
-                    .shadow(14.dp, RoundedCornerShape(26.dp), spotColor = Color(0xFFFFB703))
-                    .clip(RoundedCornerShape(26.dp))
                     .background(
                         Brush.verticalGradient(
-                            listOf(
-                                Color(0xFFFFFBEB),
-                                Color(0xFFFDE047),
-                                Color(0xFFF59E0B),
-                                Color(0xFFB45309)
-                            )
+                            listOf(Color.White.copy(alpha = 0.60f), Color.Transparent)
                         )
                     )
-                    .border(
-                        width = 2.5.dp,
-                        brush = Brush.verticalGradient(
-                            listOf(Color.White, Color(0xFFFFE082), Color(0xFF92400E))
-                        ),
-                        shape = RoundedCornerShape(26.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                // Top Specular Highlight Arc
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth(0.85f)
-                        .height(16.dp)
-                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.White.copy(alpha = 0.80f), Color.Transparent)
-                            )
-                        )
-                )
+            )
 
-                // High-Contrast Bold Stage Number in center
-                Text(
-                    text = "$stageNumber",
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFF451A03),
-                    textAlign = TextAlign.Center
-                )
-            }
+            Text(
+                text = "$stageNumber",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
         }
 
-        // 3. Golden "NOW" / "CURRENT" Capsule Badge
+        // Boss crown badge.
+        if (isBoss) {
+            Text(
+                text = "👑",
+                fontSize = 16.sp,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x = 30.dp, y = (-30).dp)
+            )
+        }
+
+        // Popster mascot standing on the current orb (same component as Home screen).
+        MascotCharacter(
+            mood = MascotMood.JOYFUL,
+            size = 44.dp,
+            showGoldRing = false,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = mascotBob.dp)
+        )
+
+        // "NOW" pill beneath the orb.
         Box(
             modifier = Modifier
-                .offset(y = (-6).dp)
-                .shadow(6.dp, RoundedCornerShape(14.dp), spotColor = Color(0xFFFFD700))
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 8.dp)
+                .shadow(6.dp, RoundedCornerShape(14.dp), spotColor = CoralPrimary)
                 .clip(RoundedCornerShape(14.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0xFFFFFBEB), Color(0xFFFEF08A), Color(0xFFF59E0B))
-                    )
-                )
-                .border(1.5.dp, Color(0xFFFFF9C4), RoundedCornerShape(14.dp))
+                .background(DesignTokens.CtaGradient)
+                .border(1.5.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
                 .padding(horizontal = 12.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -455,7 +366,7 @@ fun ThemedLadderActiveHeroNode(
                 text = "NOW",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFF451A03),
+                color = Color.White,
                 letterSpacing = 0.5.sp
             )
         }

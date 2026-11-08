@@ -12,14 +12,14 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = NeonCyan,
-    secondary = NeonPink,
-    tertiary = NeonPurple,
-    background = DarkBg1,
+    primary = CoralPrimary,
+    secondary = GoldCoin,
+    tertiary = NeonCyan,
+    background = CosmosNavyDeep,
     surface = SurfaceCard,
-    onPrimary = Color.Black,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
+    onPrimary = Color.White,
+    onSecondary = Color.Black,
+    onTertiary = Color.Black,
     onBackground = TextWhite,
     onSurface = TextWhite
 )

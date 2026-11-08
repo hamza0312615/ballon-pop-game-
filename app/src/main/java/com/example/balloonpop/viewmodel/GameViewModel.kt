@@ -1979,24 +1979,31 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        // 2. Check booster inventory & coin cost (50 coins when charges depleted)
+        // 2. Persistent inventory: consume exactly ONE persisted charge.
+        //    Counts live in the repository (SharedPreferences), so a charge
+        //    used here is gone everywhere — and remaining charges stay fully
+        //    usable in every later level; nothing is per-level any more.
+        //    (The gameplay UI intercepts 0-count taps first and offers the
+        //    one-tap buy dialog; this coin fallback only covers other callers.)
         val counts = _uiState.value.boosterCounts.toMutableMap()
         val currentCharges = counts[booster.id] ?: 3
 
         if (currentCharges > 0) {
-            counts[booster.id] = currentCharges - 1
-            repository.setBoosterCount(booster.id, currentCharges - 1)
+            if (repository.consumeBooster(booster.id)) {
+                counts[booster.id] = repository.getBoosterCount(booster.id)
+            }
         } else {
-            // Charges depleted: requires 50 coins to activate!
-            if (_uiState.value.coins >= 50) {
-                val newCoins = _uiState.value.coins - 50
+            // Charges depleted: requires BoosterPrices.DEPLETED_USE_COIN_COST coins to activate!
+            val useCost = BoosterPrices.DEPLETED_USE_COIN_COST
+            if (_uiState.value.coins >= useCost) {
+                val newCoins = _uiState.value.coins - useCost
                 repository.setCoins(newCoins)
                 _uiState.update { it.copy(coins = newCoins) }
-                addFloatingText(canvasWidth / 2f, 220f, "-50 🪙", Color(0xFFF59E0B))
+                addFloatingText(canvasWidth / 2f, 220f, "-$useCost 🪙", Color(0xFFF59E0B))
                 sound.playCoinEarn()
             } else {
                 sound.playPurchaseFail()
-                _uiState.update { it.copy(bannerMessage = "Need 50 🪙 to use ${booster.name.replace('_', ' ')}!") }
+                _uiState.update { it.copy(bannerMessage = "Need $useCost 🪙 to use ${booster.name.replace('_', ' ')}!") }
                 return
             }
         }
@@ -2161,32 +2168,32 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun buyBooster(boosterId: String, withGems: Boolean = false) {
-        val coinPrice = 150
-        val gemPrice = 3
-        val currentCount = _uiState.value.boosterCounts[boosterId] ?: 0
+        // Pass 4: prices come from the single BoosterPrices constants place and
+        // the purchase itself goes through the repository's one purchase path,
+        // so balance + inventory can never drift apart between shop & gameplay.
+        val coinPrice = BoosterPrices.COIN_PRICE
+        val gemPrice = BoosterPrices.GEM_PRICE
 
         if (withGems) {
-            if (_uiState.value.gems >= gemPrice) {
-                val newGems = _uiState.value.gems - gemPrice
-                val newCount = currentCount + 1
-                repository.setGems(newGems)
-                repository.setBoosterCount(boosterId, newCount)
-                val newCounts = _uiState.value.boosterCounts.toMutableMap()
-                newCounts[boosterId] = newCount
-                _uiState.update { it.copy(gems = newGems, boosterCounts = newCounts) }
+            if (repository.purchaseBoosterWithGems(boosterId, gemPrice)) {
+                _uiState.update {
+                    it.copy(
+                        gems = repository.getGems(),
+                        boosterCounts = repository.getAllBoosterCounts()
+                    )
+                }
                 sound.playRewardClaim()
             } else {
                 _uiState.update { it.copy(bannerMessage = "Need $gemPrice 💎 to buy this booster!") }
             }
         } else {
-            if (_uiState.value.coins >= coinPrice) {
-                val newCoins = _uiState.value.coins - coinPrice
-                val newCount = currentCount + 1
-                repository.setCoins(newCoins)
-                repository.setBoosterCount(boosterId, newCount)
-                val newCounts = _uiState.value.boosterCounts.toMutableMap()
-                newCounts[boosterId] = newCount
-                _uiState.update { it.copy(coins = newCoins, boosterCounts = newCounts) }
+            if (repository.purchaseBoosterWithCoins(boosterId, coinPrice)) {
+                _uiState.update {
+                    it.copy(
+                        coins = repository.getCoins(),
+                        boosterCounts = repository.getAllBoosterCounts()
+                    )
+                }
                 sound.playRewardClaim()
             } else {
                 _uiState.update { it.copy(bannerMessage = "Need $coinPrice 🪙 to buy this booster!") }

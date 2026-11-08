@@ -287,6 +287,28 @@ class GameRepository(context: Context) {
     fun addBooster(boosterId: String, amount: Int = 1) {
         setBoosterCount(boosterId, getBoosterCount(boosterId) + amount)
     }
+    /**
+     * Pass 4: single-path booster purchase. Checks the coin balance, deducts
+     * exactly [coinPrice] and adds exactly 1 charge as one operation.
+     * Returns false (changing nothing) when coins are insufficient.
+     */
+    fun purchaseBoosterWithCoins(boosterId: String, coinPrice: Int): Boolean {
+        val coins = getCoins()
+        if (coins < coinPrice) return false
+        setCoins(coins - coinPrice)
+        addBooster(boosterId, 1)
+        return true
+    }
+
+    /** Gem twin of [purchaseBoosterWithCoins]. */
+    fun purchaseBoosterWithGems(boosterId: String, gemPrice: Int): Boolean {
+        val gems = getGems()
+        if (gems < gemPrice) return false
+        setGems(gems - gemPrice)
+        addBooster(boosterId, 1)
+        return true
+    }
+
     fun getAllBoosterCounts(): Map<String, Int> {
         return mapOf(
             "booster_thunder" to getBoosterCount("booster_thunder"),

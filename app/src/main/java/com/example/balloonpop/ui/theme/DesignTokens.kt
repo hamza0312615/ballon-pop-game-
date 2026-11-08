@@ -67,12 +67,36 @@ object DesignTokens {
 
     // --- 4. Corner Radius Scale ---
     val RadiusSmall = 12.dp  // Chips, mini badges, input slots
+    val RadiusMedium = 16.dp // Buttons, shop cards, HUD bars
     val RadiusCard = 20.dp   // Cards, popups, dialog frames
+    val RadiusLarge = 24.dp  // Hero panels, dialogs, bottom docks
     val RadiusPill = 999.dp  // Full pill buttons & HUD bars
 
     val ShapeSmall = RoundedCornerShape(RadiusSmall)
+    val ShapeMedium = RoundedCornerShape(RadiusMedium)
     val ShapeCard = RoundedCornerShape(RadiusCard)
+    val ShapeLarge = RoundedCornerShape(RadiusLarge)
     val ShapePill = RoundedCornerShape(RadiusPill)
+
+    // --- 4b. Component Sizes (Pass 4: one size system everywhere) ---
+    val ButtonMinHeight = 56.dp   // Every tappable button is at least this tall
+    val IconButtonSize = 48.dp    // Secondary icon buttons on home / headers
+    val BoosterOrbSize = 64.dp    // Gameplay booster dock orbs
+    val ScreenPadding = Space16   // Default screen edge padding
+    val ScreenPaddingWide = Space24
+
+    // --- 4c. Typography Tiers (Pass 4: exactly 3 tiers per screen) ---
+    val TypeTierTitle = SizeH1     // Tier 1: screen titles & hero numbers
+    val TypeTierBody = SizeBody    // Tier 2: body, buttons, card titles (use SizeH2 for card titles)
+    val TypeTierCaption = SizeCaption // Tier 3: labels, badges, captions
+
+    // Primary CTA gradient (coral -> warm gold), the single hero-button look
+    val CtaGradient = Brush.horizontalGradient(
+        listOf(CoralPrimary, CoralPrimaryDark)
+    )
+    val GoldGradient = Brush.verticalGradient(
+        listOf(PrimaryBrandBright, PrimaryBrand, PrimaryBrandDark)
+    )
 
     // --- 5. Elevation & Shadows (3-Level Elevation System) ---
     val ElevationSubtle = 3.dp

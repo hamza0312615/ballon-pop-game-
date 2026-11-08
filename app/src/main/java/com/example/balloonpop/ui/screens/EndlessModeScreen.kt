@@ -10,7 +10,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -30,10 +29,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.balloonpop.model.GameMode
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
+import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.NunitoFontFamily
 
 /**
@@ -141,14 +142,14 @@ fun EndlessModeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 20.dp),
+                .padding(DesignTokens.ScreenPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Top Section: Back Button + Currency Capsules + Titles
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(DesignTokens.Space12),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 // Top Row: Back Button & 3 Glass Resource Capsules
@@ -160,7 +161,7 @@ fun EndlessModeScreen(
                     // Back button
                     Box(
                         modifier = Modifier
-                            .size(38.dp)
+                            .size(DesignTokens.IconButtonSize)
                             .clip(CircleShape)
                             .background(Color(0x2AFFFFFF))
                             .border(1.dp, Color(0x3AFFFFFF), CircleShape)
@@ -178,7 +179,7 @@ fun EndlessModeScreen(
 
                     // 3 Glass Resource Capsules (Hearts, Coins, Gems)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Hearts Capsule
@@ -204,40 +205,46 @@ fun EndlessModeScreen(
                 // Title & Subtitle Lockup
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(DesignTokens.Space4)
                 ) {
                     Text(
                         text = "ENDLESS MODES",
                         fontFamily = Baloo2FontFamily,
-                        fontSize = 30.sp,
+                        fontSize = DesignTokens.TypeTierTitle,
                         fontWeight = FontWeight.Black,
                         color = Color.White,
-                        letterSpacing = 0.8.sp
+                        letterSpacing = 0.8.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     Text(
                         text = "Survive endless waves — set record high scores",
                         fontFamily = NunitoFontFamily,
-                        fontSize = 13.sp,
+                        fontSize = DesignTokens.TypeTierBody,
                         fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF94A3B8),
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     if (highScore > 0) {
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(DesignTokens.ShapeSmall)
                                 .background(Color(0x33F59E0B))
-                                .border(1.dp, Color(0x99F59E0B), RoundedCornerShape(12.dp))
-                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                                .border(1.dp, Color(0x99F59E0B), DesignTokens.ShapeSmall)
+                                .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space4)
                         ) {
                             Text(
                                 text = "🏆 BEST: $highScore",
                                 fontFamily = Baloo2FontFamily,
-                                fontSize = 12.sp,
+                                fontSize = DesignTokens.TypeTierCaption,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFEF3C7)
+                                color = Color(0xFFFEF3C7),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -248,8 +255,8 @@ fun EndlessModeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(vertical = DesignTokens.Space4),
+                verticalArrangement = Arrangement.spacedBy(DesignTokens.Space12)
             ) {
                 // Card 1: Classic Survival (Emerald Cyan Accent)
                 EndlessModeCard(
@@ -336,17 +343,17 @@ fun EndlessModeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp)
+                    .heightIn(min = DesignTokens.ButtonMinHeight)
                     .scale(buttonScale)
-                    .shadow(16.dp, RoundedCornerShape(26.dp), spotColor = heroGradient[0])
-                    .clip(RoundedCornerShape(26.dp))
+                    .shadow(16.dp, DesignTokens.ShapeLarge, spotColor = heroGradient[0])
+                    .clip(DesignTokens.ShapeLarge)
                     .background(Brush.horizontalGradient(heroGradient))
                     .border(
                         width = 1.5.dp,
                         brush = Brush.verticalGradient(
                             listOf(Color.White.copy(alpha = 0.60f), Color.White.copy(alpha = 0.20f))
                         ),
-                        shape = RoundedCornerShape(26.dp)
+                        shape = DesignTokens.ShapeLarge
                     )
                     .clickable(
                         interactionSource = buttonInteraction,
@@ -371,22 +378,27 @@ fun EndlessModeScreen(
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.padding(vertical = DesignTokens.Space8)
                 ) {
                     Text(
                         text = heroLabel,
                         fontFamily = Baloo2FontFamily,
-                        fontSize = 19.sp,
+                        fontSize = DesignTokens.SizeH2,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        letterSpacing = 0.6.sp
+                        letterSpacing = 0.6.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     Text(
                         text = "tap to enter the arena",
                         fontFamily = NunitoFontFamily,
-                        fontSize = 11.sp,
+                        fontSize = DesignTokens.TypeTierCaption,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.90f)
+                        color = Color.White.copy(alpha = 0.90f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -405,21 +417,21 @@ private fun EndlessGlassResourceCapsule(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(DesignTokens.ShapeMedium)
             .background(Color(0xCC0D1326))
             .border(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
                     listOf(Color(0x44FFFFFF), Color(0x11FFFFFF))
                 ),
-                shape = RoundedCornerShape(16.dp)
+                shape = DesignTokens.ShapeMedium
             )
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+            .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space4),
         contentAlignment = Alignment.Center
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space4)
         ) {
             com.example.balloonpop.ui.components.CurrencyArt(
                 type = type,
@@ -428,9 +440,10 @@ private fun EndlessGlassResourceCapsule(
             Text(
                 text = String.format("%,d", amount),
                 fontFamily = Baloo2FontFamily,
-                fontSize = 13.sp,
+                fontSize = DesignTokens.TypeTierBody,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.White,
+                maxLines = 1
             )
         }
     }
@@ -489,18 +502,19 @@ private fun EndlessModeCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .heightIn(min = 84.dp)
             .scale(scale)
             .shadow(
                 elevation = if (isSelected) 12.dp else 2.dp,
-                shape = RoundedCornerShape(18.dp),
+                shape = DesignTokens.ShapeMedium,
                 spotColor = if (isSelected) accentColor else Color.Transparent
             )
-            .clip(RoundedCornerShape(18.dp))
+            .clip(DesignTokens.ShapeMedium)
             .background(cardBg)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 brush = borderBrush,
-                shape = RoundedCornerShape(18.dp)
+                shape = DesignTokens.ShapeMedium
             )
             .clickable(
                 interactionSource = interaction,
@@ -508,7 +522,7 @@ private fun EndlessModeCard(
                 onClick = onClick
             )
             .testTag(testTag)
-            .padding(horizontal = 14.dp, vertical = 13.dp),
+            .padding(horizontal = DesignTokens.Space16, vertical = DesignTokens.Space12),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -519,14 +533,14 @@ private fun EndlessModeCard(
             // Left: Squircle Icon Tile + Title & Subtitle
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space12),
                 modifier = Modifier.weight(1f)
             ) {
                 // Squircle Icon Tile with Deep Gradient & Vector EndlessModeArt
                 Box(
                     modifier = Modifier
                         .size(50.dp)
-                        .clip(RoundedCornerShape(15.dp))
+                        .clip(DesignTokens.ShapeSmall)
                         .background(
                             Brush.verticalGradient(
                                 listOf(
@@ -538,7 +552,7 @@ private fun EndlessModeCard(
                         .border(
                             width = 1.2.dp,
                             color = Color.White.copy(alpha = 0.35f),
-                            shape = RoundedCornerShape(15.dp)
+                            shape = DesignTokens.ShapeSmall
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -550,74 +564,89 @@ private fun EndlessModeCard(
 
                 // Text Description
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    verticalArrangement = Arrangement.spacedBy(DesignTokens.Space4)
                 ) {
                     Text(
                         text = title,
                         fontFamily = Baloo2FontFamily,
-                        fontSize = 17.sp,
+                        fontSize = DesignTokens.SizeH2,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     Text(
                         text = subtitle,
                         fontFamily = NunitoFontFamily,
-                        fontSize = 12.sp,
+                        fontSize = DesignTokens.TypeTierCaption,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF94A3B8)
+                        color = Color(0xFF94A3B8),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
-                    if (bestScore > 0) {
-                        Text(
-                            text = "BEST: $bestScore",
-                            fontFamily = Baloo2FontFamily,
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = accentColor
-                        )
-                    }
+                    // Always rendered (even at 0) so every card keeps the same
+                    // height and the BEST line sits in the same place.
+                    Text(
+                        text = if (bestScore > 0) "BEST: $bestScore" else "BEST: —",
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = DesignTokens.TypeTierCaption,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = accentColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
             }
 
-            // Right: Circular Checkmark (if selected) + Pill Badge Tag
+            // Right: Circular Checkmark (if selected) + Pill Badge Tag.
+            // The check slot is always reserved so the badge sits in the
+            // same place on selected and unselected cards alike.
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(DesignTokens.Space4)
             ) {
-                if (isSelected) {
-                    Box(
-                        modifier = Modifier
-                            .size(22.dp)
-                            .clip(CircleShape)
-                            .background(accentColor),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Selected",
-                            tint = Color(0xFF070B18),
-                            modifier = Modifier.size(15.dp)
-                        )
+                Box(
+                    modifier = Modifier.size(22.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .background(accentColor),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Selected",
+                                tint = Color(0xFF070B18),
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
                     }
                 }
 
                 // Tag Badge (SURVIVAL, BLITZ, CHAOS, ZEN)
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(10.dp))
+                        .clip(DesignTokens.ShapeSmall)
                         .background(badgeBgColor)
-                        .border(1.dp, accentColor.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 9.dp, vertical = 2.5.dp),
+                        .border(1.dp, accentColor.copy(alpha = 0.6f), DesignTokens.ShapeSmall)
+                        .padding(horizontal = DesignTokens.Space8, vertical = DesignTokens.Space4),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = badgeText,
                         fontFamily = NunitoFontFamily,
-                        fontSize = 9.5.sp,
+                        fontSize = DesignTokens.SizeMicro,
                         fontWeight = FontWeight.ExtraBold,
                         color = badgeTextColor,
-                        letterSpacing = 0.6.sp
+                        letterSpacing = 0.6.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

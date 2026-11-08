@@ -12,6 +12,15 @@ val NeonOrange = Color(0xFFFF6B00)
 val NeonElectricBlue = Color(0xFF38BDF8)
 val NeonRose = Color(0xFFFB7185)
 
+// Pass 4 Design System: Coral Primary CTA + Deep-Navy Cosmic Base
+val CoralPrimary = Color(0xFFFF6B4A)
+val CoralPrimaryDark = Color(0xFFE14E2B)
+val CoralPrimaryLight = Color(0xFFFF9E7D)
+val CosmosNavy = Color(0xFF0A0E24)
+val CosmosNavyDeep = Color(0xFF05070F)
+val CosmosIndigo = Color(0xFF1B2350)
+val CosmosViolet = Color(0xFF3B2E6E)
+
 // Deep Luxury Black & Obsidian Canvas
 val PureBlack = Color(0xFF000000)
 val PitchBlack = Color(0xFF050508)

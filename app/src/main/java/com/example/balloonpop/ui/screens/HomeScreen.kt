@@ -14,11 +14,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -45,16 +46,18 @@ import com.example.balloonpop.ui.components.JellyColorVariant
 import com.example.balloonpop.ui.components.TopBar
 import com.example.balloonpop.ui.dialogs.CustomChallengeDialog
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
+import com.example.balloonpop.ui.theme.CoralPrimary
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.NunitoFontFamily
 
 /**
- * Redesigned Home Screen following Step 3 Design System:
+ * Home Screen (Quality Pass 4, Royal Match / Candy Crush benchmark):
  * - Themed sky gradient with soft floating balloon ambient silhouettes & confetti
- * - Real 3D layered logo lockup for "BALLOON POP" with integrated mascot
- * - Visually dominant "PLAY LEVEL X" primary CTA with pulsating glow idle animation
- * - Unified identical secondary action cards for Endless Rush and Skill Vault
- * - 3-column bottom button group with consistent icon/label layout & badge dots
+ * - One prominent mascot above the "BALLOON POP" logo lockup
+ * - ONE hero action only: the coral "PLAY STAGE X" CTA (CtaGradient, pulsating glow)
+ * - Every secondary action (Endless, Vault, Spin, Shop, Quests, Ranks, Settings,
+ *   Help, Custom) is a uniform 48dp icon button with a one-line caption
+ * - Slim single-row TopBar for lives / coins / gems; ScreenPadding at the edges
  * - Strict usage of DesignTokens (spacing, radius, typography, colors)
  */
 @Composable
@@ -166,7 +169,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = DesignTokens.Space16, vertical = DesignTokens.Space8),
+                .padding(horizontal = DesignTokens.ScreenPadding, vertical = DesignTokens.Space8),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
@@ -186,10 +189,12 @@ fun HomeScreen(
                     .padding(vertical = DesignTokens.Space4),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Friendly smiling balloon mascot character
+                // The one prominent mascot, sitting directly above the title and
+                // the PLAY hero below it. The small duplicate mascots that used to
+                // flank the title are gone so this one reads as the hero character.
                 com.example.balloonpop.ui.components.MascotCharacter(
                     mood = com.example.balloonpop.ui.components.MascotMood.JOYFUL,
-                    size = 72.dp,
+                    size = 96.dp,
                     modifier = Modifier.offset(y = mascotBob.dp)
                 )
 
@@ -224,114 +229,55 @@ fun HomeScreen(
                         .padding(vertical = DesignTokens.Space8, horizontal = DesignTokens.Space16),
                     contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        com.example.balloonpop.ui.components.MascotCharacter(
-                            size = 34.dp,
-                            showGoldRing = true
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "BALLOON POP",
+                            fontSize = DesignTokens.TypeTierTitle,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFFFEA00),
+                            letterSpacing = 2.sp,
+                            maxLines = 1
                         )
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "BALLOON POP",
-                                fontSize = DesignTokens.SizeH1,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFFFFEA00),
-                                letterSpacing = 2.sp
-                            )
-                            Text(
-                                text = "CASUAL DELUXE ADVENTURE",
-                                fontSize = DesignTokens.SizeMicro,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFFFEF3C7),
-                                letterSpacing = 1.sp
-                            )
-                        }
-                        com.example.balloonpop.ui.components.MascotCharacter(
-                            mood = com.example.balloonpop.ui.components.MascotMood.HAPPY,
-                            size = 34.dp,
-                            showGoldRing = true
+                        Text(
+                            text = "CASUAL DELUXE ADVENTURE",
+                            fontSize = DesignTokens.SizeMicro,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFFFEF3C7),
+                            letterSpacing = 1.sp,
+                            maxLines = 1
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(DesignTokens.Space8))
-
-                // Helper Action Pills: How to Play + Custom Lab
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // "HOW TO PLAY" Helper Pill
-                    HomeHelperPill(
-                        iconContent = {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "How to play",
-                                tint = Color(0xFF7DD3FC),
-                                modifier = Modifier.size(15.dp)
-                            )
-                        },
-                        label = "HOW TO PLAY",
-                        borderColor = DesignTokens.SecondaryAccentDeep,
-                        textColor = Color(0xFF7DD3FC),
-                        onClick = { showHowToPlay = true },
-                        testTag = "how_to_play_button"
-                    )
-
-                    // "CUSTOM LAB" Helper Pill
-                    HomeHelperPill(
-                        iconContent = {
-                            Icon(
-                                imageVector = Icons.Default.Build,
-                                contentDescription = "Custom Lab",
-                                tint = Color(0xFFE9D5FF),
-                                modifier = Modifier.size(15.dp)
-                            )
-                        },
-                        label = "CUSTOM LAB",
-                        borderColor = Color(0xFFA855F7),
-                        textColor = Color(0xFFE9D5FF),
-                        onClick = { showCustomChallenge = true },
-                        testTag = "custom_challenge_button"
-                    )
-                }
             }
 
-            // 3. Primary & Secondary Game Action Cards
+            // 3. ONE hero action + every secondary action as a uniform icon button.
+            // Nothing else on this screen is a filled CTA: Endless / Vault / Spin /
+            // Shop / Quests / Ranks / Settings / Help / Custom all share the exact
+            // same 48dp icon-button treatment below the PLAY hero.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = DesignTokens.Space4),
                 verticalArrangement = Arrangement.spacedBy(DesignTokens.Space12)
             ) {
-                // PRIMARY HERO CTA: PLAY LEVEL X (Dominant, Larger, Radiant Gradient, Glow Pulse)
+                // PRIMARY HERO CTA: PLAY STAGE X — the single dominant button.
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(min = 72.dp)
                         .scale(playPulse)
-                        .shadow(DesignTokens.ElevationActive, DesignTokens.ShapeCard, spotColor = DesignTokens.PrimaryBrand)
-                        .clip(DesignTokens.ShapeCard)
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(
-                                    DesignTokens.PrimaryBrandBright,
-                                    DesignTokens.PrimaryBrand,
-                                    DesignTokens.PrimaryBrandDark
-                                )
-                            )
-                        )
-                        .border(2.5.dp, Color(0xFFFEF08A), DesignTokens.ShapeCard)
+                        .shadow(DesignTokens.ElevationActive, DesignTokens.ShapeLarge, spotColor = CoralPrimary)
+                        .clip(DesignTokens.ShapeLarge)
+                        .background(DesignTokens.CtaGradient)
+                        .border(2.5.dp, Color(0xFFFFD9CC), DesignTokens.ShapeLarge)
                         .clickable { onOpenCampaign() }
                         .testTag("home_play_campaign_button")
-                        .padding(horizontal = DesignTokens.Space16, vertical = DesignTokens.Space16)
+                        .padding(horizontal = DesignTokens.Space16, vertical = DesignTokens.Space12)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space12)
                     ) {
                         // Play Icon Circle with Depth
                         Box(
@@ -339,7 +285,7 @@ fun HomeScreen(
                                 .size(52.dp)
                                 .shadow(4.dp, CircleShape)
                                 .clip(CircleShape)
-                                .background(Color(0xFF78350F))
+                                .background(Color.White.copy(alpha = 0.22f))
                                 .border(2.dp, Color.White, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
@@ -353,119 +299,161 @@ fun HomeScreen(
 
                         // Call to Action Text Block
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                            horizontalAlignment = Alignment.Start,
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
                                 text = "PLAY STAGE $currentLevel",
                                 fontFamily = Baloo2FontFamily,
-                                fontSize = 18.sp,
+                                fontSize = DesignTokens.TypeTierTitle,
                                 fontWeight = FontWeight.Black,
-                                color = Color(0xFF5B2E00),
-                                letterSpacing = 0.5.sp
+                                color = Color.White,
+                                letterSpacing = 0.5.sp,
+                                maxLines = 1
                             )
                             Text(
-                                text = "$zoneName — Tap to Enter!",
+                                text = zoneName,
                                 fontFamily = NunitoFontFamily,
-                                fontSize = DesignTokens.SizeCaption,
+                                fontSize = DesignTokens.TypeTierCaption,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = Color(0xFF78350F)
-                            )
-                        }
-
-                        // Start Badge
-                        Box(
-                            modifier = Modifier
-                                .clip(DesignTokens.ShapeSmall)
-                                .background(Color(0xFF78350F))
-                                .border(1.dp, Color(0xFFFEF08A), DesignTokens.ShapeSmall)
-                                .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space8)
-                        ) {
-                            Text(
-                                text = "START ▶",
-                                fontSize = DesignTokens.SizeCaption,
-                                fontWeight = FontWeight.Black,
-                                color = Color.White
+                                color = Color(0xFFFFE3D9),
+                                maxLines = 1
                             )
                         }
                     }
                 }
 
-                // SECONDARY ACTION CARD 1: ENDLESS RUSH (Unified identical layout)
-                HomeSecondaryActionCard(
-                    iconContent = {
-                        EndlessModeArt(GameMode.ARCADE, modifier = Modifier.size(28.dp))
-                    },
-                    iconBgColor = DesignTokens.SecondaryAccentDeep,
-                    iconBorderColor = DesignTokens.SecondaryAccent,
-                    title = "ENDLESS RUSH",
-                    subtitle = "Fast Arcade Survival • High Score Challenge",
-                    subtitleColor = Color(0xFF93C5FD),
-                    accentColor = DesignTokens.SecondaryAccent,
-                    cardBgGradient = listOf(Color(0xFF0F1E2E), Color(0xFF0A2E4C), Color(0xFF0D1B2A)),
-                    onClick = onOpenEndless,
-                    testTag = "home_endless_rush_button"
-                )
+                // Secondary row 1: game modes and storefront actions.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    HomeIconActionButton(
+                        iconContent = {
+                            EndlessModeArt(GameMode.ARCADE, modifier = Modifier.size(26.dp))
+                        },
+                        label = "Endless",
+                        accentColor = DesignTokens.SecondaryAccent,
+                        onClick = onOpenEndless,
+                        testTag = "home_endless_rush_button",
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeIconActionButton(
+                        iconContent = {
+                            SkillVaultArt("skill_hammer_slide", modifier = Modifier.size(26.dp))
+                        },
+                        label = "Vault",
+                        accentColor = Color(0xFFA855F7),
+                        onClick = onOpenSkillVault,
+                        testTag = "home_skill_vault_button",
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeIconActionButton(
+                        iconContent = {
+                            HomeNavIcon(type = "SPIN", modifier = Modifier.size(26.dp))
+                        },
+                        label = "Spin",
+                        accentColor = Color(0xFFC084FC),
+                        badge = "FREE",
+                        onClick = onOpenDailySpin,
+                        testTag = "home_quick_daily_spin",
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeIconActionButton(
+                        iconContent = {
+                            HomeNavIcon(type = "SHOP", modifier = Modifier.size(26.dp))
+                        },
+                        label = "Shop",
+                        accentColor = DesignTokens.PrimaryBrandBright,
+                        badge = "SALE",
+                        onClick = onOpenShop,
+                        testTag = "home_quick_shop",
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeIconActionButton(
+                        iconContent = {
+                            HomeNavIcon(type = "QUESTS", modifier = Modifier.size(26.dp))
+                        },
+                        label = "Quests",
+                        accentColor = DesignTokens.SuccessGreenBright,
+                        badge = "NEW",
+                        onClick = onOpenQuests,
+                        testTag = "home_quick_quests",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
 
-                // SECONDARY ACTION CARD 2: SKILL VAULT (Unified identical layout)
-                HomeSecondaryActionCard(
-                    iconContent = {
-                        SkillVaultArt("skill_hammer_slide", modifier = Modifier.size(28.dp))
-                    },
-                    iconBgColor = Color(0xFF6B21A8),
-                    iconBorderColor = Color(0xFFA855F7),
-                    title = "SKILL VAULT & HAMMERS",
-                    subtitle = "Upgrade Hammers • Unlock 5s Slide Skill",
-                    subtitleColor = Color(0xFFD8B4FE),
-                    accentColor = Color(0xFFA855F7),
-                    cardBgGradient = listOf(Color(0xFF1E102E), Color(0xFF331454), Color(0xFF170D24)),
-                    onClick = onOpenSkillVault,
-                    testTag = "home_skill_vault_button"
-                )
-            }
-
-            // 4. Equal 3-Column Bottom Button Group (Daily Spin, Shop, Quests)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = DesignTokens.Space4),
-                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
-            ) {
-                // 1. Daily Spin Button
-                HomeBottomNavButton(
-                    iconType = "SPIN",
-                    title = "Spin",
-                    badge = "FREE",
-                    color = Color(0xFF9333EA),
-                    borderColor = Color(0xFFC084FC),
-                    onClick = onOpenDailySpin,
-                    testTag = "home_quick_daily_spin",
-                    modifier = Modifier.weight(1f)
-                )
-
-                // 2. Balloon Shop Button
-                HomeBottomNavButton(
-                    iconType = "SHOP",
-                    title = "Shop",
-                    badge = "SALE",
-                    color = DesignTokens.PrimaryBrandDark,
-                    borderColor = DesignTokens.PrimaryBrandBright,
-                    onClick = onOpenShop,
-                    testTag = "home_quick_shop",
-                    modifier = Modifier.weight(1f)
-                )
-
-                // 3. Quests Button
-                HomeBottomNavButton(
-                    iconType = "QUESTS",
-                    title = "Quests",
-                    badge = "NEW",
-                    color = Color(0xFF059669),
-                    borderColor = DesignTokens.SuccessGreenBright,
-                    onClick = onOpenQuests,
-                    testTag = "home_quick_quests",
-                    modifier = Modifier.weight(1f)
-                )
+                // Secondary row 2: ranks, settings and the two helper actions that
+                // used to be pills under the title (same callbacks, same test tags).
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = DesignTokens.Space4),
+                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    HomeIconActionButton(
+                        iconContent = {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = "Ranks",
+                                tint = Color(0xFFFFD700),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        label = "Ranks",
+                        accentColor = Color(0xFFFFD700),
+                        onClick = onOpenRanks,
+                        testTag = "home_ranks_button",
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeIconActionButton(
+                        iconContent = {
+                            Icon(
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Settings",
+                                tint = Color(0xFFC4B5FD),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        label = "Settings",
+                        accentColor = Color(0xFFA78BFA),
+                        onClick = onOpenSettings,
+                        testTag = "home_settings_button",
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeIconActionButton(
+                        iconContent = {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "How to play",
+                                tint = Color(0xFF7DD3FC),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        label = "Help",
+                        accentColor = DesignTokens.SecondaryAccentDeep,
+                        onClick = { showHowToPlay = true },
+                        testTag = "how_to_play_button",
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeIconActionButton(
+                        iconContent = {
+                            Icon(
+                                imageVector = Icons.Default.Build,
+                                contentDescription = "Custom Lab",
+                                tint = Color(0xFFE9D5FF),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        },
+                        label = "Custom",
+                        accentColor = Color(0xFFA855F7),
+                        onClick = { showCustomChallenge = true },
+                        testTag = "custom_challenge_button",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 
@@ -552,103 +540,18 @@ fun HomeScreen(
 }
 
 /**
- * Standardized Secondary Action Card Component (Endless Rush & Skill Vault):
- * Guarantees 100% identical dimensions (68dp), 44dp circular icon container,
- * text hierarchy (H2 Title + Caption subtitle), and corner radius.
+ * The ONE secondary-action treatment on Home (Pass 4): a uniform
+ * [DesignTokens.IconButtonSize] circular icon button on the shared card surface,
+ * with a single short caption underneath that never truncates. Every secondary
+ * action (Endless, Vault, Spin, Shop, Quests, Ranks, Settings, Help, Custom)
+ * uses this exact component, so nothing competes with the PLAY hero.
  */
 @Composable
-private fun HomeSecondaryActionCard(
+private fun HomeIconActionButton(
     iconContent: @Composable () -> Unit,
-    iconBgColor: Color,
-    iconBorderColor: Color,
-    title: String,
-    subtitle: String,
-    subtitleColor: Color,
+    label: String,
     accentColor: Color,
-    cardBgGradient: List<Color>,
-    onClick: () -> Unit,
-    testTag: String
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1.0f,
-        animationSpec = DesignTokens.ButtonPressSpring,
-        label = "card_press"
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(68.dp)
-            .scale(scale)
-            .shadow(DesignTokens.ElevationAmbient, DesignTokens.ShapeCard, spotColor = accentColor)
-            .clip(DesignTokens.ShapeCard)
-            .background(Brush.horizontalGradient(cardBgGradient))
-            .border(1.8.dp, accentColor, DesignTokens.ShapeCard)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .testTag(testTag)
-            .padding(horizontal = DesignTokens.Space16, vertical = DesignTokens.Space8),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space12)
-        ) {
-            // Uniform 44dp Circular Icon Container
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(iconBgColor)
-                    .border(1.5.dp, iconBorderColor, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                iconContent()
-            }
-
-            Column {
-                Text(
-                    text = title,
-                    fontSize = DesignTokens.SizeH2,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White,
-                    letterSpacing = 0.5.sp
-                )
-                Text(
-                    text = subtitle,
-                    fontSize = DesignTokens.SizeCaption,
-                    fontWeight = FontWeight.Bold,
-                    color = subtitleColor
-                )
-            }
-        }
-
-        Text(
-            text = "➔",
-            fontSize = 18.sp,
-            color = accentColor,
-            fontWeight = FontWeight.Black
-        )
-    }
-}
-
-/**
- * 3-Column Bottom Navigation Button Component:
- * Uniform height (52dp), consistent icon/title stack, with notification badge support.
- */
-@Composable
-private fun HomeBottomNavButton(
-    iconType: String,
-    title: String,
-    badge: String?,
-    color: Color,
-    borderColor: Color,
+    badge: String? = null,
     onClick: () -> Unit,
     testTag: String,
     modifier: Modifier = Modifier
@@ -656,101 +559,69 @@ private fun HomeBottomNavButton(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1.0f,
+        targetValue = if (isPressed) 0.92f else 1.0f,
         animationSpec = DesignTokens.ButtonPressSpring,
-        label = "btn_press"
+        label = "home_icon_btn_press"
     )
 
-    Box(
+    Column(
         modifier = modifier
-            .height(52.dp)
             .scale(scale)
-            .shadow(DesignTokens.ElevationAmbient, DesignTokens.ShapeCard)
-            .clip(DesignTokens.ShapeCard)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        color.copy(alpha = 0.35f),
-                        Color(0x22131927)
-                    )
-                )
-            )
-            .border(1.5.dp, borderColor.copy(alpha = 0.8f), DesignTokens.ShapeCard)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             )
             .testTag(testTag)
-            .padding(horizontal = DesignTokens.Space4, vertical = DesignTokens.Space4),
-        contentAlignment = Alignment.Center
+            .padding(vertical = DesignTokens.Space4),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            HomeNavIcon(type = iconType, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = title,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White,
-                maxLines = 1,
-                softWrap = false
-            )
-        }
-
-        // Notification Badge Dot
-        if (badge != null) {
+        Box(contentAlignment = Alignment.TopEnd) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .offset(x = 2.dp, y = (-2).dp)
-                    .clip(DesignTokens.ShapeSmall)
-                    .background(DesignTokens.DangerRed)
-                    .border(1.dp, Color.White, DesignTokens.ShapeSmall)
-                    .padding(horizontal = DesignTokens.Space4, vertical = 1.dp)
+                    .size(DesignTokens.IconButtonSize)
+                    .shadow(DesignTokens.ElevationAmbient, CircleShape, spotColor = accentColor)
+                    .clip(CircleShape)
+                    .background(DesignTokens.SurfaceCardNavy)
+                    .border(1.5.dp, accentColor.copy(alpha = 0.85f), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = badge,
-                    fontSize = 8.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White
-                )
+                iconContent()
+            }
+
+            // Small status badge (FREE / SALE / NEW), kept off the label so the
+            // caption always stays on one line.
+            if (badge != null) {
+                Box(
+                    modifier = Modifier
+                        .offset(x = 4.dp, y = (-2).dp)
+                        .clip(DesignTokens.ShapeSmall)
+                        .background(DesignTokens.DangerRed)
+                        .border(1.dp, Color.White, DesignTokens.ShapeSmall)
+                        .padding(horizontal = DesignTokens.Space4, vertical = 1.dp)
+                ) {
+                    Text(
+                        text = badge,
+                        fontSize = DesignTokens.SizeMicro,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
         }
-    }
-}
 
-@Composable
-private fun HomeHelperPill(
-    iconContent: @Composable () -> Unit,
-    label: String,
-    borderColor: Color,
-    textColor: Color,
-    onClick: () -> Unit,
-    testTag: String
-) {
-    Row(
-        modifier = Modifier
-            .height(36.dp)
-            .clip(DesignTokens.ShapeSmall)
-            .background(DesignTokens.SurfaceCardNavy)
-            .border(1.5.dp, borderColor, DesignTokens.ShapeSmall)
-            .clickable(onClick = onClick)
-            .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space4)
-            .testTag(testTag),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space4)
-    ) {
-        iconContent()
+        Spacer(modifier = Modifier.height(DesignTokens.Space4))
+
         Text(
             text = label,
-            fontSize = DesignTokens.SizeCaption,
+            fontSize = DesignTokens.TypeTierCaption,
             fontWeight = FontWeight.Black,
-            color = textColor,
-            letterSpacing = 0.5.sp
+            color = Color.White,
+            maxLines = 1,
+            softWrap = false,
+            textAlign = TextAlign.Center
         )
     }
 }

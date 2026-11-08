@@ -147,6 +147,22 @@ enum class InGameBooster(
     TORNADO_VORTEX("booster_vortex", "Wind Vortex", "🌀", "Draws all balloons into the center in a huge combo pop!")
 }
 
+/**
+ * Pass 4: the ONE place booster prices live.
+ * Shop purchases, the in-gameplay buy dialog and the ViewModel all read these
+ * values so a price can never drift between screens.
+ */
+object BoosterPrices {
+    /** Coins for +1 booster charge in the shop / in-gameplay buy dialog. */
+    const val COIN_PRICE = 150
+
+    /** Gems for +1 booster charge in the shop. */
+    const val GEM_PRICE = 3
+
+    /** Coins charged when a booster is triggered with 0 charges left. */
+    const val DEPLETED_USE_COIN_COST = 50
+}
+
 data class HammerStrikeEffect(
     val id: Long,
     val x: Float,
@@ -722,7 +738,7 @@ object GameConstants {
     )
 
     val WORLD_ZONES = listOf(
-        WorldZone(1, "Neon Glade", "Stages 1 - 10", 1, 10, Color(0xFF00F0FF), Color(0xFF06D6A0), listOf(Color(0xFF1B0E3D), Color(0xFF2A1556), Color(0xFF130930)), "🌱"),
+        WorldZone(1, "Neon Glade", "Stages 1 - 10", 1, 10, Color(0xFF38BDF8), Color(0xFFA78BFA), listOf(Color(0xFF05070F), Color(0xFF0A0E24), Color(0xFF1B2350)), "🌱"),
         WorldZone(2, "Prism Peaks", "Stages 11 - 20", 11, 20, Color(0xFF9D4EDD), Color(0xFFFF2A75), listOf(Color(0xFF261042), Color(0xFF3F196A), Color(0xFF18072E)), "🔮"),
         WorldZone(3, "Sunset Mesa", "Stages 21 - 30", 21, 30, Color(0xFFFF7A00), Color(0xFFFF007F), listOf(Color(0xFF3A1224), Color(0xFF5E1B38), Color(0xFF240A18)), "🌅"),
         WorldZone(4, "Aqua Reef", "Stages 31 - 40", 31, 40, Color(0xFF00D2FF), Color(0xFF00F5D4), listOf(Color(0xFF0A2239), Color(0xFF124559), Color(0xFF051622)), "🐬"),
@@ -738,7 +754,7 @@ object GameConstants {
         WorldZone(14, "Cosmic Void", "Stages 131 - 140", 131, 140, Color(0xFFB5179E), Color(0xFF7209B7), listOf(Color(0xFF220538), Color(0xFF3B0861), Color(0xFF130221)), "🪐"),
         WorldZone(15, "Celestial Ascension", "Stages 141 - 150", 141, 150, Color(0xFFFFD700), Color(0xFF00FFFF), listOf(Color(0xFF29104D), Color(0xFF481A85), Color(0xFF1A0A33)), "👑"),
         WorldZone(16, "Molten Core", "Stages 151 - 160", 151, 160, Color(0xFFFF5722), Color(0xFFFF9100), listOf(Color(0xFF350B05), Color(0xFF541208), Color(0xFF200703)), "☄️"),
-        WorldZone(17, "Neon Abyss", "Stages 161 - 170", 161, 170, Color(0xFF00E5FF), Color(0xFF7C4DFF), listOf(Color(0xFF05172E), Color(0xFF0C2448), Color(0xFF020E1F)), "🧬"),
+        WorldZone(17, "Neon Abyss", "Stages 161 - 170", 161, 170, Color(0xFF38BDF8), Color(0xFFA78BFA), listOf(Color(0xFF05070F), Color(0xFF0A0E24), Color(0xFF3B2E6E)), "🧬"),
         WorldZone(18, "Olympus Gates", "Stages 171 - 180", 171, 180, Color(0xFFFFD700), Color(0xFFFFF176), listOf(Color(0xFF2C2204), Color(0xFF473607), Color(0xFF191302)), "🏛️"),
         WorldZone(19, "Dragon's Lair", "Stages 181 - 190", 181, 190, Color(0xFFFF1744), Color(0xFFFF9100), listOf(Color(0xFF3E0812), Color(0xFF5D0D1B), Color(0xFF25050B)), "🐲"),
         WorldZone(20, "Grand Pantheon", "Stages 191 - 200", 191, 200, Color(0xFFFF007F), Color(0xFFFFD700), listOf(Color(0xFF240438), Color(0xFF420866), Color(0xFF150221)), "🏆")

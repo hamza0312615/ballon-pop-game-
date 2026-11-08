@@ -8,10 +8,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AllInclusive
@@ -43,7 +44,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.balloonpop.audio.SoundManager
@@ -54,25 +54,42 @@ import com.example.balloonpop.model.WorldZone
 import com.example.balloonpop.ui.components.*
 import com.example.balloonpop.ui.dialogs.PreGameStageDialog
 import com.example.balloonpop.ui.dialogs.WorldMapZoneOverviewDialog
+import com.example.balloonpop.ui.theme.CosmosNavy
+import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.ZoneVisualTheme
 import com.example.balloonpop.ui.theme.ZoneVisualThemeRegistry
 import kotlinx.coroutines.launch
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 /**
- * Node position data on the ascending vertical level ladder.
- * Coordinates specify the exact center of each stage stepping platform.
+ * Node position data on the unified winding-path level map.
+ * [xRatio] now comes from ONE shared pattern ([unifiedMapXRatio]) that is identical
+ * in all 20 zones — zone themes no longer supply per-zone routes.
  */
 data class LadderNodePos(
     val levelIndex: Int, // 0 to 9 in the current zone
     val stageNumber: Int,
-    val xRatio: Float,   // horizontal ratio (0.20f to 0.80f)
-    val yDp: Float,      // vertical center distance in dp from top
+    val xRatio: Float,   // horizontal ratio from the unified pattern
+    val yDp: Float,      // row offset in dp from the zone start (levelIndex * row height)
     val isMilestone: Boolean,
     val isBoss: Boolean
 )
+
+/** Height of one stage row on the unified map. Every stage gets exactly one row. */
+private const val MAP_ROW_HEIGHT_DP = 120
+
+/** Width of one node slot (orb centred inside it); must match ThemedLadderNodes. */
+private const val MAP_NODE_SLOT_WIDTH_DP = 108
+
+/**
+ * The single winding-path pattern for every zone (Candy Crush / Royal Match style):
+ * an 8-step S-curve of horizontal centre ratios, repeated by stage index.
+ * Stage 1 starts centre, the path swings left, returns to centre at the milestone
+ * (index 4), swings right, and keeps winding to the boss at index 9.
+ */
+private fun unifiedMapXRatio(levelIndex: Int): Float {
+    val pattern = floatArrayOf(0.50f, 0.31f, 0.21f, 0.31f, 0.50f, 0.69f, 0.79f, 0.69f)
+    return pattern[levelIndex % pattern.size]
+}
 
 /**
  * Campaign World Map Screen - Wooden-Refined Adventure Level Progression.
@@ -132,11 +149,21 @@ fun CampaignScreen(
     var selectedLevelForDialog by remember { mutableStateOf<Int?>(null) }
     var levelDivingTarget by remember { mutableStateOf<Pair<Int, Set<String>>?>(null) }
 
-    // Ladder vertical scroll state
-    val ladderScrollState = rememberScrollState()
-
-    // Height of the ladder canvas
-    val ladderHeightDp = 1060.dp
+    // Unified map list state: ONE LazyColumn system for all 20 zones.
+    // The state is created per zone, initially positioned so the current
+    // (next-to-play) stage is visible without any manual scrolling.
+    val currentIndexInZone = (currentUnlockedLevel - currentZone.startLevel).coerceIn(0, 9)
+    val initialMapIndex = when {
+        currentUnlockedLevel in currentZone.startLevel..currentZone.endLevel -> currentIndexInZone
+        selectedZoneIndex > defaultZoneIndex -> 0 // Future zone: start at its first stage (bottom)
+        else -> 9 // Past zone: show its cleared summit stages
+    }
+    val ladderListState = remember(selectedZoneIndex) {
+        LazyListState(
+            firstVisibleItemIndex = initialMapIndex,
+            firstVisibleItemScrollOffset = 0
+        )
+    }
 
     // Stars earned in the current zone
     val zoneStars = remember(selectedZoneIndex, completedLevels) {
@@ -192,17 +219,6 @@ fun CampaignScreen(
         label = "river_flow"
     )
 
-    // Energy pulse moving along ladder rails and rungs
-    val energyPulse by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "ladder_energy_pulse"
-    )
-
     // Continuous particle system clock (3600 seconds continuous seamless flow)
     val particleTime by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -214,21 +230,17 @@ fun CampaignScreen(
         label = "zone_particle_time"
     )
 
-    // Auto-scroll to center on active stage when zone changes or screen opens
+    // Auto-scroll so the current stage is visible when the zone changes or screen opens
     LaunchedEffect(selectedZoneIndex, currentUnlockedLevel) {
-        val zoneStart = currentZone.startLevel
-        val zoneEnd = currentZone.endLevel
-        if (currentUnlockedLevel in zoneStart..zoneEnd) {
-            val stageOffset = (currentUnlockedLevel - zoneStart).coerceIn(0, 9)
-            // Stage 1 is at ~940dp, Stage 10 is at ~70dp
-            val targetFraction = (9 - stageOffset) / 9f
-            ladderScrollState.animateScrollTo((targetFraction * 540).toInt())
-        } else if (selectedZoneIndex > defaultZoneIndex) {
-            // Future zone, show start at bottom
-            ladderScrollState.animateScrollTo(540)
-        } else {
-            // Past zone, show top cleared stages
-            ladderScrollState.animateScrollTo(0)
+        when {
+            currentUnlockedLevel in currentZone.startLevel..currentZone.endLevel ->
+                ladderListState.animateScrollToItem(currentIndexInZone)
+            selectedZoneIndex > defaultZoneIndex ->
+                // Future zone, show start at bottom
+                ladderListState.animateScrollToItem(0)
+            else ->
+                // Past zone, show top cleared stages
+                ladderListState.animateScrollToItem(9)
         }
     }
 
@@ -331,8 +343,7 @@ fun CampaignScreen(
                 VerticalLevelLadder(
                     theme = zoneTheme,
                     modifier = Modifier.fillMaxSize(),
-                    scrollState = ladderScrollState,
-                    heightDp = ladderHeightDp,
+                    listState = ladderListState,
                     startLevel = currentZone.startLevel,
                     endLevel = currentZone.endLevel,
                     currentUnlockedLevel = currentUnlockedLevel,
@@ -342,7 +353,6 @@ fun CampaignScreen(
                     mascotBob = mascotBob,
                     beaconPulse = beaconPulse,
                     riverFlow = riverFlow,
-                    energyPulse = energyPulse,
                     particleTime = particleTime,
                     onLevelClick = { lvl ->
                         soundManager.playLevelSelect()
@@ -353,7 +363,8 @@ fun CampaignScreen(
                 // Atmospheric Zone-Specific Floating Particle Overlay (Fireflies in Neon Glade, Crystal Shards in Prism Peaks)
                 ZoneMapParticleOverlay(
                     theme = zoneTheme,
-                    scrollOffset = ladderScrollState.value.toFloat(),
+                    scrollOffset = (ladderListState.firstVisibleItemIndex * MAP_ROW_HEIGHT_DP +
+                        ladderListState.firstVisibleItemScrollOffset).toFloat(),
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -427,9 +438,7 @@ fun CampaignScreen(
                             .clickable {
                                 soundManager.playMenuClick()
                                 coroutineScope.launch {
-                                    val offset = (currentUnlockedLevel - currentZone.startLevel).coerceIn(0, 9)
-                                    val target = ((9 - offset) / 9f * 540).toInt()
-                                    ladderScrollState.animateScrollTo(target)
+                                    ladderListState.animateScrollToItem(currentIndexInZone)
                                 }
                             }
                             .padding(horizontal = 12.dp, vertical = 7.dp),
@@ -1174,16 +1183,30 @@ private fun ModernNavSegment(
 }
 
 /**
- * Vertical Level Ladder Component:
- * Climbs up from Stage 1 (Bottom) to Stage 10 (Summit Boss) in an S-curve.
- * Connected by realistic dual braided hemp rope rails and carved timber rungs.
- * Coordinates specify the exact center of each stage stepping platform.
+ * Unified Level Map (Quality Pass 4) — ONE winding-path system for all 20 zones.
+ *
+ * Structure:
+ * - A [LazyColumn] with reverseLayout = true, so stage 1 of the zone sits at the
+ *   bottom and the stage-10 boss at the top, exactly like classic map screens.
+ *   Items use stable keys (the stage number), so scrolling/recomposition never
+ *   reshuffles rows. Every stage row is exactly [MAP_ROW_HEIGHT_DP] tall, giving
+ *   perfectly even node spacing in every zone.
+ * - Node horizontal positions come from [unifiedMapXRatio] — the same alternating
+ *   S-curve offsets in every zone. Zone themes no longer supply routes; they only
+ *   provide the scenic backdrop art and accent colours, which stay zone-specific.
+ * - The winding path is drawn per row by [drawUnifiedMapPath]: each row paints the
+ *   two half-segments from its orb centre to the shared edge midpoints with its
+ *   neighbours, so the halves join into one continuous smooth curve.
+ * - Behind the list, the zone's scenic background canvas is kept as a fixed
+ *   parallax backdrop (scroll offset derived from the list state).
+ * - The current stage row renders [ThemedLadderActiveHeroNode] (enlarged pulsing
+ *   orb + Popster mascot); all other rows render [ThemedLadderTileNode]. Tapping a
+ *   node forwards that exact stage number through [onLevelClick], unchanged.
  */
 @Composable
 private fun VerticalLevelLadder(
     theme: ZoneVisualTheme,
-    scrollState: androidx.compose.foundation.ScrollState,
-    heightDp: Dp,
+    listState: LazyListState,
     startLevel: Int,
     endLevel: Int,
     currentUnlockedLevel: Int,
@@ -1193,84 +1216,86 @@ private fun VerticalLevelLadder(
     mascotBob: Float,
     beaconPulse: Float,
     riverFlow: Float,
-    energyPulse: Float,
     particleTime: Float = riverFlow * 25f,
     onLevelClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Generate the 10 nodes with theme-specific route coordinates and pacing
-    val nodes = remember(startLevel, endLevel, theme) {
-        val list = mutableListOf<LadderNodePos>()
-        val totalStages = 10
-        val xCurves = theme.routeLayout.xCurves
-        val yOffsets = theme.routeLayout.yOffsets
-
-        for (i in 0 until totalStages) {
-            val stageNum = startLevel + i
-            list.add(
-                LadderNodePos(
-                    levelIndex = i,
-                    stageNumber = stageNum,
-                    xRatio = xCurves.getOrElse(i) { 0.5f },
-                    yDp = yOffsets.getOrElse(i) { 500f },
-                    isMilestone = (i == 4), // Stage 5 is milestone
-                    isBoss = (i == 9)       // Stage 10 is boss
-                )
+    // The zone's 10 stages on the unified pattern (bottom = startLevel).
+    val nodes = remember(startLevel, endLevel) {
+        (0 until 10).map { i ->
+            LadderNodePos(
+                levelIndex = i,
+                stageNumber = startLevel + i,
+                xRatio = unifiedMapXRatio(i),
+                yDp = (i * MAP_ROW_HEIGHT_DP).toFloat(),
+                isMilestone = (i == 4), // Stage 5 of the zone is the milestone
+                isBoss = (i == 9)       // Stage 10 of the zone is the boss
             )
         }
-        list
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(heightDp)
-        ) {
-            // 1. Unique Scenic Multi-Layer Environment Canvas & Thematic Paths
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                with(ZoneEnvironmentRenderer) {
-                    drawScenicBackground(
-                        theme = theme,
-                        scrollOffset = scrollState.value.toFloat(),
-                        riverFlow = riverFlow,
-                        density = this@Canvas,
-                        timeSeconds = particleTime
-                    )
-                    drawThemedPath(
-                        theme = theme,
-                        nodes = nodes,
-                        currentUnlockedLevel = currentUnlockedLevel,
-                        energyPulse = energyPulse,
-                        riverFlow = riverFlow,
-                        density = this@Canvas
-                    )
-                }
+    val zonePet = remember(selectedZoneIndex) { MiniPetRegistry.getPetForZone(selectedZoneIndex) }
+    val backdropScrollOffset = (listState.firstVisibleItemIndex * MAP_ROW_HEIGHT_DP +
+        listState.firstVisibleItemScrollOffset).toFloat()
+
+    Box(modifier = modifier.fillMaxSize()) {
+        // Zone scenic backdrop: rich, zone-specific art kept as a parallax layer
+        // behind the scrolling list. (The old per-zone themed path that used to be
+        // drawn here is gone — the unified path below replaces it in every zone.)
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            with(ZoneEnvironmentRenderer) {
+                drawScenicBackground(
+                    theme = theme,
+                    scrollOffset = backdropScrollOffset,
+                    riverFlow = riverFlow,
+                    density = this@Canvas,
+                    timeSeconds = particleTime
+                )
             }
+        }
 
-            // 2. Interactive Themed Stage Platform Nodes
-            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val availableWidth = maxWidth
+        LazyColumn(
+            state = listState,
+            reverseLayout = true,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 12.dp)
+        ) {
+            items(nodes, key = { it.stageNumber }) { node ->
+                val isUnlocked = node.stageNumber <= currentUnlockedLevel
+                val isCurrent = node.stageNumber == currentUnlockedLevel
+                val isCleared = completedLevels.containsKey(node.stageNumber)
+                val stars = completedLevels[node.stageNumber] ?: 0
+                val prevNode = nodes.getOrNull(node.levelIndex - 1)
+                val nextNode = nodes.getOrNull(node.levelIndex + 1)
 
-                nodes.forEach { node ->
-                    val isUnlocked = node.stageNumber <= currentUnlockedLevel
-                    val isCurrent = node.stageNumber == currentUnlockedLevel
-                    val isCleared = completedLevels.containsKey(node.stageNumber)
-                    val stars = completedLevels[node.stageNumber] ?: if (isCleared) 3 else 0
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(MAP_ROW_HEIGHT_DP.dp)
+                ) {
+                    val availableWidth = maxWidth
+                    val slotHalfWidth = (MAP_NODE_SLOT_WIDTH_DP / 2).dp
+                    val centerX = (availableWidth * node.xRatio)
+                        .coerceIn(slotHalfWidth, availableWidth - slotHalfWidth)
 
-                    // Exact Platform Center in Dp
-                    val centerX = (availableWidth * node.xRatio).coerceIn(48.dp, availableWidth - 48.dp)
-                    val centerY = node.yDp.dp
+                    // Unified winding path segment for this row (behind the node).
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        drawUnifiedMapPath(
+                            xRatio = node.xRatio,
+                            prevXRatio = prevNode?.xRatio,
+                            nextXRatio = nextNode?.xRatio,
+                            isPrevSegmentTraversed = prevNode != null &&
+                                prevNode.stageNumber <= currentUnlockedLevel && isUnlocked,
+                            isNextSegmentTraversed = nextNode != null &&
+                                isUnlocked && nextNode.stageNumber <= currentUnlockedLevel,
+                            accentColor = theme.primaryAccent
+                        )
+                    }
 
                     if (isCurrent) {
-                        // Active Hero Platform: Centered precisely on (centerX, centerY)
                         Box(
                             modifier = Modifier
-                                .offset(x = centerX - 36.dp, y = centerY - 100.dp)
+                                .offset(x = centerX - slotHalfWidth, y = 0.dp)
                                 .testTag("ladder_node_${node.stageNumber}")
                         ) {
                             ThemedLadderActiveHeroNode(
@@ -1285,16 +1310,14 @@ private fun VerticalLevelLadder(
                             )
                         }
 
-                        // Animated Zone Mini Pet Balloon Companion floating beside the player
-                        val zonePet = remember(selectedZoneIndex) { MiniPetRegistry.getPetForZone(selectedZoneIndex) }
+                        // Zone mini-pet companion floating beside the current node.
                         val petX = if (node.xRatio > 0.5f) {
-                            (centerX - 92.dp).coerceAtLeast(8.dp)
+                            (centerX - 104.dp).coerceAtLeast(4.dp)
                         } else {
-                            (centerX + 44.dp).coerceAtMost(availableWidth - 92.dp)
+                            (centerX + 56.dp).coerceAtMost(availableWidth - 52.dp)
                         }
-                        val petY = (centerY - 18.dp).coerceAtLeast(8.dp)
                         Box(
-                            modifier = Modifier.offset(x = petX, y = petY)
+                            modifier = Modifier.offset(x = petX, y = 8.dp)
                         ) {
                             MiniPetMapCompanion(
                                 pet = zonePet,
@@ -1302,10 +1325,9 @@ private fun VerticalLevelLadder(
                             )
                         }
                     } else {
-                        // Standard Cleared / Locked Platform
                         Box(
                             modifier = Modifier
-                                .offset(x = centerX - 28.dp, y = centerY - 32.dp)
+                                .offset(x = centerX - slotHalfWidth, y = 0.dp)
                                 .testTag("ladder_node_${node.stageNumber}")
                         ) {
                             ThemedLadderTileNode(
@@ -1325,6 +1347,91 @@ private fun VerticalLevelLadder(
         }
     }
 }
+
+/**
+ * Draws this row's share of the unified winding path: two quadratic half-curves
+ * from the orb centre (row centre, at [xRatio] of the width) to the midpoints of
+ * the top/bottom row edges shared with the next/previous stages. Neighbouring
+ * rows compute the identical shared midpoint, so the halves join seamlessly into
+ * one continuous S-curve through all 10 orbs.
+ *
+ * Style is identical in every zone: a dark underlay ribbon, a gold ribbon for
+ * traversed segments (both endpoint stages unlocked) or a pale ribbon for
+ * upcoming segments (tinted with the zone accent), a dotted white centre line,
+ * and a stepping bead where segments join at the row edge.
+ */
+private fun DrawScope.drawUnifiedMapPath(
+    xRatio: Float,
+    prevXRatio: Float?,
+    nextXRatio: Float?,
+    isPrevSegmentTraversed: Boolean,
+    isNextSegmentTraversed: Boolean,
+    accentColor: Color
+) {
+    val w = size.width
+    val h = size.height
+    val slotHalfPx = (MAP_NODE_SLOT_WIDTH_DP / 2).dp.toPx()
+
+    fun centerXOf(ratio: Float): Float =
+        (w * ratio).coerceIn(slotHalfPx, w - slotHalfPx)
+
+    val cx = centerXOf(xRatio)
+    val cy = h / 2f
+
+    fun drawHalf(targetRatio: Float, toTop: Boolean, traversed: Boolean) {
+        val edgeX = (cx + centerXOf(targetRatio)) / 2f
+        val edgeY = if (toTop) 0f else h
+        val curve = Path().apply {
+            moveTo(cx, cy)
+            quadraticBezierTo(cx, edgeY, edgeX, edgeY)
+        }
+        val mainColor = if (traversed) {
+            DesignTokens.StarGoldFilled
+        } else {
+            accentColor.copy(alpha = 0.38f)
+        }
+        // Dark underlay ribbon (keeps the path readable over busy zone art).
+        drawPath(
+            path = curve,
+            color = CosmosNavy.copy(alpha = 0.55f),
+            style = Stroke(width = 16.dp.toPx(), cap = StrokeCap.Round)
+        )
+        // Main ribbon.
+        drawPath(
+            path = curve,
+            color = mainColor,
+            style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
+        )
+        // Dotted centre line (round-cap dashes read as beads).
+        drawPath(
+            path = curve,
+            color = Color.White.copy(alpha = if (traversed) 0.85f else 0.40f),
+            style = Stroke(
+                width = 3.5.dp.toPx(),
+                cap = StrokeCap.Round,
+                pathEffect = PathEffect.dashPathEffect(
+                    floatArrayOf(0.1f, 13.dp.toPx()),
+                    0f
+                )
+            )
+        )
+        // Stepping bead at the join with the neighbouring row.
+        drawCircle(
+            color = mainColor,
+            radius = 5.dp.toPx(),
+            center = Offset(edgeX, edgeY)
+        )
+        drawCircle(
+            color = Color.White.copy(alpha = 0.75f),
+            radius = 1.8.dp.toPx(),
+            center = Offset(edgeX, edgeY)
+        )
+    }
+
+    if (nextXRatio != null) drawHalf(nextXRatio, toTop = true, traversed = isNextSegmentTraversed)
+    if (prevXRatio != null) drawHalf(prevXRatio, toTop = false, traversed = isPrevSegmentTraversed)
+}
+
 
 /**
  * Modern Bottom Floating Dock:

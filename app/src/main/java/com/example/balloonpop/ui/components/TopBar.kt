@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Icon
@@ -28,11 +27,11 @@ import androidx.compose.ui.unit.sp
 import com.example.balloonpop.ui.theme.DesignTokens
 
 /**
- * Modern 2024/2025 Glassmorphic Top Resource Bar:
- * - Subtle glassmorphic container: soft background, 1px inner highlight, drop shadow for depth
+ * Slim single-row Top Resource Bar (Pass 4):
+ * - One row only: lives, coins and gems, each as icon + number + "+" button
+ * - Subtle glassmorphic container: soft background, drop shadow for depth
  * - Micro-animation on value changes (bounce pulse)
  * - Soft ambient glow pulse on "+" add buttons
- * - Generous touch targets (>= 44x44dp)
  */
 @Composable
 fun TopBar(
@@ -44,12 +43,15 @@ fun TopBar(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Pass 4: ONE slim single-row bar. The caller owns the screen-edge padding
+    // (Home uses DesignTokens.ScreenPadding); this bar only adds a small inset so
+    // it also sits correctly on screens that render it without outer padding.
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space8)
-            .shadow(DesignTokens.ElevationMedium, RoundedCornerShape(22.dp), spotColor = Color(0x66000000))
-            .clip(RoundedCornerShape(22.dp))
+            .padding(horizontal = DesignTokens.Space8, vertical = DesignTokens.Space4)
+            .shadow(DesignTokens.ElevationMedium, DesignTokens.ShapeMedium, spotColor = Color(0x66000000))
+            .clip(DesignTokens.ShapeMedium)
             .background(
                 Brush.verticalGradient(
                     listOf(
@@ -64,28 +66,14 @@ fun TopBar(
                 Brush.verticalGradient(
                     listOf(Color(0x66FFFFFF), Color(0x18FFFFFF), Color(0x3338BDF8))
                 ),
-                RoundedCornerShape(22.dp)
+                DesignTokens.ShapeMedium
             )
             .padding(horizontal = DesignTokens.Space8, vertical = DesignTokens.Space4)
     ) {
-        // Inner Glass Highlight Reflection Arc
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth(0.92f)
-                .height(14.dp)
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color(0x33FFFFFF), Color(0x00FFFFFF))
-                    )
-                )
-        )
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp),
+                .height(40.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -113,12 +101,12 @@ fun TopBar(
                     )
             )
 
-            // 2. Coins Segment
+            // 2. Coins Segment (icon + number + plus, same as every other segment)
             ResourceSegment(
                 currencyType = "coin",
                 value = String.format("%,d", coins),
                 textColor = DesignTokens.PrimaryBrandBright,
-                showAdd = false,
+                showAdd = true,
                 onAddClick = onOpenShop,
                 onSegmentClick = onOpenShop,
                 testTag = "top_coins_badge",
@@ -242,16 +230,17 @@ private fun ResourceSegment(
         if (showAdd) {
             Spacer(modifier = Modifier.width(DesignTokens.Space4))
 
-            // Consistent Add "+" Button with glowing pulse and >= 44x44dp touch target
+            // Consistent Add "+" Button with glowing pulse. Kept compact so the bar
+            // stays one slim row; the whole segment is also tappable to the shop.
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(32.dp)
                     .clickable(onClick = onAddClick),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(22.dp)
+                        .size(20.dp)
                         .scale(addPulse)
                         .shadow(6.dp, CircleShape, spotColor = DesignTokens.SuccessGreenBright)
                         .clip(CircleShape)

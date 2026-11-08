@@ -84,6 +84,7 @@ fun GamePlayScreen(
     boosterCooldowns: Map<String, Float> = emptyMap(),
     candyPraise: String? = null,
     onTriggerBooster: (InGameBooster) -> Unit = {},
+    onBuyBooster: (String) -> Unit = {},
     coins: Int = 0,
     equippedSkillId: String = "skill_slice",
     skillEnergy: Float = 100f,
@@ -111,6 +112,10 @@ fun GamePlayScreen(
     modifier: Modifier = Modifier
 ) {
     var resumeCountdown by remember { mutableStateOf<Int?>(null) }
+
+    // Pass 4: tapping a 0-charge booster opens the one-tap coin buy dialog
+    // instead of triggering (and instead of leaving the level for the shop).
+    var boosterBuyTarget by remember { mutableStateOf<InGameBooster?>(null) }
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -273,6 +278,25 @@ fun GamePlayScreen(
                             }
                         }
                     }
+                }
+
+                // Center: Score — one large readable number (Pass 4 HUD rule)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "SCORE",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF94A3B8),
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = String.format("%,d", score),
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color(0xFFFFD700)
+                    )
                 }
 
                 // Right: Clock Icon + Time Countdown & Pause
@@ -532,7 +556,10 @@ fun GamePlayScreen(
                     badgeBgColor = if (bombCount > 0) Color(0xFF3B82F6) else Color(0xFFF59E0B),
                     orbGradient = listOf(Color(0xFFA855F7), Color(0xFF7E22CE), Color(0xFF3B0764)),
                     glowColor = Color(0xFFA855F7),
-                    onClick = { onTriggerBooster(InGameBooster.COLOR_BOMB) },
+                    onClick = {
+                        if (bombCount > 0) onTriggerBooster(InGameBooster.COLOR_BOMB)
+                        else boosterBuyTarget = InGameBooster.COLOR_BOMB
+                    },
                     testTag = "booster_bomb"
                 )
 
@@ -548,7 +575,10 @@ fun GamePlayScreen(
                     badgeBgColor = if (thunderCount > 0) Color(0xFF0284C7) else Color(0xFFF59E0B),
                     orbGradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1)),
                     glowColor = Color(0xFF00E5FF),
-                    onClick = { onTriggerBooster(InGameBooster.THUNDER_STRIKE) },
+                    onClick = {
+                        if (thunderCount > 0) onTriggerBooster(InGameBooster.THUNDER_STRIKE)
+                        else boosterBuyTarget = InGameBooster.THUNDER_STRIKE
+                    },
                     testTag = "booster_lightning"
                 )
 
@@ -564,13 +594,30 @@ fun GamePlayScreen(
                     badgeBgColor = if (isFreezeActive) Color(0xFF06B6D4) else if (freezeCount > 0) Color(0xFF38BDF8) else Color(0xFFF59E0B),
                     orbGradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF082F49)),
                     glowColor = Color(0xFF38BDF8),
-                    onClick = { onTriggerBooster(InGameBooster.FREEZE_BLIZZARD) },
+                    onClick = {
+                        if (freezeCount > 0) onTriggerBooster(InGameBooster.FREEZE_BLIZZARD)
+                        else boosterBuyTarget = InGameBooster.FREEZE_BLIZZARD
+                    },
                     testTag = "booster_freeze"
                 )
             }
         }
 
 
+
+        // Pass 4: one-tap booster buy dialog (opened from a 0-charge orb tap)
+        val buyTarget = boosterBuyTarget
+        if (buyTarget != null && gameState == GameState.PLAYING) {
+            BoosterBuyDialog(
+                booster = buyTarget,
+                coins = coins,
+                onBuy = {
+                    onBuyBooster(buyTarget.id)
+                    boosterBuyTarget = null
+                },
+                onDismiss = { boosterBuyTarget = null }
+            )
+        }
 
         // Animated Resume 3-2-1-GO Countdown Overlay (Guarded against double-rendering during transitions)
         if (resumeCountdown != null && !isTransitioningLevel && gameState == GameState.PLAYING) {
@@ -788,6 +835,109 @@ fun GamePlayScreen(
                 zone = zone,
                 onAnimationFinished = onFinishLevelTransition
             )
+        }
+    }
+}
+
+/**
+ * Pass 4: one-tap booster purchase without leaving the level.
+ * Shown when the player taps a booster orb that has 0 charges left.
+ * Price comes from the single BoosterPrices constants place.
+ */
+@Composable
+private fun BoosterBuyDialog(
+    booster: InGameBooster,
+    coins: Int,
+    onBuy: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val price = BoosterPrices.COIN_PRICE
+    val canAfford = coins >= price
+    Dialog(onDismissRequest = onDismiss) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.86f)
+                .shadow(24.dp, DesignTokens.ShapeLarge, spotColor = Color(0x99000000))
+                .clip(DesignTokens.ShapeLarge)
+                .background(Color(0xF50E1328))
+                .border(1.5.dp, Color(0x55FFD54F), DesignTokens.ShapeLarge)
+                .padding(horizontal = DesignTokens.Space24, vertical = DesignTokens.Space24),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(DesignTokens.Space12)
+            ) {
+                Text(text = booster.icon, fontSize = 40.sp)
+                Text(
+                    text = booster.displayName,
+                    fontFamily = Baloo2FontFamily,
+                    fontSize = DesignTokens.SizeH2,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.White
+                )
+                Text(
+                    text = "No charges left",
+                    fontFamily = NunitoFontFamily,
+                    fontSize = DesignTokens.SizeBody,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF94A3B8)
+                )
+                // Price pill
+                Box(
+                    modifier = Modifier
+                        .clip(DesignTokens.ShapePill)
+                        .background(Color(0xFF261E05))
+                        .border(1.5.dp, Color(0xFFF59E0B), DesignTokens.ShapePill)
+                        .padding(horizontal = DesignTokens.Space16, vertical = DesignTokens.Space8)
+                ) {
+                    Text(
+                        text = "+1 charge · $price 🪙",
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = DesignTokens.SizeBody,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFFEF08A)
+                    )
+                }
+                Text(
+                    text = "You have $coins 🪙",
+                    fontFamily = NunitoFontFamily,
+                    fontSize = DesignTokens.SizeCaption,
+                    fontWeight = FontWeight.Bold,
+                    color = if (canAfford) Color(0xFF94A3B8) else Color(0xFFEF4444)
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(DesignTokens.ButtonMinHeight)
+                        .clip(DesignTokens.ShapeMedium)
+                        .background(
+                            if (canAfford) DesignTokens.CtaGradient
+                            else Brush.verticalGradient(listOf(Color(0xFF475569), Color(0xFF334155)))
+                        )
+                        .clickable(enabled = canAfford) { onBuy() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (canAfford) "BUY" else "NEED $price 🪙",
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = DesignTokens.SizeH2,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                }
+                Text(
+                    text = "Not now",
+                    fontFamily = NunitoFontFamily,
+                    fontSize = DesignTokens.SizeBody,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF94A3B8),
+                    modifier = Modifier
+                        .clip(DesignTokens.ShapeSmall)
+                        .clickable { onDismiss() }
+                        .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space8)
+                )
+            }
         }
     }
 }
@@ -1167,7 +1317,7 @@ private fun GameOrbButton(
     val badgeText = when {
         isOnCooldown -> String.format(java.util.Locale.US, "%.1fs", cooldownRemaining)
         count > 0 -> "x$count"
-        else -> "$coinCost🪙"
+        else -> "+" // Pass 4: 0 charges -> clear "+" buy affordance (opens buy dialog)
     }
 
     val finalBadgeBgColor = when {

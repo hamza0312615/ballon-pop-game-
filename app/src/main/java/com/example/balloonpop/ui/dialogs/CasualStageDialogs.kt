@@ -1,6 +1,5 @@
 package com.example.balloonpop.ui.dialogs
 
-import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
@@ -19,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -31,7 +29,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -138,7 +135,9 @@ fun StageIntroRibbon(
 }
 
 /**
- * Victory Results Dialog (Level Complete with Rainbow Arch, Confetti Cannon, Sunburst, 3 Stars, High Score Banner, Mascot & Stage Bridge)
+ * Victory Results Dialog — Pass 4 concise layout:
+ * headline, stars, score in one line, rewards in one line,
+ * then Next (primary) / Replay / Map.
  */
 @Composable
 fun VictoryStageDialog(
@@ -154,12 +153,9 @@ fun VictoryStageDialog(
     onMap: () -> Unit,
     onMainMenu: () -> Unit = onMap
 ) {
-    val nextLevelData = GameConstants.CAMPAIGN_LEVELS.getOrNull(level)
-    val nextLevelNum = nextLevelData?.level ?: (level + 1)
-    val nextTargetPops = nextLevelData?.targetPops ?: (20 + (nextLevelNum * 3))
-    val nextTimeLimit = nextLevelData?.timeLimit ?: 45
-    val nextRewardCoins = nextLevelData?.rewardCoins ?: (150 + nextLevelNum * 20)
-    val nextRewardGems = nextLevelData?.rewardGems ?: (1 + nextLevelNum / 5)
+    val nextLevelNum = GameConstants.CAMPAIGN_LEVELS.getOrNull(level)?.level ?: (level + 1)
+    val hasNextLevel = nextLevelNum <= 200
+    val animatedScoreText = AnimatedScoreCounter(score)
 
     Box(
         modifier = Modifier
@@ -178,272 +174,191 @@ fun VictoryStageDialog(
 
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
+                .fillMaxWidth(0.92f)
                 .widthIn(max = 400.dp)
-                .padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeLarge)
+                .clip(DesignTokens.ShapeLarge)
+                .background(DesignTokens.SurfaceCardNavy)
+                .border(2.dp, DesignTokens.StarGoldFilled, DesignTokens.ShapeLarge)
+                .padding(DesignTokens.Space24),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Space16)
         ) {
-            // Celebratory Rainbow Arc Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.92f)
-                    .offset(y = 12.dp)
-                    .shadow(12.dp, RoundedCornerShape(24.dp))
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(
-                                Color(0xFFEF4444),
-                                Color(0xFFF97316),
-                                Color(0xFFFACC15),
-                                Color(0xFF22C55E),
-                                Color(0xFF3B82F6),
-                                Color(0xFFA855F7)
-                            )
-                        )
-                    )
-                    .border(2.5.dp, Color.White, RoundedCornerShape(24.dp))
-                    .padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
+            VictoryTrophyArt(modifier = Modifier.size(48.dp))
+
+            Text(
+                text = "Stage $level Cleared!",
+                fontSize = DesignTokens.SizeH1,
+                fontWeight = FontWeight.Black,
+                color = DesignTokens.TextPrimary,
+                textAlign = TextAlign.Center
+            )
+
+            if (isNewHighScore) {
                 Text(
-                    text = "STAGE $level CLEARED!",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White,
-                    letterSpacing = 1.sp
+                    text = "New best score!",
+                    fontSize = DesignTokens.SizeCaption,
+                    fontWeight = FontWeight.Bold,
+                    color = DesignTokens.StarGoldFilled,
+                    textAlign = TextAlign.Center
                 )
             }
 
-            // Luxury Onyx/Gold Result Box
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(28.dp, RoundedCornerShape(28.dp), spotColor = Color(0x88FFD700))
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF281C08), Color(0xFF160E04), Color(0xFF0C0701))
-                        )
-                    )
-                    .border(2.5.dp, Color(0xFFFFD700), RoundedCornerShape(28.dp))
-                    .padding(14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            StarsDisplay3D(
+                starsCount = stars,
+                size = 54.dp,
+                animated = true
+            )
+
+            Text(
+                text = "Score: $animatedScoreText",
+                fontSize = DesignTokens.SizeH2,
+                fontWeight = FontWeight.Bold,
+                color = DesignTokens.TextPrimary,
+                textAlign = TextAlign.Center
+            )
+
+            // Rewards in ONE line
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
             ) {
-                // Header with Golden Chalice Trophy
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    VictoryTrophyArt(modifier = Modifier.size(38.dp))
-                    Text(
-                        text = "Stage $level of 200",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                        letterSpacing = 1.sp
-                    )
-                }
+                CurrencyArt(currencyType = "coin", modifier = Modifier.size(18.dp))
+                Text(
+                    text = "+$coinsEarned Coins \u00B7 +$gemsEarned Gems",
+                    fontSize = DesignTokens.SizeBody,
+                    fontWeight = FontWeight.Bold,
+                    color = DesignTokens.TextPrimary
+                )
+                CurrencyArt(currencyType = "gem", modifier = Modifier.size(18.dp))
+            }
 
-                // High Score Badge if Achieved
-                if (isNewHighScore) {
-                    HighScoreCelebrationBadge(
-                        previousHighScore = previousHighScore,
-                        newScore = score
-                    )
-                }
+            if (hasNextLevel) {
+                StagePrimaryButton(
+                    text = "Next",
+                    onClick = onNextLevel,
+                    testTag = "victory_next_button",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                StagePrimaryButton(
+                    text = "Finish",
+                    onClick = onMap,
+                    testTag = "victory_complete_button",
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-                // Inner Obsidian Body
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFF141422))
-                        .border(1.5.dp, Color(0xFF28283E), RoundedCornerShape(20.dp))
-                        .padding(14.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    // 3 Large 3D Stars
-                    StarsDisplay3D(
-                        starsCount = stars,
-                        size = 54.dp,
-                        animated = true
-                    )
-
-                    // You Won Header + Mascot + Animated Rolling Score
-                    val animatedScoreText = AnimatedScoreCounter(score)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        MascotCharacter(mood = MascotMood.JOYFUL, size = 46.dp)
-
-                        Column {
-                            Text(
-                                text = "Victory!",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFFFFD700)
-                            )
-                            Text(
-                                text = "Score: $animatedScoreText points",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-                    }
-
-                    // Reward Badges (Coins & Gems with Vector Art)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(14.dp))
-                            .background(Color(0xFF1E1E2E))
-                            .border(1.dp, Color(0xFF383852), RoundedCornerShape(14.dp))
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceAround,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            CurrencyArt(currencyType = "coin", modifier = Modifier.size(18.dp))
-                            Text(
-                                text = "+$coinsEarned Coins",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFFFBBF24)
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            CurrencyArt(currencyType = "gem", modifier = Modifier.size(18.dp))
-                            Text(
-                                text = "+$gemsEarned Gems",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Color(0xFF38BDF8)
-                            )
-                        }
-                    }
-
-                    // Visual Stage Bridge (Level N -> Level N+1 across 200 stages)
-                    if (nextLevelNum <= 200) {
-                        StagePathBridge(
-                            currentLevel = level,
-                            nextLevel = nextLevelNum,
-                            maxLevels = 200
-                        )
-                    }
-
-                    // Next Button (Juicy 3D Green with pulse)
-                    val infiniteTransition = rememberInfiniteTransition(label = "victory_pulse")
-                    val pulseScale by infiniteTransition.animateFloat(
-                        initialValue = 1.0f,
-                        targetValue = 1.04f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(600, easing = EaseInOutSine),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "next_pulse"
-                    )
-
-                    if (nextLevelNum <= 200) {
-                        JellyButton(
-                            text = "PLAY NEXT ▶",
-                            onClick = onNextLevel,
-                            height = 54.dp,
-                            fontSize = 18,
-                            colorVariant = JellyColorVariant.GOLD,
-                            testTag = "victory_next_button",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .scale(pulseScale)
-                        )
-                    } else {
-                        // Grand Champion Finale Button
-                        JellyButton(
-                            text = "👑 GRAND VICTORY! 🏆",
-                            onClick = onMap,
-                            height = 54.dp,
-                            fontSize = 17,
-                            colorVariant = JellyColorVariant.GOLD,
-                            testTag = "victory_complete_button",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .scale(pulseScale)
-                        )
-                    }
-
-                    // Secondary Actions: 2x2 Grid (Menu, Map, Replay, Share)
-                    val context = LocalContext.current
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            VictoryActionButton(
-                                text = "Main Menu",
-                                icon = Icons.Default.Home,
-                                onClick = onMainMenu,
-                                testTag = "victory_menu_button",
-                                modifier = Modifier.weight(1f)
-                            )
-                            VictoryActionButton(
-                                text = "Stage Map",
-                                icon = Icons.Default.Map,
-                                onClick = onMap,
-                                testTag = "victory_map_button",
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            VictoryActionButton(
-                                text = "Replay",
-                                icon = Icons.Default.Refresh,
-                                onClick = onReplay,
-                                testTag = "victory_replay_button",
-                                modifier = Modifier.weight(1f)
-                            )
-                            VictoryActionButton(
-                                text = "Share",
-                                icon = Icons.Default.Share,
-                                onClick = {
-                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(
-                                            Intent.EXTRA_SUBJECT,
-                                            "Balloon Pop Deluxe Victory!"
-                                        )
-                                        putExtra(
-                                            Intent.EXTRA_TEXT,
-                                            "🎈 I just beat Stage $level of 200 with $stars ⭐ in Balloon Pop Deluxe! Scored ${String.format("%,d", score)} points! Can you beat my score?"
-                                        )
-                                    }
-                                    context.startActivity(
-                                        Intent.createChooser(shareIntent, "Share Your Balloon Pop Score")
-                                    )
-                                },
-                                testTag = "victory_share_button",
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
+            ) {
+                VictoryActionButton(
+                    text = "Replay",
+                    icon = Icons.Default.Refresh,
+                    onClick = onReplay,
+                    testTag = "victory_replay_button",
+                    modifier = Modifier.weight(1f)
+                )
+                VictoryActionButton(
+                    text = "Map",
+                    icon = Icons.Default.Map,
+                    onClick = onMap,
+                    testTag = "victory_map_button",
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
+    }
+}
+
+/**
+ * Primary CTA for stage dialogs: CtaGradient, RadiusMedium corners,
+ * at least DesignTokens.ButtonMinHeight tall.
+ */
+@Composable
+private fun StagePrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    testTag: String,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1.0f,
+        animationSpec = DesignTokens.ButtonPressSpring,
+        label = "primary_btn_press"
+    )
+
+    Box(
+        modifier = modifier
+            .height(DesignTokens.ButtonMinHeight)
+            .scale(scale)
+            .shadow(DesignTokens.ElevationMedium, DesignTokens.ShapeMedium)
+            .clip(DesignTokens.ShapeMedium)
+            .background(DesignTokens.CtaGradient)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .testTag(testTag)
+            .padding(horizontal = DesignTokens.Space16),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontSize = DesignTokens.SizeH2,
+            fontWeight = FontWeight.Black,
+            color = Color.White,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/**
+ * Compact secondary revive pill for the defeat dialog.
+ * Deliberately smaller than the big Retry / Map / Home buttons.
+ */
+@Composable
+private fun RevivePill(
+    text: String,
+    onClick: () -> Unit,
+    testTag: String,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1.0f,
+        animationSpec = DesignTokens.ButtonPressSpring,
+        label = "revive_pill_press"
+    )
+
+    Box(
+        modifier = modifier
+            .height(40.dp)
+            .scale(scale)
+            .clip(DesignTokens.ShapePill)
+            .background(DesignTokens.SurfaceCardElevated)
+            .border(1.dp, DesignTokens.SurfaceBorder, DesignTokens.ShapePill)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .testTag(testTag)
+            .padding(horizontal = DesignTokens.Space12),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontSize = DesignTokens.SizeCaption,
+            fontWeight = FontWeight.Bold,
+            color = DesignTokens.TextPrimary,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -465,16 +380,12 @@ private fun VictoryActionButton(
 
     Row(
         modifier = modifier
-            .height(46.dp)
+            .height(DesignTokens.ButtonMinHeight)
             .scale(scale)
-            .shadow(DesignTokens.ElevationAmbient, DesignTokens.ShapeSmall)
-            .clip(DesignTokens.ShapeSmall)
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF222034), Color(0xFF141322))
-                )
-            )
-            .border(1.5.dp, Color(0xFF3E3B5A), DesignTokens.ShapeSmall)
+            .shadow(DesignTokens.ElevationAmbient, DesignTokens.ShapeMedium)
+            .clip(DesignTokens.ShapeMedium)
+            .background(DesignTokens.SurfaceCardElevated)
+            .border(1.5.dp, DesignTokens.SurfaceBorder, DesignTokens.ShapeMedium)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
@@ -489,12 +400,12 @@ private fun VictoryActionButton(
             imageVector = icon,
             contentDescription = text,
             tint = Color(0xFFFFD700),
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(DesignTokens.Space4))
         Text(
             text = text,
-            fontSize = DesignTokens.SizeCaption,
+            fontSize = DesignTokens.SizeBody,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
@@ -502,7 +413,13 @@ private fun VictoryActionButton(
 }
 
 /**
- * Failed Stage Dialog (Out of Moves / Time / Missed Limit with Mascot and Retry / Play On Options)
+ * Failed Stage Dialog — Pass 4 concise layout:
+ * ONE headline ("Level Failed!"), ONE short subline, ONE result line,
+ * two compact revive pills (secondary), then exactly 3 big buttons:
+ * Retry (primary) / Map / Home.
+ *
+ * Revive values come from GameViewModel.playOnRevive: +15s and,
+ * for the coin path, a 100-coin cost; the rewarded-ad path is free.
  */
 @Composable
 fun FailedStageDialog(
@@ -519,198 +436,111 @@ fun FailedStageDialog(
     onMap: () -> Unit,
     onMainMenu: () -> Unit = onMap
 ) {
-    val stageTitle = if (level > 0) "Stage $level Failed!" else "Challenge Failed!"
+    val resultLine = when (reason) {
+        GameOverReason.MISSED_LIMIT -> "Missed $missedCount of $maxMissesAllowed"
+        GameOverReason.TIME_EXPIRED -> "Needed $missingPops more pops"
+        GameOverReason.BOMB_DETONATION -> "A bomb popped!"
+        GameOverReason.LIVES_DEPLETED -> "Out of lives"
+    }
 
-    AmberDialogFrame(
-        title = stageTitle,
-        onClose = onMap
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xDD000000)),
+        contentAlignment = Alignment.Center
     ) {
-        // Mascot showing sad emotion alongside bespoke Defeat Hazard Art
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .widthIn(max = 400.dp)
+                .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeLarge)
+                .clip(DesignTokens.ShapeLarge)
+                .background(DesignTokens.SurfaceCardNavy)
+                .border(2.dp, DesignTokens.SurfaceBorder, DesignTokens.ShapeLarge)
+                .padding(DesignTokens.Space24),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(DesignTokens.Space16)
         ) {
-            MascotCharacter(mood = MascotMood.SAD, size = 60.dp)
-            DefeatHazardArt(reason = reason, modifier = Modifier.size(54.dp))
-        }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
+            ) {
+                MascotCharacter(mood = MascotMood.SAD, size = 52.dp)
+                DefeatHazardArt(reason = reason, modifier = Modifier.size(44.dp))
+            }
 
-        // Specific failure reason banner & description
-        when (reason) {
-            GameOverReason.MISSED_LIMIT -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF450A0A))
-                        .border(1.5.dp, Color(0xFFEF4444), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "TOO MANY BALLOONS MISSED!",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFFFCA5A5),
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = "You missed $missedCount balloons (Limit: $maxMissesAllowed misses allowed)",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                Text(
-                    text = "You can only miss up to $maxMissesAllowed balloons in this stage. Pop them fast before they float away!",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFFCBD5E1),
-                    textAlign = TextAlign.Center
-                )
-            }
-            GameOverReason.TIME_EXPIRED -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF3F1505))
-                        .border(1.5.dp, Color(0xFFF97316), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "TIME'S UP! (${timeLimit}s EXPIRED)",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFFFED7AA),
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = "Needed $missingPops more balloon pops",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                Text(
-                    text = "The clock ran out before you reached the target. Keep popping at lightning speed!",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFFCBD5E1),
-                    textAlign = TextAlign.Center
-                )
-            }
-            GameOverReason.BOMB_DETONATION -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF3B0715))
-                        .border(1.5.dp, Color(0xFFFF2A75), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "BOMB DETONATION!",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFFFDA4AF),
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = "A hazard bomb exploded",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                Text(
-                    text = "Careful! Avoid tapping black spiky bomb balloons.",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFFCBD5E1),
-                    textAlign = TextAlign.Center
-                )
-            }
-            GameOverReason.LIVES_DEPLETED -> {
-                Text(
-                    text = "NO LIVES REMAINING!",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color(0xFFF87171),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "Don't let balloons slip past your hammer!",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFFCBD5E1),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-
-        // Play On (+15s Time & Reset Misses — 100 Coins)
-        JellyButton(
-            text = "PLAY ON — +15s, Reset Misses (100 Coins)",
-            onClick = onPlayOn,
-            height = 52.dp,
-            fontSize = 14,
-            colorVariant = JellyColorVariant.GREEN,
-            testTag = "failed_play_on_button",
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        // Free Continue / Revive via Rewarded Ad
-        if (onWatchAdToRevive != null) {
-            JellyButton(
-                text = "WATCH AD — +15s, +3 Hearts (FREE)",
-                onClick = onWatchAdToRevive,
-                height = 50.dp,
-                fontSize = 14,
-                colorVariant = JellyColorVariant.PURPLE,
-                testTag = "failed_watch_ad_revive_button",
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                text = "Level Failed!",
+                fontSize = DesignTokens.SizeH1,
+                fontWeight = FontWeight.Black,
+                color = DesignTokens.TextPrimary,
+                textAlign = TextAlign.Center
             )
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            VictoryActionButton(
+            Text(
+                text = "So close \u2014 try again!",
+                fontSize = DesignTokens.SizeBody,
+                fontWeight = FontWeight.Bold,
+                color = DesignTokens.TextSecondary,
+                textAlign = TextAlign.Center
+            )
+
+            Text(
+                text = resultLine,
+                fontSize = DesignTokens.SizeBody,
+                fontWeight = FontWeight.Bold,
+                color = DesignTokens.TextPrimary,
+                textAlign = TextAlign.Center
+            )
+
+            // Compact revive pills — secondary to Retry below.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
+            ) {
+                RevivePill(
+                    text = "+15s \u00B7 100 coins",
+                    onClick = onPlayOn,
+                    testTag = "failed_play_on_button",
+                    modifier = Modifier.weight(1f)
+                )
+                if (onWatchAdToRevive != null) {
+                    RevivePill(
+                        text = "+15s \u00B7 Free",
+                        onClick = onWatchAdToRevive,
+                        testTag = "failed_watch_ad_revive_button",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            StagePrimaryButton(
                 text = "Retry",
-                icon = Icons.Default.Refresh,
                 onClick = onRetry,
                 testTag = "failed_retry_button",
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth()
             )
-            VictoryActionButton(
-                text = "Map",
-                icon = Icons.Default.Map,
-                onClick = onMap,
-                testTag = "failed_map_button",
-                modifier = Modifier.weight(1f)
-            )
-            VictoryActionButton(
-                text = "Menu",
-                icon = Icons.Default.Home,
-                onClick = onMainMenu,
-                testTag = "failed_menu_button",
-                modifier = Modifier.weight(1f)
-            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
+            ) {
+                VictoryActionButton(
+                    text = "Map",
+                    icon = Icons.Default.Map,
+                    onClick = onMap,
+                    testTag = "failed_map_button",
+                    modifier = Modifier.weight(1f)
+                )
+                VictoryActionButton(
+                    text = "Home",
+                    icon = Icons.Default.Home,
+                    onClick = onMainMenu,
+                    testTag = "failed_menu_button",
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
+
