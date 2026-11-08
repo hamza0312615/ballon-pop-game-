@@ -28,7 +28,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AvTimer
+import androidx.compose.material.icons.filled.GpsFixed
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.window.Dialog
+import com.example.balloonpop.ui.components.ShopItemArt
 import com.example.balloonpop.model.GameConstants
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.NunitoFontFamily
@@ -178,7 +185,7 @@ fun PreGameStageDialog(
                 ) {
                     // Box 1: TARGET
                     IntroStatBox(
-                        icon = "🎯",
+                        iconVector = Icons.Default.GpsFixed,
                         iconColor = Color(0xFFEF4444),
                         label = "TARGET",
                         value = "$targetPops pops",
@@ -187,7 +194,7 @@ fun PreGameStageDialog(
 
                     // Box 2: TIME
                     IntroStatBox(
-                        icon = "🕒",
+                        iconVector = Icons.Default.AvTimer,
                         iconColor = Color(0xFF38BDF8),
                         label = "TIME",
                         value = "${timeLimit}s",
@@ -196,7 +203,7 @@ fun PreGameStageDialog(
 
                     // Box 3: MAX MISS
                     IntroStatBox(
-                        icon = "⚠️",
+                        iconVector = Icons.Default.Warning,
                         iconColor = Color(0xFFFBBF24),
                         label = "MAX MISS",
                         value = "$maxMissesAllowed",
@@ -225,7 +232,7 @@ fun PreGameStageDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IntroBoosterOrb(
-                            icon = "🕒+",
+                            boosterId = "booster_freeze",
                             label = "+15s Time",
                             gradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7)),
                             glowColor = Color(0xFF38BDF8),
@@ -240,7 +247,7 @@ fun PreGameStageDialog(
                         )
 
                         IntroBoosterOrb(
-                            icon = "❄️",
+                            boosterId = "booster_freeze",
                             label = "Freeze",
                             gradient = listOf(Color(0xFF2DD4BF), Color(0xFF0D9488)),
                             glowColor = Color(0xFF2DD4BF),
@@ -255,7 +262,7 @@ fun PreGameStageDialog(
                         )
 
                         IntroBoosterOrb(
-                            icon = "🌈",
+                            boosterId = "booster_color_bomb",
                             label = "Rainbow",
                             gradient = listOf(Color(0xFFFF5D8F), Color(0xFFC084FC), Color(0xFFFBBF24)),
                             glowColor = Color(0xFFFF5D8F),
@@ -350,7 +357,7 @@ fun PreGameStageDialog(
 
 @Composable
 private fun IntroStatBox(
-    icon: String,
+    iconVector: ImageVector,
     iconColor: Color,
     label: String,
     value: String,
@@ -372,7 +379,12 @@ private fun IntroStatBox(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                Text(text = icon, fontSize = 11.sp)
+                Icon(
+                    imageVector = iconVector,
+                    contentDescription = label,
+                    tint = iconColor,
+                    modifier = Modifier.size(13.dp)
+                )
                 Text(
                     text = label,
                     fontFamily = NunitoFontFamily,
@@ -394,7 +406,7 @@ private fun IntroStatBox(
 
 @Composable
 private fun IntroBoosterOrb(
-    icon: String,
+    boosterId: String,
     label: String,
     gradient: List<Color>,
     glowColor: Color,
@@ -419,17 +431,7 @@ private fun IntroBoosterOrb(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Specular sheen
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val cx = size.width / 2f
-                val cy = size.height / 2f
-                drawCircle(
-                    color = Color.White.copy(alpha = 0.45f),
-                    radius = size.width * 0.18f,
-                    center = Offset(cx - size.width * 0.2f, cy - size.height * 0.2f)
-                )
-            }
-            Text(text = icon, fontSize = 22.sp)
+            ShopItemArt(itemId = boosterId, modifier = Modifier.size(30.dp))
         }
         Text(
             text = label,

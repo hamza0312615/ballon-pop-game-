@@ -450,21 +450,14 @@ fun AnimatedScoreCounter(
     formatSuffix: String = "",
     durationMillis: Int = 1000
 ): String {
-    var animatedValue by remember { mutableIntStateOf(0) }
+    val animatedValue by androidx.compose.animation.core.animateIntAsState(
+        targetValue = targetValue,
+        animationSpec = androidx.compose.animation.core.tween(durationMillis, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+        label = "score_counter"
+    )
 
-    LaunchedEffect(targetValue) {
-        val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < durationMillis) {
-            val elapsed = System.currentTimeMillis() - startTime
-            val fraction = (elapsed.toFloat() / durationMillis.toFloat()).coerceIn(0f, 1f)
-            val easeOut = 1f - (1f - fraction) * (1f - fraction)
-            animatedValue = (targetValue * easeOut).toInt()
-            delay(16L)
-        }
-        animatedValue = targetValue
-    }
-
-    return "$formatPrefix${String.format("%,d", animatedValue)}$formatSuffix"
+    val display = if (animatedValue == 0 && targetValue > 0) targetValue else animatedValue
+    return "$formatPrefix${String.format("%,d", display)}$formatSuffix"
 }
 
 /**
@@ -635,15 +628,15 @@ fun LevelTransitionPortal(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF7C2D12))
+                            .background(Color(0xFF78350F))
                             .padding(vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "🔥 ARCADE FRENZY! RAPID RESPAWNS! 🔥",
+                            text = "⚡ BONUS STAGE! HIGH VALUE BALLOONS! ⚡",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFFFFEDD5)
+                            color = Color(0xFFFEF3C7)
                         )
                     }
                 }

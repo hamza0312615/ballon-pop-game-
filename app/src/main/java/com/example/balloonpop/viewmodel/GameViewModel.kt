@@ -125,6 +125,7 @@ data class UiState(
         "booster_freeze" to 3,
         "booster_vortex" to 3
     ),
+    val boosterCooldowns: Map<String, Float> = emptyMap(),
     val candyPraise: String? = null,
     val screenFlashAlpha: Float = 0f,
     // Onboarding & Milestones
@@ -135,12 +136,13 @@ data class UiState(
     val isNewHighScoreAchieved: Boolean = false,
     val previousHighScore: Int = 0,
     val isTransitioningLevel: Boolean = false,
-    val transitionTargetLevel: Int? = null
+    val transitionTargetLevel: Int? = null,
+    val shouldPromptFirstClearNotification: Boolean = false
 )
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository = GameRepository(application)
+    val repository = GameRepository(application)
     val sound = SoundManager.getInstance(application)
     val musicPlayer: BackgroundMusicPlayer get() = sound.musicPlayer
 
@@ -202,6 +204,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var timerJob: Job? = null
     private var lastPopTime = 0L
     private var lastHammerTapTime = 0L
+    private val internalBoosterCooldowns = mutableMapOf<String, Float>()
+    private var lastPraiseTime = 0L
+    private var lastComboFloatingTextTime = 0L
 
     var canvasWidth: Float = 1080f
     var canvasHeight: Float = 1920f
@@ -872,7 +877,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         initGameSession()
     }
 
-    fun playOnRevive() {
+    fun playOnRevive(withCoins: Boolean = false) {
+        if (withCoins) {
+            val cost = 100
+            val cur = _uiState.value.coins
+            if (cur >= cost) {
+                val newCoins = cur - cost
+                repository.setCoins(newCoins)
+                _uiState.update { it.copy(coins = newCoins) }
+                addFloatingText(canvasWidth / 2f, 220f, "-100 🪙", Color(0xFFF59E0B))
+            } else {
+                sound.playPurchaseFail()
+                _uiState.update { it.copy(bannerMessage = "Need 100 🪙 to revive!") }
+                return
+            }
+        }
         sound.playRainbowBlast()
         musicPlayer.resume()
         _uiState.update {
@@ -1026,7 +1045,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             timerJob = viewModelScope.launch {
                 while (_uiState.value.gameState == GameState.PLAYING || _uiState.value.gameState == GameState.PAUSED) {
                     delay(1000L)
-                    if (_uiState.value.gameState == GameState.PLAYING) {
+                    if (_uiState.value.gameState == GameState.PLAYING && !com.example.balloonpop.ads.AdMobManager.isAdShowing) {
                         val current = _uiState.value.timeLeft
                         if (current > 1) {
                             _uiState.update { it.copy(timeLeft = current - 1) }
@@ -1060,9 +1079,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun stepFrame(dtSeconds: Float) {
         val state = _uiState.value
-        if (state.gameState != GameState.PLAYING) return
+        if (state.gameState != GameState.PLAYING || com.example.balloonpop.ads.AdMobManager.isAdShowing) return
 
         val step = dtSeconds * 60f // Normalized to 60fps unit
+
+        // 0. Booster Cooldowns Countdown
+        if (internalBoosterCooldowns.isNotEmpty()) {
+            val it = internalBoosterCooldowns.iterator()
+            var changed = false
+            while (it.hasNext()) {
+                val entry = it.next()
+                val nextVal = (entry.value - dtSeconds).coerceAtLeast(0f)
+                if (nextVal <= 0f) {
+                    it.remove()
+                    changed = true
+                } else {
+                    entry.setValue(nextVal)
+                    changed = true
+                }
+            }
+            if (changed) {
+                _uiState.update { it.copy(boosterCooldowns = internalBoosterCooldowns.toMap()) }
+            }
+        }
 
         // 1. Freeze Countdown
         if (freezeTimeRemaining > 0f) {
@@ -1209,8 +1248,23 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val p = it.next()
                 p.x += p.vx * step
                 p.y += p.vy * step
-                p.vy += 0.16f * step // gravity
-                p.alpha -= 0.045f * step
+                p.rotation += p.vRot * step
+                p.vx *= (1f - 0.02f * step)
+                val gravityFactor = when (p.particleType) {
+                    ParticleType.RUBBER_SHRED -> 0.22f
+                    ParticleType.CONFETTI_RIBBON -> 0.12f
+                    ParticleType.ICE_CRYSTAL -> 0.18f
+                    ParticleType.GLOW_SPARK -> 0.08f
+                    else -> 0.16f
+                }
+                p.vy += gravityFactor * step
+                val decayRate = when (p.particleType) {
+                    ParticleType.GLOW_SPARK -> 0.065f
+                    ParticleType.SPARKLE_STAR -> 0.045f
+                    ParticleType.RUBBER_SHRED -> 0.032f
+                    else -> 0.038f
+                }
+                p.alpha -= decayRate * step
                 if (p.alpha <= 0f) {
                     it.remove()
                 }
@@ -1727,7 +1781,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             "BATTERY_SAVER" -> 6
             else -> 10
         }
-        createParticleBurst(b.x, b.y, b.color, count = particleCount)
+        createExplosionBurst(b.x, b.y, b.color, b.type, b.radius, count = particleCount)
     }
 
     private fun applyScoreAndPop(
@@ -1737,44 +1791,45 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         newMaxCombo: Int = _uiState.value.maxCombo
     ) {
         val earnedScore = b.type.points * comboMultiplier
-        val newScore = maxOf(0, _uiState.value.score + earnedScore)
-        val newPopped = _uiState.value.poppedCount + 1
-
-        val wasHighScoreBroken = !_uiState.value.isNewHighScoreAchieved && sessionBaselineHighScore > 0 && newScore > sessionBaselineHighScore
+        val wasHighScoreBroken = !_uiState.value.isNewHighScoreAchieved && sessionBaselineHighScore > 0 && (_uiState.value.score + earnedScore) > sessionBaselineHighScore
         if (wasHighScoreBroken) {
             sound.playHighScoreFanfare()
             triggerVibration(60L)
             triggerCandyPraise("NEW HIGH SCORE! 🏆")
             createSparks(b.x, b.y, Color(0xFFFFD700), count = 16)
-            addFloatingText(b.x, b.y - 35f, "🏆 NEW RECORD! ${newScore} PTS! 🏆", Color(0xFFFFD700))
+            addFloatingText(b.x, b.y - 35f, "🏆 NEW RECORD!", Color(0xFFFFD700))
         }
 
         repository.addLifetimePops(1)
-        repository.updateLifetimeHighScore(newScore)
 
-        _uiState.update {
-            it.copy(
-                score = newScore,
-                poppedCount = newPopped,
+        var shouldClearStage = false
+        _uiState.update { current ->
+            val updatedScore = maxOf(0, current.score + earnedScore)
+            val updatedPopped = maxOf(current.poppedCount + 1, current.poppedCount)
+            repository.updateLifetimeHighScore(updatedScore)
+            if (current.gameMode == GameMode.CAMPAIGN && updatedPopped >= current.targetPops) {
+                shouldClearStage = true
+            }
+            current.copy(
+                score = updatedScore,
+                poppedCount = updatedPopped,
                 combo = newCombo,
                 maxCombo = newMaxCombo,
                 skillEnergy = internalSkillEnergy,
                 lifetimePops = repository.getLifetimePops(),
                 lifetimeHighScore = repository.getLifetimeHighScore(),
-                isNewHighScoreAchieved = it.isNewHighScoreAchieved || wasHighScoreBroken || (newScore > sessionBaselineHighScore && sessionBaselineHighScore > 0)
+                isNewHighScoreAchieved = current.isNewHighScoreAchieved || wasHighScoreBroken
             )
         }
 
         // Campaign Stage Win Check
-        if (_uiState.value.gameMode == GameMode.CAMPAIGN) {
-            if (newPopped >= _uiState.value.targetPops) {
-                stageClear()
-            }
+        if (shouldClearStage) {
+            stageClear()
         }
     }
 
     private fun onMissBalloon(escapeX: Float = 150f) {
-        if (_uiState.value.gameState != GameState.PLAYING) return
+        if (_uiState.value.gameState != GameState.PLAYING || com.example.balloonpop.ads.AdMobManager.isAdShowing) return
         val currentMode = _uiState.value.gameMode
         val newMissed = _uiState.value.missedCount + 1
         val maxAllowed = _uiState.value.maxMissesAllowed
@@ -1901,10 +1956,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun triggerCandyPraise(text: String) {
+        val now = System.currentTimeMillis()
+        if (now - lastPraiseTime < 3500L) return
+        lastPraiseTime = now
         sound.playPraise()
         _uiState.update { it.copy(candyPraise = text) }
         viewModelScope.launch {
-            delay(1600L)
+            delay(900L)
             _uiState.update {
                 if (it.candyPraise == text) it.copy(candyPraise = null) else it
             }
@@ -1914,25 +1972,41 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun triggerInGameBooster(booster: InGameBooster) {
         if (_uiState.value.gameState != GameState.PLAYING) return
 
-        // Check booster inventory; deduct if available, or nominal coins if available
-        val counts = _uiState.value.boosterCounts.toMutableMap()
-        val currentCount = counts[booster.id] ?: 3
-
-        if (currentCount > 0) {
-            counts[booster.id] = currentCount - 1
-            repository.setBoosterCount(booster.id, currentCount - 1)
-        } else if (_uiState.value.coins >= 25) {
-            val newCoins = _uiState.value.coins - 25
-            repository.setCoins(newCoins)
-            _uiState.update { it.copy(coins = newCoins) }
-            addFloatingText(200f, 200f, "-25 🪙", Color(0xFFF59E0B))
-            sound.playCoinEarn()
+        // 1. Cooldown check (3.5s cooldown)
+        val activeCd = internalBoosterCooldowns[booster.id] ?: 0f
+        if (activeCd > 0f) {
+            sound.playClick()
+            return
         }
 
+        // 2. Check booster inventory & coin cost (50 coins when charges depleted)
+        val counts = _uiState.value.boosterCounts.toMutableMap()
+        val currentCharges = counts[booster.id] ?: 3
+
+        if (currentCharges > 0) {
+            counts[booster.id] = currentCharges - 1
+            repository.setBoosterCount(booster.id, currentCharges - 1)
+        } else {
+            // Charges depleted: requires 50 coins to activate!
+            if (_uiState.value.coins >= 50) {
+                val newCoins = _uiState.value.coins - 50
+                repository.setCoins(newCoins)
+                _uiState.update { it.copy(coins = newCoins) }
+                addFloatingText(canvasWidth / 2f, 220f, "-50 🪙", Color(0xFFF59E0B))
+                sound.playCoinEarn()
+            } else {
+                sound.playPurchaseFail()
+                _uiState.update { it.copy(bannerMessage = "Need 50 🪙 to use ${booster.name.replace('_', ' ')}!") }
+                return
+            }
+        }
+
+        internalBoosterCooldowns[booster.id] = 3.5f
         stageBoosterUsesCount++
         _uiState.update {
             it.copy(
                 boosterCounts = counts,
+                boosterCooldowns = internalBoosterCooldowns.toMap(),
                 stageBoosterUsesCount = stageBoosterUsesCount
             )
         }
@@ -2123,20 +2197,24 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun stageClear() {
         timerJob?.cancel()
 
+        val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(_uiState.value.currentLevel - 1)
+            ?: GameConstants.CAMPAIGN_LEVELS.first()
+
         val currentScore = _uiState.value.score
-        val isHighScore = _uiState.value.isNewHighScoreAchieved || (currentScore > sessionBaselineHighScore && sessionBaselineHighScore > 0)
+        // Ensure final score is non-zero, monotonic, and reflects actual pops
+        val finalScore = maxOf(currentScore, (_uiState.value.poppedCount * 35) + (lvl.level * 25))
+        repository.updateLifetimeHighScore(finalScore)
+
+        val isHighScore = _uiState.value.isNewHighScoreAchieved || (finalScore > sessionBaselineHighScore && sessionBaselineHighScore > 0)
         if (isHighScore) {
             sound.playHighScoreFanfare()
         } else {
             sound.playStageClear()
         }
 
-        val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(_uiState.value.currentLevel - 1)
-            ?: GameConstants.CAMPAIGN_LEVELS.first()
-
         val stars = when {
-            _uiState.value.score >= lvl.targetScore * 1.3 -> 3
-            _uiState.value.score >= lvl.targetScore -> 2
+            finalScore >= lvl.targetScore * 1.3 -> 3
+            finalScore >= lvl.targetScore -> 2
             else -> 1
         }
 
@@ -2147,26 +2225,40 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         repository.setCoins(newCoins)
         repository.setGems(newGems)
 
+        val wasFirstLevelCompleted = _uiState.value.completedLevels.isEmpty()
+        val updatedCompletedLevels = repository.getCompletedLevels()
+
         _uiState.update {
             it.copy(
                 gameState = GameState.LEVELCLEAR,
+                score = finalScore,
                 coins = newCoins,
                 gems = newGems,
-                completedLevels = repository.getCompletedLevels(),
+                completedLevels = updatedCompletedLevels,
                 earnedCoinsThisSession = lvl.rewardCoins,
                 earnedGemsThisSession = lvl.rewardGems,
                 earnedStarsThisLevel = stars,
+                lifetimeHighScore = repository.getLifetimeHighScore(),
                 isNewHighScoreAchieved = isHighScore,
-                previousHighScore = sessionBaselineHighScore
+                previousHighScore = sessionBaselineHighScore,
+                shouldPromptFirstClearNotification = wasFirstLevelCompleted
             )
         }
+    }
+
+    fun onNotificationPromptDismissed() {
+        _uiState.update { it.copy(shouldPromptFirstClearNotification = false) }
     }
 
     private fun gameOver(reason: GameOverReason = GameOverReason.TIME_EXPIRED) {
         timerJob?.cancel()
         triggerVibration(80L)
 
-        val earnedCoins = maxOf(5, _uiState.value.score / 20)
+        val currentScore = _uiState.value.score
+        repository.updateLifetimeHighScore(currentScore)
+        repository.updateEndlessHighScore(_uiState.value.gameMode.name, currentScore)
+
+        val earnedCoins = maxOf(5, currentScore / 20)
         val newCoins = _uiState.value.coins + earnedCoins
         repository.setCoins(newCoins)
         repository.updateLifetimeMaxCombo(_uiState.value.maxCombo)
@@ -2177,67 +2269,225 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 gameOverReason = reason,
                 coins = newCoins,
                 earnedCoinsThisSession = earnedCoins,
+                lifetimeHighScore = repository.getLifetimeHighScore(),
                 lifetimeMaxCombo = repository.getLifetimeMaxCombo()
             )
         }
     }
 
     private fun addFloatingText(x: Float, y: Float, text: String, color: Color) {
+        val now = System.currentTimeMillis()
+        if (text.startsWith("COMBO")) {
+            if (now - lastComboFloatingTextTime < 300L) return
+            lastComboFloatingTextTime = now
+        }
+        val clampedX = x.coerceIn(80f, (canvasWidth - 80f).coerceAtLeast(160f))
         synchronized(floatingTexts) {
+            // Prevent double-rendered floating text by deduplicating identical nearby text
+            val isDuplicate = floatingTexts.any { it.text == text && kotlin.math.abs(it.x - clampedX) < 30f && kotlin.math.abs(it.y - y) < 30f }
+            if (isDuplicate) return
             if (floatingTexts.size < 12) {
-                floatingTexts.add(FloatingText(x, y, text, color))
+                val laneOffset = (floatingTexts.size % 3) * 22f
+                floatingTexts.add(FloatingText(clampedX, y - laneOffset, text, color))
+            }
+        }
+    }
+
+    private fun createExplosionBurst(
+        x: Float,
+        y: Float,
+        color: Color,
+        type: BalloonType = BalloonType.STANDARD,
+        radius: Float = 48f,
+        count: Int = 14
+    ) {
+        val maxCap = when (_uiState.value.graphicsQuality) {
+            "ULTRA" -> 160
+            "BATTERY_SAVER" -> 35
+            else -> 90
+        }
+        synchronized(particles) {
+            if (particles.size >= maxCap) return
+
+            // 1. Torn Rubber Shreds (Balloon membrane shreds flying outwards with flutter and rotation)
+            val shredCount = (count * 0.75f).toInt().coerceAtLeast(6)
+            for (i in 0 until shredCount) {
+                val angle = Random.nextFloat() * 6.283f
+                val speed = 2.5f + Random.nextFloat() * 5.5f
+                val shredColor = if (i % 3 == 0) color.copy(alpha = 0.9f) else color
+                particles.add(
+                    Particle(
+                        x = x,
+                        y = y,
+                        vx = kotlin.math.cos(angle) * speed,
+                        vy = kotlin.math.sin(angle) * speed - 1.2f,
+                        radius = 4f + Random.nextFloat() * 4.5f,
+                        color = shredColor,
+                        alpha = 1.0f,
+                        rotation = Random.nextFloat() * 360f,
+                        vRot = (Random.nextFloat() - 0.5f) * 24f,
+                        particleType = ParticleType.RUBBER_SHRED,
+                        length = radius * (0.28f + Random.nextFloat() * 0.35f)
+                    )
+                )
+            }
+
+            // 2. High-speed Glow Sparks (Bright hot core radiating outward)
+            val sparkCount = (count * 0.65f).toInt().coerceAtLeast(5)
+            for (i in 0 until sparkCount) {
+                val angle = Random.nextFloat() * 6.283f
+                val speed = 4.5f + Random.nextFloat() * 6.5f
+                particles.add(
+                    Particle(
+                        x = x,
+                        y = y,
+                        vx = kotlin.math.cos(angle) * speed,
+                        vy = kotlin.math.sin(angle) * speed - 2.0f,
+                        radius = 2.5f + Random.nextFloat() * 3.5f,
+                        color = Color.White,
+                        alpha = 1.0f,
+                        rotation = 0f,
+                        vRot = 0f,
+                        particleType = ParticleType.GLOW_SPARK
+                    )
+                )
+            }
+
+            // 3. Radiant Star Glints (Sparkle twinkle stars)
+            val starCount = 3 + Random.nextInt(3)
+            for (i in 0 until starCount) {
+                val angle = Random.nextFloat() * 6.283f
+                val speed = 1.5f + Random.nextFloat() * 3.5f
+                particles.add(
+                    Particle(
+                        x = x,
+                        y = y,
+                        vx = kotlin.math.cos(angle) * speed,
+                        vy = kotlin.math.sin(angle) * speed - 1.0f,
+                        radius = 5f + Random.nextFloat() * 4f,
+                        color = Color(0xFFFFE082),
+                        alpha = 1.0f,
+                        isStar = true,
+                        rotation = Random.nextFloat() * 360f,
+                        vRot = (Random.nextFloat() - 0.5f) * 16f,
+                        particleType = ParticleType.SPARKLE_STAR
+                    )
+                )
+            }
+
+            // 4. Special Type Particle Enhancements
+            when (type) {
+                BalloonType.BOMB -> {
+                    for (i in 0 until 10) {
+                        val angle = Random.nextFloat() * 6.283f
+                        val speed = 3.5f + Random.nextFloat() * 7.0f
+                        val fireColor = if (i % 2 == 0) Color(0xFFFF3D00) else Color(0xFFFFD600)
+                        particles.add(
+                            Particle(
+                                x = x,
+                                y = y,
+                                vx = kotlin.math.cos(angle) * speed,
+                                vy = kotlin.math.sin(angle) * speed - 3f,
+                                radius = 4f + Random.nextFloat() * 5f,
+                                color = fireColor,
+                                alpha = 1.0f,
+                                particleType = ParticleType.GLOW_SPARK
+                            )
+                        )
+                    }
+                }
+                BalloonType.FREEZE -> {
+                    for (i in 0 until 8) {
+                        val angle = Random.nextFloat() * 6.283f
+                        val speed = 2.0f + Random.nextFloat() * 4.5f
+                        particles.add(
+                            Particle(
+                                x = x,
+                                y = y,
+                                vx = kotlin.math.cos(angle) * speed,
+                                vy = kotlin.math.sin(angle) * speed,
+                                radius = 5f + Random.nextFloat() * 5f,
+                                color = Color(0xFFE0F7FA),
+                                alpha = 1.0f,
+                                rotation = Random.nextFloat() * 360f,
+                                vRot = (Random.nextFloat() - 0.5f) * 10f,
+                                particleType = ParticleType.ICE_CRYSTAL
+                            )
+                        )
+                    }
+                }
+                BalloonType.ELECTRIC_STORM -> {
+                    for (i in 0 until 8) {
+                        val angle = Random.nextFloat() * 6.283f
+                        val speed = 5.0f + Random.nextFloat() * 6.0f
+                        particles.add(
+                            Particle(
+                                x = x,
+                                y = y,
+                                vx = kotlin.math.cos(angle) * speed,
+                                vy = kotlin.math.sin(angle) * speed,
+                                radius = 3f + Random.nextFloat() * 3f,
+                                color = Color(0xFF00E5FF),
+                                alpha = 1.0f,
+                                particleType = ParticleType.LIGHTNING_EMBER
+                            )
+                        )
+                    }
+                }
+                BalloonType.RAINBOW -> {
+                    val rainbowColors = listOf(Color(0xFFFF1744), Color(0xFFFF9100), Color(0xFFFFEA00), Color(0xFF00E676), Color(0xFF2979FF), Color(0xFFD500F9))
+                    for (i in 0 until 10) {
+                        val angle = Random.nextFloat() * 6.283f
+                        val speed = 2.0f + Random.nextFloat() * 5.0f
+                        particles.add(
+                            Particle(
+                                x = x,
+                                y = y,
+                                vx = kotlin.math.cos(angle) * speed,
+                                vy = kotlin.math.sin(angle) * speed - 1.5f,
+                                radius = 4f + Random.nextFloat() * 4f,
+                                color = rainbowColors[i % rainbowColors.size],
+                                alpha = 1.0f,
+                                rotation = Random.nextFloat() * 360f,
+                                vRot = (Random.nextFloat() - 0.5f) * 20f,
+                                particleType = ParticleType.CONFETTI_RIBBON,
+                                length = 14f + Random.nextFloat() * 12f
+                            )
+                        )
+                    }
+                }
+                BalloonType.GOLDEN, BalloonType.GOLDEN_PIGGY -> {
+                    for (i in 0 until 8) {
+                        val angle = Random.nextFloat() * 6.283f
+                        val speed = 2.5f + Random.nextFloat() * 5.5f
+                        particles.add(
+                            Particle(
+                                x = x,
+                                y = y,
+                                vx = kotlin.math.cos(angle) * speed,
+                                vy = kotlin.math.sin(angle) * speed - 2.0f,
+                                radius = 5f + Random.nextFloat() * 5f,
+                                color = Color(0xFFFFD700),
+                                alpha = 1.0f,
+                                isStar = true,
+                                rotation = Random.nextFloat() * 360f,
+                                vRot = (Random.nextFloat() - 0.5f) * 14f,
+                                particleType = ParticleType.SPARKLE_STAR
+                            )
+                        )
+                    }
+                }
+                else -> {}
             }
         }
     }
 
     private fun createParticleBurst(x: Float, y: Float, color: Color, count: Int = 10) {
-        val maxCap = when (_uiState.value.graphicsQuality) {
-            "ULTRA" -> 120
-            "BATTERY_SAVER" -> 25
-            else -> 60
-        }
-        synchronized(particles) {
-            if (particles.size >= maxCap) return
-            for (i in 0 until count) {
-                val angle = Random.nextFloat() * 6.28f
-                val speed = 2.5f + Random.nextFloat() * 5.0f
-                particles.add(
-                    Particle(
-                        x = x,
-                        y = y,
-                        vx = kotlin.math.cos(angle) * speed,
-                        vy = kotlin.math.sin(angle) * speed,
-                        radius = 4f + Random.nextFloat() * 5f,
-                        color = color
-                    )
-                )
-            }
-        }
+        createExplosionBurst(x, y, color, BalloonType.STANDARD, 44f, count)
     }
 
     private fun createSparks(x: Float, y: Float, sparkColor: Color, count: Int = 8) {
-        val maxCap = when (_uiState.value.graphicsQuality) {
-            "ULTRA" -> 120
-            "BATTERY_SAVER" -> 25
-            else -> 60
-        }
-        synchronized(particles) {
-            if (particles.size >= maxCap) return
-            for (i in 0 until count) {
-                val angle = Random.nextFloat() * 6.28f
-                val speed = 4.0f + Random.nextFloat() * 6.0f
-                particles.add(
-                    Particle(
-                        x = x,
-                        y = y,
-                        vx = kotlin.math.cos(angle) * speed,
-                        vy = kotlin.math.sin(angle) * speed - 1.5f,
-                        radius = 3f + Random.nextFloat() * 4f,
-                        color = sparkColor
-                    )
-                )
-            }
-        }
+        createExplosionBurst(x, y, sparkColor, BalloonType.STANDARD, 36f, count)
     }
 
     // --- Skills System ---

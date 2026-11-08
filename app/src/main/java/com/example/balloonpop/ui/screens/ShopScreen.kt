@@ -368,161 +368,164 @@ fun ShopScreen(
 
             // 5. Items Grid (2 Columns)
             Box(modifier = Modifier.weight(1f)) {
-                when (selectedTab) {
-                    ShopTab.THEMES -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(GameConstants.SHOP_THEMES) { theme ->
-                                val isUnlocked = unlockedThemes.contains(theme.id)
-                                val isEquipped = equippedThemeId == theme.id
+                key(selectedTab) {
+                    when (selectedTab) {
+                        ShopTab.THEMES -> {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(GameConstants.SHOP_THEMES, key = { it.id }) { theme ->
+                                    val isUnlocked = unlockedThemes.contains(theme.id)
+                                    val isEquipped = equippedThemeId == theme.id
 
-                                CosmeticItemCard(
-                                    title = theme.name,
-                                    description = "Theme visual atmosphere",
-                                    icon = "🎨",
-                                    iconBgColor = theme.gradientColors.firstOrNull() ?: Color(0xFF0F172A),
-                                    priceCoins = if (theme.currency == CurrencyType.COINS) theme.cost else 0,
-                                    priceGems = if (theme.currency == CurrencyType.GEMS) theme.cost else 0,
-                                    isUnlocked = isUnlocked,
-                                    isEquipped = isEquipped,
-                                    onAction = { onBuyTheme(theme) }
-                                )
+                                    CosmeticItemCard(
+                                        title = theme.name,
+                                        description = "Theme visual atmosphere",
+                                        icon = "🎨",
+                                        iconBgColor = theme.gradientColors.firstOrNull() ?: Color(0xFF0F172A),
+                                        previewBrush = Brush.verticalGradient(theme.gradientColors),
+                                        priceCoins = if (theme.currency == CurrencyType.COINS) theme.cost else 0,
+                                        priceGems = if (theme.currency == CurrencyType.GEMS) theme.cost else 0,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        onAction = { onBuyTheme(theme) }
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    ShopTab.HAMMERS -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(GameConstants.SHOP_HAMMERS) { hammer ->
-                                val isUnlocked = unlockedHammers.contains(hammer.id)
-                                val isEquipped = equippedHammerId == hammer.id
+                        ShopTab.HAMMERS -> {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(GameConstants.SHOP_HAMMERS, key = { it.id }) { hammer ->
+                                    val isUnlocked = unlockedHammers.contains(hammer.id)
+                                    val isEquipped = equippedHammerId == hammer.id
 
-                                CosmeticItemCard(
-                                    title = hammer.name,
-                                    description = hammer.description,
-                                    icon = "🔨",
-                                    iconBgColor = Color(0xFFF59E0B),
-                                    priceCoins = if (hammer.currency == CurrencyType.COINS) hammer.cost else 0,
-                                    priceGems = if (hammer.currency == CurrencyType.GEMS) hammer.cost else 0,
-                                    isUnlocked = isUnlocked,
-                                    isEquipped = isEquipped,
-                                    onAction = { onBuyHammer(hammer) }
-                                )
+                                    CosmeticItemCard(
+                                        title = hammer.name,
+                                        description = hammer.description,
+                                        icon = "🔨",
+                                        iconBgColor = Color(0xFFF59E0B),
+                                        priceCoins = if (hammer.currency == CurrencyType.COINS) hammer.cost else 0,
+                                        priceGems = if (hammer.currency == CurrencyType.GEMS) hammer.cost else 0,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        onAction = { onBuyHammer(hammer) }
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    ShopTab.FRAMES -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(GameConstants.SHOP_FRAMES) { frame ->
-                                val isUnlocked = unlockedFrames.contains(frame.id)
-                                val isEquipped = equippedFrameId == frame.id
+                        ShopTab.FRAMES -> {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(GameConstants.SHOP_FRAMES, key = { it.id }) { frame ->
+                                    val isUnlocked = unlockedFrames.contains(frame.id)
+                                    val isEquipped = equippedFrameId == frame.id
 
-                                CosmeticItemCard(
-                                    title = frame.name,
-                                    description = frame.description,
-                                    icon = "🖼️",
-                                    iconBgColor = Color(0xFF38BDF8),
-                                    priceCoins = if (frame.currency == CurrencyType.COINS) frame.cost else 0,
-                                    priceGems = if (frame.currency == CurrencyType.GEMS) frame.cost else 0,
-                                    isUnlocked = isUnlocked,
-                                    isEquipped = isEquipped,
-                                    onAction = { onBuyFrame(frame) }
-                                )
+                                    CosmeticItemCard(
+                                        title = frame.name,
+                                        description = frame.description,
+                                        icon = "🖼️",
+                                        iconBgColor = Color(0xFF38BDF8),
+                                        priceCoins = if (frame.currency == CurrencyType.COINS) frame.cost else 0,
+                                        priceGems = if (frame.currency == CurrencyType.GEMS) frame.cost else 0,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        onAction = { onBuyFrame(frame) }
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    ShopTab.BLADES -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(GameConstants.SHOP_BLADES) { blade ->
-                                val isUnlocked = unlockedBlades.contains(blade.id)
-                                val isEquipped = equippedBladeId == blade.id
+                        ShopTab.BLADES -> {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(GameConstants.SHOP_BLADES, key = { it.id }) { blade ->
+                                    val isUnlocked = unlockedBlades.contains(blade.id)
+                                    val isEquipped = equippedBladeId == blade.id
 
-                                CosmeticItemCard(
-                                    title = blade.name,
-                                    description = blade.description,
-                                    icon = "⚔️",
-                                    iconBgColor = Color(0xFF34D399),
-                                    priceCoins = if (blade.currency == CurrencyType.COINS) blade.cost else 0,
-                                    priceGems = if (blade.currency == CurrencyType.GEMS) blade.cost else 0,
-                                    isUnlocked = isUnlocked,
-                                    isEquipped = isEquipped,
-                                    onAction = { onBuyBlade(blade) }
-                                )
+                                    CosmeticItemCard(
+                                        title = blade.name,
+                                        description = blade.description,
+                                        icon = "⚔️",
+                                        iconBgColor = Color(0xFF34D399),
+                                        priceCoins = if (blade.currency == CurrencyType.COINS) blade.cost else 0,
+                                        priceGems = if (blade.currency == CurrencyType.GEMS) blade.cost else 0,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        onAction = { onBuyBlade(blade) }
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    ShopTab.FLAMES -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(GameConstants.SHOP_FLAMES) { flame ->
-                                val isUnlocked = unlockedFlames.contains(flame.id)
-                                val isEquipped = equippedFlameId == flame.id
+                        ShopTab.FLAMES -> {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(GameConstants.SHOP_FLAMES, key = { it.id }) { flame ->
+                                    val isUnlocked = unlockedFlames.contains(flame.id)
+                                    val isEquipped = equippedFlameId == flame.id
 
-                                CosmeticItemCard(
-                                    title = flame.name,
-                                    description = flame.description,
-                                    icon = "🔥",
-                                    iconBgColor = Color(0xFFF97316),
-                                    priceCoins = if (flame.currency == CurrencyType.COINS) flame.cost else 0,
-                                    priceGems = if (flame.currency == CurrencyType.GEMS) flame.cost else 0,
-                                    isUnlocked = isUnlocked,
-                                    isEquipped = isEquipped,
-                                    onAction = { onBuyFlame(flame) }
-                                )
+                                    CosmeticItemCard(
+                                        title = flame.name,
+                                        description = flame.description,
+                                        icon = "🔥",
+                                        iconBgColor = Color(0xFFF97316),
+                                        priceCoins = if (flame.currency == CurrencyType.COINS) flame.cost else 0,
+                                        priceGems = if (flame.currency == CurrencyType.GEMS) flame.cost else 0,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        onAction = { onBuyFlame(flame) }
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    ShopTab.DIAMONDS -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp),
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            items(GameConstants.DIAMOND_STORE_PACKS) { pack ->
-                                DiamondStoreCard(
-                                    pack = pack,
-                                    onClaim = {
-                                        if (pack.isAdReward || pack.id == "coin_convert_pack") {
-                                            onClaimDiamondPack(pack)
-                                        } else {
-                                            selectedIapPack = pack
+                        ShopTab.DIAMONDS -> {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(GameConstants.DIAMOND_STORE_PACKS, key = { it.id }) { pack ->
+                                    DiamondStoreCard(
+                                        pack = pack,
+                                        onClaim = {
+                                            if (pack.isAdReward || pack.id == "coin_convert_pack") {
+                                                onClaimDiamondPack(pack)
+                                            } else {
+                                                selectedIapPack = pack
+                                            }
                                         }
-                                    }
-                                )
+                                    )
+                                }
                             }
                         }
                     }
@@ -624,6 +627,7 @@ private fun CosmeticItemCard(
     priceGems: Int,
     isUnlocked: Boolean,
     isEquipped: Boolean,
+    previewBrush: Brush? = null,
     onAction: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -655,41 +659,19 @@ private fun CosmeticItemCard(
                     .height(96.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
-                        Brush.radialGradient(
+                        previewBrush ?: Brush.radialGradient(
                             listOf(iconBgColor.copy(alpha = 0.40f), Color(0x11000000))
                         )
                     )
                     .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = icon, fontSize = 44.sp)
-
-                // Top Right EQUIPPED Badge
-                if (isEquipped) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(6.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFF064E3B))
-                            .border(1.dp, Color(0xFF34D399), RoundedCornerShape(10.dp))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(3.dp)
-                        ) {
-                            Icon(Icons.Default.Check, contentDescription = "Equipped", tint = Color(0xFF34D399), modifier = Modifier.size(11.dp))
-                            Text(
-                                text = "EQUIPPED",
-                                fontFamily = NunitoFontFamily,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF34D399)
-                            )
-                        }
-                    }
-                }
+                com.example.balloonpop.ui.components.ShopItemArt(
+                    type = "$title $description".lowercase(),
+                    title = title,
+                    primaryColor = iconBgColor,
+                    modifier = Modifier.size(68.dp)
+                )
             }
 
             // Title & Description
@@ -719,7 +701,7 @@ private fun CosmeticItemCard(
                 )
             }
 
-            // Bottom Buttons: Dual Currency or Equip
+            // Single Full-Width Action Button (EQUIPPED / EQUIP / 🪙 PRICE / 💎 PRICE)
             if (isUnlocked) {
                 Box(
                     modifier = Modifier
@@ -734,7 +716,7 @@ private fun CosmeticItemCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = if (isEquipped) "ACTIVE" else "EQUIP",
+                        text = if (isEquipped) "EQUIPPED" else "EQUIP",
                         fontFamily = Baloo2FontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -742,49 +724,26 @@ private fun CosmeticItemCard(
                     )
                 }
             } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                val usesGems = priceGems > 0
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(34.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (usesGems) Brush.horizontalGradient(listOf(Color(0xFF0284C7), Color(0xFF0369A1)))
+                            else Brush.horizontalGradient(listOf(Color(0xFFF59E0B), Color(0xFFD97706)))
+                        )
+                        .clickable { onAction() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    // Coin Button
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(34.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xDD382405))
-                            .border(1.dp, Color(0xFFB45309), RoundedCornerShape(10.dp))
-                            .clickable { onAction() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "🪙 $priceCoins",
-                            fontFamily = Baloo2FontFamily,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFEF3C7)
-                        )
-                    }
-
-                    // Gem Button
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(34.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xDD0C2B40))
-                            .border(1.dp, Color(0xFF0284C7), RoundedCornerShape(10.dp))
-                            .clickable { onAction() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "💎 $priceGems",
-                            fontFamily = Baloo2FontFamily,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFBAE6FD)
-                        )
-                    }
+                    Text(
+                        text = if (usesGems) "💎 $priceGems" else "🪙 $priceCoins",
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
                 }
             }
         }
@@ -828,7 +787,12 @@ private fun DiamondStoreCard(
                     .background(Color(0x330284C7)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = pack.bonusTag ?: "💎", fontSize = 42.sp)
+                com.example.balloonpop.ui.components.ShopItemArt(
+                    type = "diamond pack",
+                    title = pack.title,
+                    primaryColor = Color(0xFF38BDF8),
+                    modifier = Modifier.size(56.dp)
+                )
             }
 
             Text(

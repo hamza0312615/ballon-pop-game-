@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import com.example.balloonpop.model.GameConstants
 import com.example.balloonpop.model.QuestCategory
 import com.example.balloonpop.model.QuestItem
+import com.example.balloonpop.ui.components.CurrencyArt
+import com.example.balloonpop.ui.components.QuestIconArt
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.NunitoFontFamily
 
@@ -149,7 +151,7 @@ fun QuestsScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                items(GameConstants.DEFAULT_QUESTS) { quest ->
+                items(GameConstants.DEFAULT_QUESTS, key = { it.id }) { quest ->
                     val currentProgress = when (quest.id) {
                         "quest_pop_50" -> lifetimePops
                         "quest_pop_200" -> lifetimePops
@@ -240,7 +242,7 @@ private fun QuestItemCard(
                         .border(1.5.dp, Color(0x66FFD54F), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = quest.icon, fontSize = 26.sp)
+                    QuestIconArt(questId = quest.id, modifier = Modifier.size(32.dp))
                 }
 
                 // Title + Description
@@ -250,7 +252,7 @@ private fun QuestItemCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = if (quest.category == QuestCategory.DAILY) "Daily Quest" else if (quest.category == QuestCategory.WEEKLY) "Weekly Quest" else "Achievement",
+                            text = quest.title,
                             fontFamily = Baloo2FontFamily,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
@@ -279,11 +281,11 @@ private fun QuestItemCard(
                     Spacer(modifier = Modifier.height(2.dp))
 
                     Text(
-                        text = quest.title,
+                        text = "Goal: ${quest.target} ${if (quest.id.contains("combo")) "combo multiplier" else "points or actions"}",
                         fontFamily = NunitoFontFamily,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xCCFFFFFF)
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xAAFFFFFF)
                     )
                 }
             }
@@ -325,16 +327,22 @@ private fun QuestItemCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Reward Pill (e.g. 🪙 200 coins)
-                    Box(
+                    // Reward Pill with Vector Currency
+                    Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color(0x33F59E0B))
                             .border(1.dp, Color(0x55FFD54F), RoundedCornerShape(12.dp))
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .padding(horizontal = 10.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                     ) {
+                        CurrencyArt(
+                            currencyType = if (quest.rewardCoins > 0) "coin" else "gem",
+                            modifier = Modifier.size(15.dp)
+                        )
                         Text(
-                            text = if (quest.rewardCoins > 0) "🪙 ${quest.rewardCoins} coins" else "💎 ${quest.rewardGems} gems",
+                            text = if (quest.rewardCoins > 0) "${quest.rewardCoins} coins" else "${quest.rewardGems} gems",
                             fontFamily = Baloo2FontFamily,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,

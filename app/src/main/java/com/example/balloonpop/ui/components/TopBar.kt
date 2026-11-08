@@ -91,7 +91,7 @@ fun TopBar(
         ) {
             // 1. Lives Heart Segment
             ResourceSegment(
-                icon = "❤️",
+                currencyType = "heart",
                 value = "$lives/$maxLives",
                 textColor = Color(0xFFFFF1F2),
                 showAdd = true,
@@ -115,7 +115,7 @@ fun TopBar(
 
             // 2. Coins Segment
             ResourceSegment(
-                icon = "🪙",
+                currencyType = "coin",
                 value = String.format("%,d", coins),
                 textColor = DesignTokens.PrimaryBrandBright,
                 showAdd = false,
@@ -139,7 +139,7 @@ fun TopBar(
 
             // 3. Gems Segment
             ResourceSegment(
-                icon = "💎",
+                currencyType = "gem",
                 value = String.format("%,d", gems),
                 textColor = DesignTokens.SecondaryAccent,
                 showAdd = true,
@@ -154,7 +154,7 @@ fun TopBar(
 
 @Composable
 private fun ResourceSegment(
-    icon: String,
+    currencyType: String,
     value: String,
     textColor: Color,
     showAdd: Boolean,
@@ -221,9 +221,9 @@ private fun ResourceSegment(
             modifier = Modifier.size(24.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = icon,
-                fontSize = 18.sp
+            CurrencyArt(
+                type = currencyType,
+                modifier = Modifier.size(20.dp)
             )
         }
 

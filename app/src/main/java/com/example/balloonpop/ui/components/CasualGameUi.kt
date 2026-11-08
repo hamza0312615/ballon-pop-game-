@@ -344,60 +344,336 @@ fun StarsDisplay3D(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = if (isEarned) "⭐" else "☆",
-                    fontSize = (size.value * 0.52f).sp
-                )
+                Canvas(modifier = Modifier.size(size * 0.60f)) {
+                    val w = this.size.width
+                    val h = this.size.height
+                    val cx = w / 2f
+                    val cy = h / 2f
+                    val outerR = w * 0.46f
+                    val innerR = outerR * 0.40f
+
+                    val starPath = Path()
+                    for (i in 0 until 10) {
+                        val angle = (i * 36 - 90) * (Math.PI / 180.0)
+                        val r = if (i % 2 == 0) outerR else innerR
+                        val x = (cx + r * kotlin.math.cos(angle)).toFloat()
+                        val y = (cy + r * kotlin.math.sin(angle)).toFloat()
+                        if (i == 0) starPath.moveTo(x, y) else starPath.lineTo(x, y)
+                    }
+                    starPath.close()
+
+                    if (isEarned) {
+                        drawPath(
+                            path = starPath,
+                            brush = Brush.radialGradient(
+                                colors = listOf(Color(0xFFFFFBEB), Color(0xFFFFD700), Color(0xFFF59E0B)),
+                                center = Offset(cx - outerR * 0.2f, cy - outerR * 0.2f),
+                                radius = outerR * 1.2f
+                            )
+                        )
+                        drawCircle(
+                            color = Color.White.copy(alpha = 0.8f),
+                            radius = outerR * 0.18f,
+                            center = Offset(cx - outerR * 0.22f, cy - outerR * 0.22f)
+                        )
+                    } else {
+                        drawPath(
+                            path = starPath,
+                            color = Color(0xFF4B5563)
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 /**
- * Mascot Character "Popster" Composable (Joyful, Neutral, Sad)
+ * Friendly Balloon Mascot Character "Popster" drawn in code with Compose Canvas.
+ * Features glossy spherical volume, shiny specular arc highlight, expressive eyes,
+ * smiling mouth, rosy cheeks, balloon tie knot, and wiggly string.
  */
 @Composable
 fun MascotCharacter(
     mood: MascotMood = MascotMood.JOYFUL,
     size: Dp = 72.dp,
+    showGoldRing: Boolean = true,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "mascot_bob")
-    val bounceY by infiniteTransition.animateFloat(
-        initialValue = -5f,
-        targetValue = 5f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bounce"
-    )
+    val balloonColor = when (mood) {
+        MascotMood.JOYFUL -> Color(0xFFFF2A6D)  // Radiant ruby rose
+        MascotMood.HAPPY -> Color(0xFFFFB703)   // Golden sunny amber
+        MascotMood.NEUTRAL -> Color(0xFF00E5FF) // Electric sky cyan
+        MascotMood.SAD -> Color(0xFF818CF8)     // Gentle pastel indigo
+    }
+    val highlightColor = Color.White.copy(alpha = 0.85f)
+    val knotColor = when (mood) {
+        MascotMood.JOYFUL -> Color(0xFFB0003A)
+        MascotMood.HAPPY -> Color(0xFFD97706)
+        MascotMood.NEUTRAL -> Color(0xFF0091EA)
+        MascotMood.SAD -> Color(0xFF3949AB)
+    }
 
     Box(
         modifier = modifier
-            .offset(y = if (mood == MascotMood.JOYFUL) bounceY.dp else 0.dp)
             .size(size)
-            .shadow(6.dp, CircleShape, spotColor = Color(0xFFF59E0B))
-            .clip(CircleShape)
-            .background(
-                Brush.radialGradient(
-                    listOf(
-                        Color(0xFFFDE047), // Sunny star yellow
-                        Color(0xFFF59E0B),
-                        Color(0xFFD97706)
-                    )
-                )
-            )
-            .border(2.5.dp, Color(0xFFFFFBEB), CircleShape),
+            .shadow(if (showGoldRing) 10.dp else 4.dp, CircleShape, spotColor = Color(0xFFFFD700))
+            .clip(CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        val emoji = when (mood) {
-            MascotMood.JOYFUL -> "🥳"
-            MascotMood.HAPPY -> "🌟"
-            MascotMood.NEUTRAL -> "🎈"
-            MascotMood.SAD -> "🥺"
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = this.size.width
+            val h = this.size.height
+            val cx = w / 2f
+            val cy = h / 2f
+
+            // 0. Deep Navy Background Base if within gold frame
+            if (showGoldRing) {
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(Color(0xFF161C38), Color(0xFF0A0E24)),
+                        center = Offset(cx, cy),
+                        radius = w * 0.5f
+                    ),
+                    radius = w * 0.49f,
+                    center = Offset(cx, cy)
+                )
+            }
+
+            // 1. Balloon main body (Volumetric 3D Spherical balloon)
+            val bodyR = if (showGoldRing) w * 0.31f else w * 0.38f
+            val bodyCenterX = cx
+            val bodyCenterY = if (showGoldRing) cy + h * 0.05f else cy
+
+            // Soft Drop Shadow
+            drawCircle(
+                color = Color.Black.copy(alpha = 0.38f),
+                radius = bodyR,
+                center = Offset(bodyCenterX, bodyCenterY + bodyR * 0.12f)
+            )
+
+            // Multi-stop 3D sphere gradient
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.90f),
+                        balloonColor.copy(alpha = 0.95f),
+                        balloonColor,
+                        knotColor,
+                        Color(0xFF20000D)
+                    ),
+                    center = Offset(bodyCenterX - bodyR * 0.32f, bodyCenterY - bodyR * 0.32f),
+                    radius = bodyR * 1.35f
+                ),
+                radius = bodyR,
+                center = Offset(bodyCenterX, bodyCenterY)
+            )
+
+            // Bottom subtle bounce rim reflection
+            drawCircle(
+                brush = Brush.verticalGradient(
+                    colors = listOf(Color.Transparent, Color(0x66FFD700), Color(0x88FFA000)),
+                    startY = bodyCenterY,
+                    endY = bodyCenterY + bodyR
+                ),
+                radius = bodyR,
+                center = Offset(bodyCenterX, bodyCenterY)
+            )
+
+            // 2. Glossy crescent specular highlight (top-left)
+            val glintPath = Path().apply {
+                moveTo(bodyCenterX - bodyR * 0.65f, bodyCenterY - bodyR * 0.25f)
+                cubicTo(
+                    bodyCenterX - bodyR * 0.68f, bodyCenterY - bodyR * 0.65f,
+                    bodyCenterX - bodyR * 0.25f, bodyCenterY - bodyR * 0.68f,
+                    bodyCenterX + bodyR * 0.15f, bodyCenterY - bodyR * 0.55f
+                )
+            }
+            drawPath(
+                path = glintPath,
+                color = highlightColor,
+                style = Stroke(width = bodyR * 0.18f, cap = StrokeCap.Round)
+            )
+
+            // Specular flare dot
+            drawCircle(
+                color = Color.White,
+                radius = bodyR * 0.08f,
+                center = Offset(bodyCenterX - bodyR * 0.40f, bodyCenterY - bodyR * 0.40f)
+            )
+
+            // 3. Cute Face (Eyes, Rosy Cheeks, Joyful Smile)
+            val eyeRadius = bodyR * 0.13f
+            val eyeY = bodyCenterY + bodyR * 0.02f
+            val leftEyeX = bodyCenterX - bodyR * 0.38f
+            val rightEyeX = bodyCenterX + bodyR * 0.38f
+
+            when (mood) {
+                MascotMood.JOYFUL, MascotMood.HAPPY -> {
+                    // Kawaii happy anime eye sparkles
+                    drawCircle(color = Color(0xFF1E0A16), radius = eyeRadius, center = Offset(leftEyeX, eyeY))
+                    drawCircle(color = Color.White, radius = eyeRadius * 0.45f, center = Offset(leftEyeX + 1.5f, eyeY - 1.5f))
+                    drawCircle(color = Color.White, radius = eyeRadius * 0.22f, center = Offset(leftEyeX - 1.5f, eyeY + 1.5f))
+
+                    drawCircle(color = Color(0xFF1E0A16), radius = eyeRadius, center = Offset(rightEyeX, eyeY))
+                    drawCircle(color = Color.White, radius = eyeRadius * 0.45f, center = Offset(rightEyeX + 1.5f, eyeY - 1.5f))
+                    drawCircle(color = Color.White, radius = eyeRadius * 0.22f, center = Offset(rightEyeX - 1.5f, eyeY + 1.5f))
+                }
+                MascotMood.NEUTRAL -> {
+                    drawCircle(color = Color(0xFF1E0A16), radius = eyeRadius, center = Offset(leftEyeX, eyeY))
+                    drawCircle(color = Color.White, radius = eyeRadius * 0.38f, center = Offset(leftEyeX - 1.5f, eyeY - 1.5f))
+                    drawCircle(color = Color(0xFF1E0A16), radius = eyeRadius, center = Offset(rightEyeX, eyeY))
+                    drawCircle(color = Color.White, radius = eyeRadius * 0.38f, center = Offset(rightEyeX - 1.5f, eyeY - 1.5f))
+                }
+                MascotMood.SAD -> {
+                    drawCircle(color = Color(0xFF1E0A16), radius = eyeRadius * 1.1f, center = Offset(leftEyeX, eyeY))
+                    drawCircle(color = Color.White, radius = eyeRadius * 0.45f, center = Offset(leftEyeX - 1.5f, eyeY - 1.5f))
+                    drawCircle(color = Color(0xFF1E0A16), radius = eyeRadius * 1.1f, center = Offset(rightEyeX, eyeY))
+                    drawCircle(color = Color.White, radius = eyeRadius * 0.45f, center = Offset(rightEyeX - 1.5f, eyeY - 1.5f))
+                }
+            }
+
+            // Rosy blush cheeks
+            val cheekY = eyeY + bodyR * 0.22f
+            drawCircle(
+                color = Color(0x66FF2A6D),
+                radius = bodyR * 0.16f,
+                center = Offset(leftEyeX - bodyR * 0.18f, cheekY)
+            )
+            drawCircle(
+                color = Color(0x66FF2A6D),
+                radius = bodyR * 0.16f,
+                center = Offset(rightEyeX + bodyR * 0.18f, cheekY)
+            )
+
+            // Friendly open smile with pink tongue
+            val mouthY = eyeY + bodyR * 0.24f
+            val mouthPath = Path().apply {
+                moveTo(bodyCenterX - bodyR * 0.22f, mouthY)
+                quadraticTo(bodyCenterX, mouthY + bodyR * 0.32f, bodyCenterX + bodyR * 0.22f, mouthY)
+                close()
+            }
+            drawPath(mouthPath, color = Color(0xFF1E0A16))
+            val tonguePath = Path().apply {
+                moveTo(bodyCenterX - bodyR * 0.12f, mouthY + bodyR * 0.10f)
+                quadraticTo(bodyCenterX, mouthY + bodyR * 0.28f, bodyCenterX + bodyR * 0.12f, mouthY + bodyR * 0.10f)
+                close()
+            }
+            drawPath(tonguePath, color = Color(0xFFFF4081))
+
+            // 4. Festive Party Hat (Jauntily perched on top right)
+            val hatBaseLeft = bodyCenterX - bodyR * 0.18f
+            val hatBaseRight = bodyCenterX + bodyR * 0.62f
+            val hatBaseY = bodyCenterY - bodyR * 0.72f
+            val hatApexX = bodyCenterX + bodyR * 0.42f
+            val hatApexY = bodyCenterY - bodyR * 1.48f
+
+            val hatPath = Path().apply {
+                moveTo(hatBaseLeft, hatBaseY)
+                lineTo(hatApexX, hatApexY)
+                lineTo(hatBaseRight, hatBaseY - bodyR * 0.08f)
+                close()
+            }
+            drawPath(
+                path = hatPath,
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFFFFEA00), Color(0xFFFF5722), Color(0xFF9C27B0), Color(0xFF00E5FF)),
+                    start = Offset(hatBaseLeft, hatBaseY),
+                    end = Offset(hatApexX, hatApexY)
+                )
+            )
+            // Party hat stripes
+            drawLine(
+                color = Color.White.copy(alpha = 0.85f),
+                start = Offset(hatBaseLeft + (hatApexX - hatBaseLeft) * 0.35f, hatBaseY - bodyR * 0.25f),
+                end = Offset(hatBaseRight - bodyR * 0.15f, hatBaseY - bodyR * 0.28f),
+                strokeWidth = bodyR * 0.08f,
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = Color(0xFF00E5FF),
+                start = Offset(hatBaseLeft + (hatApexX - hatBaseLeft) * 0.65f, hatBaseY - bodyR * 0.48f),
+                end = Offset(hatBaseRight - bodyR * 0.25f, hatBaseY - bodyR * 0.52f),
+                strokeWidth = bodyR * 0.08f,
+                cap = StrokeCap.Round
+            )
+
+            // Fluffy pom-pom on party hat tip
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFFFFF9C4), Color(0xFFFFD700), Color(0xFFFF9100)),
+                    center = Offset(hatApexX, hatApexY),
+                    radius = bodyR * 0.20f
+                ),
+                radius = bodyR * 0.18f,
+                center = Offset(hatApexX, hatApexY)
+            )
+
+            // 5. Balloon Tie Knot & Wavy Curly String at Bottom
+            val knotY = bodyCenterY + bodyR
+            val knotPath = Path().apply {
+                moveTo(bodyCenterX, knotY)
+                lineTo(bodyCenterX - bodyR * 0.14f, knotY + bodyR * 0.16f)
+                lineTo(bodyCenterX + bodyR * 0.14f, knotY + bodyR * 0.16f)
+                close()
+            }
+            drawPath(knotPath, color = knotColor)
+
+            val stringPath = Path().apply {
+                val startY = knotY + bodyR * 0.16f
+                moveTo(bodyCenterX, startY)
+                cubicTo(
+                    bodyCenterX - bodyR * 0.25f, startY + bodyR * 0.18f,
+                    bodyCenterX + bodyR * 0.25f, startY + bodyR * 0.36f,
+                    bodyCenterX - bodyR * 0.10f, (h * 0.96f).coerceAtLeast(startY + bodyR * 0.5f)
+                )
+            }
+            drawPath(
+                path = stringPath,
+                color = Color.White.copy(alpha = 0.85f),
+                style = Stroke(width = bodyR * 0.06f, cap = StrokeCap.Round)
+            )
+
+            // 6. Bold Polished Gold Ring Frame (Outermost Layer)
+            if (showGoldRing) {
+                val ringRadius = w * 0.45f
+                val ringThickness = w * 0.085f
+
+                // Deep gold outer shadow rim
+                drawCircle(
+                    color = Color(0xFF6B4500),
+                    radius = ringRadius + ringThickness * 0.5f,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = ringThickness * 0.4f)
+                )
+
+                // Polished gold main ring band with dynamic shine gradient
+                drawCircle(
+                    brush = Brush.sweepGradient(
+                        colors = listOf(
+                            Color(0xFFFFEA00),
+                            Color(0xFFFFF9C4),
+                            Color(0xFFF59E0B),
+                            Color(0xFFB45309),
+                            Color(0xFFFFF59D),
+                            Color(0xFFFFEA00)
+                        ),
+                        center = Offset(cx, cy)
+                    ),
+                    radius = ringRadius,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = ringThickness)
+                )
+
+                // Inner crisp golden rim
+                drawCircle(
+                    color = Color(0xFFFFFDE7).copy(alpha = 0.85f),
+                    radius = ringRadius - ringThickness * 0.48f,
+                    center = Offset(cx, cy),
+                    style = Stroke(width = 1.8f)
+                )
+            }
         }
-        Text(text = emoji, fontSize = (size.value * 0.55f).sp)
     }
 }
 

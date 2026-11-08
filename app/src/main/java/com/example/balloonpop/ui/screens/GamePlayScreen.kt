@@ -81,6 +81,7 @@ fun GamePlayScreen(
     lightningBolts: List<LightningBolt> = emptyList(),
     screenFlashAlpha: Float = 0f,
     boosterCounts: Map<String, Int> = emptyMap(),
+    boosterCooldowns: Map<String, Float> = emptyMap(),
     candyPraise: String? = null,
     onTriggerBooster: (InGameBooster) -> Unit = {},
     coins: Int = 0,
@@ -101,6 +102,7 @@ fun GamePlayScreen(
     onStageMenu: () -> Unit,
     onQuitToMenu: () -> Unit,
     onOpenSettings: () -> Unit,
+    onPlayOnRevive: (Boolean) -> Unit = {},
     isNewHighScore: Boolean = false,
     previousHighScore: Int = 0,
     isTransitioningLevel: Boolean = false,
@@ -112,15 +114,6 @@ fun GamePlayScreen(
 
     val context = LocalContext.current
     val activity = context as? Activity
-
-    // Full-screen Interstitial Ad on Game Over and Stage Clear
-    LaunchedEffect(gameState) {
-        if (gameState == GameState.LEVELCLEAR || gameState == GameState.GAMEOVER) {
-            activity?.let { act ->
-                AdMobManager.showInterstitialAd(act)
-            }
-        }
-    }
 
     LaunchedEffect(resumeCountdown) {
         val c = resumeCountdown
@@ -349,21 +342,9 @@ fun GamePlayScreen(
         }
 
         // Mini Pet In-Game Companion cheering the player on!
-        val currentZoneIdx = ((currentLevel - 1) / 10).coerceAtLeast(0)
-        val currentPet = remember(currentZoneIdx) { MiniPetRegistry.getPetForZone(currentZoneIdx) }
-        MiniPetInGameHud(
-            pet = currentPet,
-            isBossLevel = isBossStage,
-            combo = combo,
-            timeLeft = timeLeft,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = if (isBossStage && activeBoss != null) 116.dp else 58.dp, end = DesignTokens.Space12)
-        )
-
-        // 3. Floating 3x COMBO! Golden Pill Badge (Matching Image 1 & 4)
+        // 3. Floating COMBO & Multiplier Golden Pill Badge (Merged cleanly into single pill)
         AnimatedVisibility(
-            visible = combo >= 2,
+            visible = (combo >= 2 || isMultiplierActive) && gameState == GameState.PLAYING,
             enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
@@ -393,8 +374,15 @@ fun GamePlayScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(text = "✨", fontSize = 13.sp)
+                    val comboLabel = if (combo >= 2 && isMultiplierActive) {
+                        "${combo}x COMBO • 2X ⭐"
+                    } else if (combo >= 2) {
+                        "${combo}x COMBO!"
+                    } else {
+                        "2X POINTS ⭐"
+                    }
                     Text(
-                        text = "${combo}x COMBO!",
+                        text = comboLabel,
                         fontFamily = Baloo2FontFamily,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
@@ -405,36 +393,36 @@ fun GamePlayScreen(
             }
         }
 
-        // Live High Score Celebration Banner (Triggers on new record during gameplay)
+        // Live High Score Celebration Banner (Compact top header position)
         AnimatedVisibility(
             visible = isNewHighScore && gameState == GameState.PLAYING,
             enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
             exit = fadeOut(),
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 98.dp)
+                .padding(top = 60.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .shadow(12.dp, RoundedCornerShape(20.dp), spotColor = Color(0xFFFFD700))
-                    .clip(RoundedCornerShape(20.dp))
+                    .shadow(8.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFFFD700))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(
                         Brush.horizontalGradient(
                             listOf(Color(0xFFB45309), Color(0xFFF59E0B), Color(0xFFD97706))
                         )
                     )
-                    .border(2.dp, Color(0xFFFFFBEB), RoundedCornerShape(20.dp))
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                    .border(1.5.dp, Color(0xFFFFFBEB), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 12.dp, vertical = 3.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(text = "🏆", fontSize = 16.sp)
+                    Text(text = "🏆", fontSize = 13.sp)
                     Text(
                         text = "NEW HIGH SCORE: ${String.format("%,d", score)} PTS!",
                         fontFamily = Baloo2FontFamily,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.White
                     )
@@ -442,84 +430,54 @@ fun GamePlayScreen(
             }
         }
 
-        // 4. Candy Crush Style "SWEET!" Floating Praise Banner (Matching Image 1)
+        // 4. Candy Style Floating Praise Banner (Compact, docked cleanly at top edge, never blocking balloons)
         AnimatedVisibility(
-            visible = candyPraise != null,
+            visible = candyPraise != null && gameState == GameState.PLAYING,
             enter = scaleIn(spring(dampingRatio = Spring.DampingRatioMediumBouncy)) + fadeIn(),
             exit = fadeOut() + scaleOut(),
             modifier = Modifier
-                .align(Alignment.Center)
-                .padding(bottom = 60.dp)
+                .align(Alignment.TopCenter)
+                .padding(top = 62.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .shadow(24.dp, RoundedCornerShape(36.dp), spotColor = Color(0xFFFF5D8F))
-                    .clip(RoundedCornerShape(36.dp))
+                    .shadow(10.dp, RoundedCornerShape(18.dp), spotColor = Color(0xFFFF5D8F))
+                    .clip(RoundedCornerShape(18.dp))
                     .background(
                         Brush.horizontalGradient(
                             listOf(
-                                Color(0xE6FF5D8F),
+                                Color(0xF2FF5D8F),
                                 Color(0xF2FB923C),
-                                Color(0xE6FFC93C)
+                                Color(0xF2FFC93C)
                             )
                         )
                     )
                     .border(
-                        width = 3.dp,
+                        width = 1.5.dp,
                         brush = Brush.verticalGradient(
                             listOf(Color.White, Color(0xFFFFE082), Color(0xFFFF2A75))
                         ),
-                        shape = RoundedCornerShape(36.dp)
+                        shape = RoundedCornerShape(18.dp)
                     )
-                    .padding(horizontal = 32.dp, vertical = 14.dp),
+                    .padding(horizontal = 14.dp, vertical = 4.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    // Deep 3D Shadow Layer
-                    Text(
-                        text = candyPraise ?: "SWEET!",
-                        fontFamily = Baloo2FontFamily,
-                        fontSize = 46.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF5B2E00),
-                        modifier = Modifier.offset(y = 4.dp)
-                    )
-                    // Orange Outline Bevel
-                    Text(
-                        text = candyPraise ?: "SWEET!",
-                        fontFamily = Baloo2FontFamily,
-                        fontSize = 46.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFFEA580C),
-                        modifier = Modifier.offset(y = 2.dp)
-                    )
-                    // Creamy Yellow-to-Peach Gradient Face
-                    Text(
-                        text = candyPraise ?: "SWEET!",
-                        fontFamily = Baloo2FontFamily,
-                        fontSize = 46.sp,
-                        fontWeight = FontWeight.Black,
-                        style = androidx.compose.ui.text.TextStyle(
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color(0xFFFFFBEB),
-                                    Color(0xFFFEF08A),
-                                    Color(0xFFFDE047),
-                                    Color(0xFFF59E0B)
-                                )
-                            )
-                        )
-                    )
-                }
+                Text(
+                    text = candyPraise ?: "SWEET!",
+                    fontFamily = Baloo2FontFamily,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
             }
         }
 
-        // Active Powerups Badges (Floating above bottom dock)
-        if (isFreezeActive || isMultiplierActive || (isHammerSlideActive && hammerSlideTimeRemaining > 0f)) {
+        // Active Powerups Badges (Floating directly centered above bottom dock)
+        if ((isFreezeActive || isMultiplierActive || (isHammerSlideActive && hammerSlideTimeRemaining > 0f)) && gameState == GameState.PLAYING) {
             Row(
                 modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 14.dp, bottom = 86.dp),
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 96.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (isHammerSlideActive && hammerSlideTimeRemaining > 0f) {
@@ -563,11 +521,15 @@ fun GamePlayScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // 1. BOMB ORB BUTTON
+                val bombCount = boosterCounts["booster_color_bomb"] ?: 3
+                val bombCd = boosterCooldowns["booster_color_bomb"] ?: 0f
                 GameOrbButton(
                     icon = "💣",
                     label = "BOMB",
-                    badgeText = "READY",
-                    badgeBgColor = Color(0xFF3B82F6),
+                    count = bombCount,
+                    coins = coins,
+                    cooldownRemaining = bombCd,
+                    badgeBgColor = if (bombCount > 0) Color(0xFF3B82F6) else Color(0xFFF59E0B),
                     orbGradient = listOf(Color(0xFFA855F7), Color(0xFF7E22CE), Color(0xFF3B0764)),
                     glowColor = Color(0xFFA855F7),
                     onClick = { onTriggerBooster(InGameBooster.COLOR_BOMB) },
@@ -575,11 +537,15 @@ fun GamePlayScreen(
                 )
 
                 // 2. LIGHTNING ORB BUTTON
+                val thunderCount = boosterCounts["booster_thunder"] ?: 3
+                val thunderCd = boosterCooldowns["booster_thunder"] ?: 0f
                 GameOrbButton(
                     icon = "⚡",
                     label = "LIGHTNING",
-                    badgeText = "READY",
-                    badgeBgColor = Color(0xFF0284C7),
+                    count = thunderCount,
+                    coins = coins,
+                    cooldownRemaining = thunderCd,
+                    badgeBgColor = if (thunderCount > 0) Color(0xFF0284C7) else Color(0xFFF59E0B),
                     orbGradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1)),
                     glowColor = Color(0xFF00E5FF),
                     onClick = { onTriggerBooster(InGameBooster.THUNDER_STRIKE) },
@@ -587,11 +553,15 @@ fun GamePlayScreen(
                 )
 
                 // 3. FREEZE ORB BUTTON
+                val freezeCount = boosterCounts["booster_freeze"] ?: 3
+                val freezeCd = boosterCooldowns["booster_freeze"] ?: 0f
                 GameOrbButton(
                     icon = "❄️",
                     label = "FREEZE",
-                    badgeText = if (isFreezeActive) "ACTIVE" else "READY",
-                    badgeBgColor = Color(0xFF38BDF8),
+                    count = freezeCount,
+                    coins = coins,
+                    cooldownRemaining = freezeCd,
+                    badgeBgColor = if (isFreezeActive) Color(0xFF06B6D4) else if (freezeCount > 0) Color(0xFF38BDF8) else Color(0xFFF59E0B),
                     orbGradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF082F49)),
                     glowColor = Color(0xFF38BDF8),
                     onClick = { onTriggerBooster(InGameBooster.FREEZE_BLIZZARD) },
@@ -602,8 +572,8 @@ fun GamePlayScreen(
 
 
 
-        // Animated Resume 3-2-1-GO Countdown Overlay
-        if (resumeCountdown != null) {
+        // Animated Resume 3-2-1-GO Countdown Overlay (Guarded against double-rendering during transitions)
+        if (resumeCountdown != null && !isTransitioningLevel && gameState == GameState.PLAYING) {
             ResumeCountdownOverlay(count = resumeCountdown!!)
         }
 
@@ -778,19 +748,19 @@ fun GamePlayScreen(
                 FailedStageDialog(
                     level = currentLevel,
                     missingPops = (targetPops - poppedCount).coerceAtLeast(1),
-                    userCoins = earnedCoins,
+                    userCoins = coins,
                     missedCount = missedCount,
                     maxMissesAllowed = maxMissesAllowed,
                     timeLimit = timeLeft,
                     reason = gameOverReason,
-                    onPlayOn = onRestart,
+                    onPlayOn = { onPlayOnRevive(true) },
                     onRetry = onRestart,
                     onWatchAdToRevive = {
                         activity?.let { act ->
                             AdMobManager.showRewardedAd(
                                 act,
                                 onRewardEarned = {
-                                    onRestart()
+                                    onPlayOnRevive(false)
                                 }
                             )
                         }
@@ -1171,7 +1141,10 @@ private fun BossBattleHealthBar(
 private fun GameOrbButton(
     icon: String,
     label: String,
-    badgeText: String,
+    count: Int,
+    coins: Int,
+    cooldownRemaining: Float = 0f,
+    coinCost: Int = 50,
     badgeBgColor: Color,
     orbGradient: List<Color>,
     glowColor: Color,
@@ -1179,20 +1152,38 @@ private fun GameOrbButton(
     testTag: String,
     modifier: Modifier = Modifier
 ) {
+    val isOnCooldown = cooldownRemaining > 0f
+    val isAffordable = count > 0 || coins >= coinCost
+    val isEnabled = !isOnCooldown && isAffordable
+
     val interaction = remember { MutableInteractionSource() }
     val isPressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.90f else 1.0f,
+        targetValue = if (isPressed && isEnabled) 0.90f else 1.0f,
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "orb_scale"
     )
 
+    val badgeText = when {
+        isOnCooldown -> String.format(java.util.Locale.US, "%.1fs", cooldownRemaining)
+        count > 0 -> "x$count"
+        else -> "$coinCost🪙"
+    }
+
+    val finalBadgeBgColor = when {
+        isOnCooldown -> Color(0xFF475569)
+        !isAffordable -> Color(0xFF6B7280)
+        else -> badgeBgColor
+    }
+
     Column(
         modifier = modifier
             .scale(scale)
+            .alpha(if (!isAffordable && !isOnCooldown) 0.48f else 1.0f)
             .clickable(
                 interactionSource = interaction,
                 indication = null,
+                enabled = true,
                 onClick = onClick
             )
             .testTag(testTag),
@@ -1202,7 +1193,7 @@ private fun GameOrbButton(
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .shadow(12.dp, CircleShape, spotColor = glowColor)
+                .shadow(12.dp, CircleShape, spotColor = if (isEnabled) glowColor else Color.Transparent)
                 .clip(CircleShape)
                 .background(Brush.radialGradient(orbGradient))
                 .border(
@@ -1214,8 +1205,8 @@ private fun GameOrbButton(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            // Top specular shine crescent
-            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+            // Specular sheen
+            Canvas(modifier = Modifier.fillMaxSize()) {
                 val w = size.width
                 val h = size.height
                 drawOval(
@@ -1224,21 +1215,34 @@ private fun GameOrbButton(
                         startY = 0f,
                         endY = h * 0.45f
                     ),
-                    topLeft = androidx.compose.ui.geometry.Offset(w * 0.15f, h * 0.05f),
-                    size = androidx.compose.ui.geometry.Size(w * 0.70f, h * 0.35f)
+                    topLeft = Offset(w * 0.15f, h * 0.05f),
+                    size = Size(w * 0.70f, h * 0.35f)
                 )
+
+                // Cooldown radial progress sweep overlay
+                if (isOnCooldown) {
+                    val sweepProgress = (cooldownRemaining / 3.5f).coerceIn(0f, 1f)
+                    drawArc(
+                        color = Color(0xCC0B0F19),
+                        startAngle = -90f,
+                        sweepAngle = 360f * sweepProgress,
+                        useCenter = true,
+                        size = Size(w, h),
+                        topLeft = Offset(0f, 0f)
+                    )
+                }
             }
 
             Text(text = icon, fontSize = 26.sp)
 
-            // Top-right Cooldown / Status Pill Badge
+            // Top-right Charges / Coin Cost / Cooldown Pill Badge
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = 4.dp, y = (-2).dp)
+                    .offset(x = 6.dp, y = (-3).dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(badgeBgColor)
-                    .border(1.dp, Color.White.copy(alpha = 0.75f), RoundedCornerShape(8.dp))
+                    .background(finalBadgeBgColor)
+                    .border(1.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(8.dp))
                     .padding(horizontal = 5.dp, vertical = 1.dp)
             ) {
                 Text(
@@ -1256,7 +1260,7 @@ private fun GameOrbButton(
             fontFamily = Baloo2FontFamily,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = if (isEnabled) Color.White else Color(0x99FFFFFF),
             letterSpacing = 0.5.sp
         )
     }

@@ -54,6 +54,11 @@ fun EndlessModeScreen(
     onStartMode: (GameMode) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    highScore: Int = 0,
+    classicBest: Int = 0,
+    timeRushBest: Int = 0,
+    arcadeBest: Int = 0,
+    zenBest: Int = 0,
     lives: Int = 124,
     coins: Int = 8540,
     gems: Int = 320
@@ -71,14 +76,14 @@ fun EndlessModeScreen(
         label = "glow_pulse"
     )
 
-    // Deep cosmic space gradient background
+    // Deep navy/indigo game theme background with subtle gradient depth
     val cosmicGradient = Brush.verticalGradient(
         listOf(
-            Color(0xFF0B1026),
-            Color(0xFF140F2D),
-            Color(0xFF1B1035),
-            Color(0xFF120A24),
-            Color(0xFF090616)
+            Color(0xFF070B18),
+            Color(0xFF0D1429),
+            Color(0xFF131A36),
+            Color(0xFF0E1428),
+            Color(0xFF060914)
         )
     )
 
@@ -103,10 +108,10 @@ fun EndlessModeScreen(
             }
             drawPath(
                 path = beamPath,
-                color = Color(0x12A78BFA)
+                color = Color(0x0C38BDF8)
             )
 
-            // Faint floating balloon outlines at ~6% opacity
+            // Faint floating balloon outlines at ~5% opacity
             val ambientBalloons = listOf(
                 Offset(w * 0.08f, h * 0.22f) to 26f,
                 Offset(w * 0.92f, h * 0.16f) to 32f,
@@ -118,13 +123,13 @@ fun EndlessModeScreen(
 
             for ((pos, r) in ambientBalloons) {
                 drawCircle(
-                    color = Color.White.copy(alpha = 0.05f),
+                    color = Color.White.copy(alpha = 0.04f),
                     radius = r,
                     center = pos
                 )
                 // String
                 drawLine(
-                    color = Color.White.copy(alpha = 0.035f),
+                    color = Color.White.copy(alpha = 0.03f),
                     start = Offset(pos.x, pos.y + r),
                     end = Offset(pos.x - 4f, pos.y + r + 24f),
                     strokeWidth = 1.2f
@@ -136,14 +141,14 @@ fun EndlessModeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 20.dp, vertical = 22.dp),
+                .padding(horizontal = 20.dp, vertical = 20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Top Section: Back Button + Currency Capsules + Titles
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 // Top Row: Back Button & 3 Glass Resource Capsules
@@ -157,8 +162,8 @@ fun EndlessModeScreen(
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
-                            .background(Color(0x33FFFFFF))
-                            .border(1.dp, Color(0x33FFFFFF), CircleShape)
+                            .background(Color(0x2AFFFFFF))
+                            .border(1.dp, Color(0x3AFFFFFF), CircleShape)
                             .clickable { onClose() }
                             .testTag("endless_back_button"),
                         contentAlignment = Alignment.Center
@@ -178,23 +183,20 @@ fun EndlessModeScreen(
                     ) {
                         // Hearts Capsule
                         EndlessGlassResourceCapsule(
-                            icon = "❤️",
-                            amount = lives,
-                            iconColor = Color(0xFFEF4444)
+                            type = "HEART",
+                            amount = lives
                         )
 
                         // Coins Capsule
                         EndlessGlassResourceCapsule(
-                            icon = "🪙",
-                            amount = coins,
-                            iconColor = Color(0xFFFFC93C)
+                            type = "COIN",
+                            amount = coins
                         )
 
                         // Gems Capsule
                         EndlessGlassResourceCapsule(
-                            icon = "💎",
-                            amount = gems,
-                            iconColor = Color(0xFFA855F7)
+                            type = "GEM",
+                            amount = gems
                         )
                     }
                 }
@@ -207,10 +209,10 @@ fun EndlessModeScreen(
                     Text(
                         text = "ENDLESS MODES",
                         fontFamily = Baloo2FontFamily,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Black,
                         color = Color.White,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 0.8.sp
                     )
 
                     Text(
@@ -218,75 +220,97 @@ fun EndlessModeScreen(
                         fontFamily = NunitoFontFamily,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFC4B5FD),
+                        color = Color(0xFF94A3B8),
                         textAlign = TextAlign.Center
                     )
+
+                    if (highScore > 0) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0x33F59E0B))
+                                .border(1.dp, Color(0x99F59E0B), RoundedCornerShape(12.dp))
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = "🏆 BEST: $highScore",
+                                fontFamily = Baloo2FontFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFEF3C7)
+                            )
+                        }
+                    }
                 }
             }
 
-            // Middle Section: 4 Mode Cards
+            // Middle Section: 4 Mode Cards (Harmonious Modern Palette)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Card 1: Classic Survival
+                // Card 1: Classic Survival (Emerald Cyan Accent)
                 EndlessModeCard(
                     title = "Classic Survival",
                     subtitle = "3 Lives • Increasing Speed",
-                    icon = "🎯",
+                    mode = GameMode.CLASSIC,
                     badgeText = "SURVIVAL",
                     accentColor = Color(0xFF10B981),
-                    badgeBgColor = Color(0xFF064E3B),
-                    badgeTextColor = Color(0xFF34D399),
+                    badgeBgColor = Color(0x3310B981),
+                    badgeTextColor = Color(0xFF6EE7B7),
                     isSelected = selectedMode == GameMode.CLASSIC,
                     glowPulse = glowPulse,
+                    bestScore = classicBest,
                     onClick = { selectedMode = GameMode.CLASSIC },
                     testTag = "mode_card_classic"
                 )
 
-                // Card 2: Time Rush
+                // Card 2: Time Rush (Golden Amber Accent)
                 EndlessModeCard(
                     title = "Time Rush",
                     subtitle = "60 Seconds • Fast Spawns",
-                    icon = "⏱️",
+                    mode = GameMode.TIME_RUSH,
                     badgeText = "BLITZ",
                     accentColor = Color(0xFFF59E0B),
-                    badgeBgColor = Color(0xFF78350F),
+                    badgeBgColor = Color(0x33F59E0B),
                     badgeTextColor = Color(0xFFFDE68A),
                     isSelected = selectedMode == GameMode.TIME_RUSH,
                     glowPulse = glowPulse,
+                    bestScore = timeRushBest,
                     onClick = { selectedMode = GameMode.TIME_RUSH },
                     testTag = "mode_card_time_rush"
                 )
 
-                // Card 3: Arcade Frenzy
+                // Card 3: Arcade Frenzy (Sunset Coral / Flame Accent)
                 EndlessModeCard(
                     title = "Arcade Frenzy",
                     subtitle = "Power-ups & Bomb Waves",
-                    icon = "🔥",
+                    mode = GameMode.ARCADE,
                     badgeText = "CHAOS",
-                    accentColor = Color(0xFFF97316),
-                    badgeBgColor = Color(0xFF7C2D12),
-                    badgeTextColor = Color(0xFFFDBA74),
+                    accentColor = Color(0xFFFF5722),
+                    badgeBgColor = Color(0x33FF5722),
+                    badgeTextColor = Color(0xFFFFCCBC),
                     isSelected = selectedMode == GameMode.ARCADE,
                     glowPulse = glowPulse,
+                    bestScore = arcadeBest,
                     onClick = { selectedMode = GameMode.ARCADE },
                     testTag = "mode_card_arcade"
                 )
 
-                // Card 4: Zen Popping
+                // Card 4: Zen Popping (Tranquil Teal Accent)
                 EndlessModeCard(
                     title = "Zen Popping",
                     subtitle = "No Bombs • Relaxing Ambient",
-                    icon = "🪷",
+                    mode = GameMode.ZEN,
                     badgeText = "ZEN",
-                    accentColor = Color(0xFF2DD4BF),
-                    badgeBgColor = Color(0xFF134E4A),
-                    badgeTextColor = Color(0xFF99F6E4),
+                    accentColor = Color(0xFF00E5FF),
+                    badgeBgColor = Color(0x3300E5FF),
+                    badgeTextColor = Color(0xFFBAE6FD),
                     isSelected = selectedMode == GameMode.ZEN,
                     glowPulse = glowPulse,
+                    bestScore = zenBest,
                     onClick = { selectedMode = GameMode.ZEN },
                     testTag = "mode_card_zen"
                 )
@@ -294,11 +318,11 @@ fun EndlessModeScreen(
 
             // Bottom Section: Big Hero Pill Button
             val (heroGradient, heroLabel) = when (selectedMode) {
-                GameMode.CLASSIC -> listOf(Color(0xFF34D399), Color(0xFF10B981), Color(0xFF059669)) to "START CLASSIC"
-                GameMode.TIME_RUSH -> listOf(Color(0xFFFDE047), Color(0xFFF59E0B), Color(0xFFD97706)) to "START TIME RUSH"
-                GameMode.ARCADE -> listOf(Color(0xFFFB923C), Color(0xFFF97316), Color(0xFFDC2626)) to "START ARCADE"
-                GameMode.ZEN -> listOf(Color(0xFF5EEAD4), Color(0xFF2DD4BF), Color(0xFF0F766E)) to "START ZEN"
-                else -> listOf(Color(0xFF34D399), Color(0xFF10B981), Color(0xFF059669)) to "START GAME"
+                GameMode.CLASSIC -> listOf(Color(0xFF10B981), Color(0xFF059669)) to "START CLASSIC"
+                GameMode.TIME_RUSH -> listOf(Color(0xFFF59E0B), Color(0xFFD97706)) to "START TIME RUSH"
+                GameMode.ARCADE -> listOf(Color(0xFFFF5722), Color(0xFFDC2626)) to "START ARCADE"
+                GameMode.ZEN -> listOf(Color(0xFF00E5FF), Color(0xFF0284C7)) to "START ZEN"
+                else -> listOf(Color(0xFF10B981), Color(0xFF059669)) to "START GAME"
             }
 
             val buttonInteraction = remember { MutableInteractionSource() }
@@ -312,17 +336,17 @@ fun EndlessModeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(64.dp)
+                    .height(60.dp)
                     .scale(buttonScale)
-                    .shadow(18.dp, RoundedCornerShape(28.dp), spotColor = heroGradient[1])
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(Brush.verticalGradient(heroGradient))
+                    .shadow(16.dp, RoundedCornerShape(26.dp), spotColor = heroGradient[0])
+                    .clip(RoundedCornerShape(26.dp))
+                    .background(Brush.horizontalGradient(heroGradient))
                     .border(
-                        width = 2.dp,
+                        width = 1.5.dp,
                         brush = Brush.verticalGradient(
-                            listOf(Color.White.copy(alpha = 0.65f), Color.White.copy(alpha = 0.15f))
+                            listOf(Color.White.copy(alpha = 0.60f), Color.White.copy(alpha = 0.20f))
                         ),
-                        shape = RoundedCornerShape(28.dp)
+                        shape = RoundedCornerShape(26.dp)
                     )
                     .clickable(
                         interactionSource = buttonInteraction,
@@ -335,12 +359,12 @@ fun EndlessModeScreen(
                 // Top shine highlight
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(24.dp)
+                        .fillMaxWidth(0.9f)
+                        .height(20.dp)
                         .align(Alignment.TopCenter)
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color.White.copy(alpha = 0.40f), Color.Transparent)
+                                listOf(Color.White.copy(alpha = 0.35f), Color.Transparent)
                             )
                         )
                 )
@@ -352,17 +376,17 @@ fun EndlessModeScreen(
                     Text(
                         text = heroLabel,
                         fontFamily = Baloo2FontFamily,
-                        fontSize = 20.sp,
+                        fontSize = 19.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 0.6.sp
                     )
                     Text(
                         text = "tap to enter the arena",
                         fontFamily = NunitoFontFamily,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.88f)
+                        color = Color.White.copy(alpha = 0.90f)
                     )
                 }
             }
@@ -375,19 +399,18 @@ fun EndlessModeScreen(
  */
 @Composable
 private fun EndlessGlassResourceCapsule(
-    icon: String,
+    type: String,
     amount: Int,
-    iconColor: Color,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xB3181230))
+            .background(Color(0xCC0D1326))
             .border(
                 width = 1.dp,
                 brush = Brush.verticalGradient(
-                    listOf(Color(0x55FFFFFF), Color(0x15FFFFFF))
+                    listOf(Color(0x44FFFFFF), Color(0x11FFFFFF))
                 ),
                 shape = RoundedCornerShape(16.dp)
             )
@@ -398,7 +421,10 @@ private fun EndlessGlassResourceCapsule(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(text = icon, fontSize = 14.sp)
+            com.example.balloonpop.ui.components.CurrencyArt(
+                type = type,
+                modifier = Modifier.size(16.dp)
+            )
             Text(
                 text = String.format("%,d", amount),
                 fontFamily = Baloo2FontFamily,
@@ -411,19 +437,20 @@ private fun EndlessGlassResourceCapsule(
 }
 
 /**
- * High-End Mode Card with dynamic border glow and squircle icon tile.
+ * High-End Mode Card with unified card background and luminous accent glow.
  */
 @Composable
 private fun EndlessModeCard(
     title: String,
     subtitle: String,
-    icon: String,
+    mode: GameMode,
     badgeText: String,
     accentColor: Color,
     badgeBgColor: Color,
     badgeTextColor: Color,
     isSelected: Boolean,
     glowPulse: Float,
+    bestScore: Int = 0,
     onClick: () -> Unit,
     testTag: String,
     modifier: Modifier = Modifier
@@ -437,26 +464,26 @@ private fun EndlessModeCard(
     )
 
     val borderBrush = if (isSelected) {
-        Brush.linearGradient(
+        Brush.horizontalGradient(
             listOf(
                 accentColor,
-                accentColor.copy(alpha = 0.7f),
+                accentColor.copy(alpha = 0.85f),
                 accentColor
             )
         )
     } else {
         Brush.linearGradient(
             listOf(
-                Color(0x33FFFFFF),
-                Color(0x11FFFFFF)
+                Color(0x2AFFFFFF),
+                Color(0x10FFFFFF)
             )
         )
     }
 
     val cardBg = if (isSelected) {
-        Color(0xCC181335)
+        Color(0xF0121A33)
     } else {
-        Color(0xB3110E24)
+        Color(0xD90E1428)
     }
 
     Box(
@@ -464,16 +491,16 @@ private fun EndlessModeCard(
             .fillMaxWidth()
             .scale(scale)
             .shadow(
-                elevation = if (isSelected) 14.dp else 4.dp,
-                shape = RoundedCornerShape(20.dp),
+                elevation = if (isSelected) 12.dp else 2.dp,
+                shape = RoundedCornerShape(18.dp),
                 spotColor = if (isSelected) accentColor else Color.Transparent
             )
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(cardBg)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 brush = borderBrush,
-                shape = RoundedCornerShape(20.dp)
+                shape = RoundedCornerShape(18.dp)
             )
             .clickable(
                 interactionSource = interaction,
@@ -481,7 +508,7 @@ private fun EndlessModeCard(
                 onClick = onClick
             )
             .testTag(testTag)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
+            .padding(horizontal = 14.dp, vertical = 13.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -495,29 +522,29 @@ private fun EndlessModeCard(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                // Squircle Icon Tile with Glossy Gradient
+                // Squircle Icon Tile with Deep Gradient & Vector EndlessModeArt
                 Box(
                     modifier = Modifier
-                        .size(54.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .size(50.dp)
+                        .clip(RoundedCornerShape(15.dp))
                         .background(
                             Brush.verticalGradient(
                                 listOf(
-                                    accentColor.copy(alpha = 0.85f),
-                                    accentColor.copy(alpha = 0.40f)
+                                    accentColor.copy(alpha = 0.75f),
+                                    accentColor.copy(alpha = 0.35f)
                                 )
                             )
                         )
                         .border(
-                            width = 1.5.dp,
+                            width = 1.2.dp,
                             color = Color.White.copy(alpha = 0.35f),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(15.dp)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = icon,
-                        fontSize = 26.sp
+                    com.example.balloonpop.ui.components.EndlessModeArt(
+                        mode = mode,
+                        modifier = Modifier.size(34.dp)
                     )
                 }
 
@@ -528,7 +555,7 @@ private fun EndlessModeCard(
                     Text(
                         text = title,
                         fontFamily = Baloo2FontFamily,
-                        fontSize = 18.sp,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -537,9 +564,19 @@ private fun EndlessModeCard(
                         text = subtitle,
                         fontFamily = NunitoFontFamily,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFCBD5E1)
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF94A3B8)
                     )
+
+                    if (bestScore > 0) {
+                        Text(
+                            text = "BEST: $bestScore",
+                            fontFamily = Baloo2FontFamily,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = accentColor
+                        )
+                    }
                 }
             }
 
@@ -551,7 +588,7 @@ private fun EndlessModeCard(
                 if (isSelected) {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(22.dp)
                             .clip(CircleShape)
                             .background(accentColor),
                         contentAlignment = Alignment.Center
@@ -559,8 +596,8 @@ private fun EndlessModeCard(
                         Icon(
                             imageVector = Icons.Default.Check,
                             contentDescription = "Selected",
-                            tint = Color(0xFF0B1026),
-                            modifier = Modifier.size(16.dp)
+                            tint = Color(0xFF070B18),
+                            modifier = Modifier.size(15.dp)
                         )
                     }
                 }
@@ -568,19 +605,19 @@ private fun EndlessModeCard(
                 // Tag Badge (SURVIVAL, BLITZ, CHAOS, ZEN)
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(badgeBgColor)
-                        .border(1.dp, accentColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 10.dp, vertical = 3.dp),
+                        .border(1.dp, accentColor.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 9.dp, vertical = 2.5.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = badgeText,
                         fontFamily = NunitoFontFamily,
-                        fontSize = 10.sp,
+                        fontSize = 9.5.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = badgeTextColor,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 0.6.sp
                     )
                 }
             }

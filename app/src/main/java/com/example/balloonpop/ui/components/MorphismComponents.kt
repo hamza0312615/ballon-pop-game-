@@ -455,13 +455,12 @@ fun LevelDiveOverlay(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier
-                .scale(cameraScale)
-                .padding(24.dp)
+            modifier = Modifier.padding(24.dp)
         ) {
             Box(
                 modifier = Modifier
                     .size(90.dp)
+                    .scale(cameraScale)
                     .shadow(24.dp, CircleShape, spotColor = Color(0xFFFFD700))
                     .clip(CircleShape)
                     .background(

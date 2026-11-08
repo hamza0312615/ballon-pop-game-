@@ -1,0 +1,281 @@
+Balloon Pop Deluxe — New Recording Review + Google AI Studio Fix Prompt
+Date: 2026-10-21 (evening recording)
+Source reviewed: Screen recording, 159.9 seconds (2:39), 9:29 PM – 9:31 PM on device
+Flow covered in the recording: Home → Shop (all 6 tabs) → Daily Spin wheel → Quests (claiming) → Endless Modes → Skill Vault → Map (Neon Glade) → Stage 5 gameplay + Victory → Stage 6 gameplay + Victory → AdMob interstitial → Home (Stage 7) → Map full scroll through all 7 zones → Stage 7 intro → AdMob interstitial → Stage 7 Failed screen → Revive → Stage 7 gameplay → Pause → Home → Map scroll again
+Rule for this review: Every error below is visible in a frame of THIS recording, with its timestamp. Nothing is guessed. Where a cause is not visible, I say so and tell the AI Studio agent what to check — I do not invent a cause.
+NOT a game bug (excluded on purpose): At ~02:03–02:05 the phone's notification shade is pulled down (TikTok/WhatsApp notification, "Backing up your photos"). That is the phone OS, not the game. Do not ask AI Studio to fix it.
+
+PART 1 — WHAT IS GOOD NOW (verified in this recording — do NOT regress these)
+Continue button is now CORRECT. Home shows "CONTINUE STAGE 5" at the start (player is on Stage 5), "CONTINUE STAGE 7" after Stages 5 and 6 are cleared (01:48, 02:22). This was a bug in an older build ("PLAY LEVEL 1 / wrong stage") — it is fixed in this build.
+Stage intro zone names are CORRECT. Stage 5, 6, and 7 all correctly say "Neon Glade / Zone 1: Neon Glade". The old wrong-zone bug (Stage 46 labelled Prism Peaks) does not appear here.
+Single HUD on Home, Map, Quests. One row only: ❤ 3/5, coins, gems. The old duplicated-HUD bug is gone on these screens.
+Shop descriptions are no longer generic. Themes now have different descriptions (Sunset Twilight: "Warm dusk gradient with drifting clouds", Midnight Obsidian: "Deep dark voids with sleek obsidian gleam", Cyberpunk Neon, Crimson Eclipse, Cosmic Galaxy, Royal Golden Onyx all differ). The old "Theme visual atmosphere" copy-paste bug is fixed.
+Quest claiming actually pays out. Coin total visibly rises 3,358 → 3,808 → 4,368 → 4,658 → 5,458 and gems 76 → 79 → 81 → 87 → 95 while CLAIM buttons are tapped (00:22–00:28). Buttons correctly turn into green "CLAIMED ✓".
+Endless Modes selection works. Tapping Classic Survival / Time Rush / Arcade Frenzy / Zen Popping moves the green check and changes the bottom start button (00:30–00:33).
+Gameplay background is readable now. The sunset gradient (purple top → orange bottom) makes balloons, stars and cat balloons visible. This is much better than the old flat muddy dark-red background.
+Victory screen for Stage 5 is correct. 3 gold stars, "Score: 856 points", +500 Coins, +12 Gems, Stage 5 → Stage 6 progress, "Campaign Progress: 5/200 Stages Cleared (2%)" (01:12).
+AdMob interstitial test ads load and close. Both times (01:40–01:45 and 01:56–02:02). Closing with the X returns to the game. (Frequency and timing are a separate problem — see Error A2.)
+Pause menu works. Resume / Settings / Restart / Main Menu, "Version 1.4.2", and Main Menu correctly returns Home (02:20–02:22).
+
+PART 2 — ALL ERRORS FOUND, IN DETAIL
+A. CRITICAL LOGIC ERRORS (these break the game — fix first)
+A1. Game keeps running behind the interstitial ad — Stage 7 auto-fails unfairly — ~01:54 to ~02:07
+01:54: Stage 7 intro card is shown (Target 50 pops, Time 66s, Max Miss 5). Player taps PLAY.
+01:55: Countdown card appears ("…NG INTO STAG…", number 3).
+01:56–02:02: A full-screen AdMob interstitial plays INSTEAD of gameplay starting.
+~02:06–02:07, immediately after the ad is closed: "Stage 7 Failed! — TOO MANY BALLOONS MISSED! You missed 6 balloons (Limit: 5 allowed)" — with the gameplay HUD behind it showing 0/50 pops and the timer already running.
+Meaning, visible from the frames alone: balloons spawned and were counted as missed while the player was stuck watching an ad and had popped 0 balloons. The player never got a chance to play.
+This is the single worst bug in the recording. A player who gets this once will uninstall.
+A2. Interstitial ad frequency is too high, and one fires BEFORE a stage starts
+Ad #1 fires after the Stage 6 Victory screen (01:39–01:45).
+Ad #2 fires after the Stage 7 countdown, before a single balloon appears (01:56).
+That is 2 interstitials in about 1 minute of recording, and the second one is at the worst possible moment (stage start). Interstitials must never fire between tapping PLAY / the countdown and gameplay starting.
+A3. Stage 6 Victory shows "Score: 0 points" — ~01:38
+Stage 6 is cleared at 46/48 pops with long combo chains visible in the frames (+50, COMBO 7x!, COMBO 8x!, COMBO 9x!, THUNDER ZAP!, SPEED BONUS! +45).
+The Victory card then says: 3 gold stars, "Score: 0 points", +480 Coins, +6 Gems, "Stage 6 of 200".
+Compare Stage 5's Victory (01:12): "Score: 856 points" for similar play. Stage 6's score is lost / never accumulated / reset before the Victory card reads it. The exact code cause is not visible — the agent must trace where the stage score is stored and when it is reset.
+A4. Pop counter visibly goes BACKWARDS during Stage 5 — ~00:59 and ~01:05
+00:57–00:58: counter reads 14/50 pops.
+00:59–01:00: counter reads 12/50 pops — it went down by 2 while the player was popping.
+01:03: counter reads 23/50 pops.
+01:05: counter reads 20/50 pops — down by 3 again, then jumps to 30/50 by 01:06.
+No on-screen text explains any penalty at those moments. Either (a) the counter/score state is being overwritten by another system (combo / floating-text / special balloon), or (b) a hidden penalty exists that is never shown to the player. Both are unacceptable — the agent must find which one it is. If it is (b), the penalty must be shown as explicit floating text (e.g. "−3 POPS") at the moment it happens. If it is (a), fix the state bug so the pop count only ever increases by +1 per valid pop during a stage.
+A5. Stage 7 fail offers two confusingly identical revive options — ~02:06
+Green button: "PLAY ON (+15s & RESET MISSES)"
+Purple button: "REVIVE FREE (+15s & 3 ❤)" with a small ad icon
+Both lead with the same "+15s", so the player cannot tell at a glance what is different, what the green one costs (nothing is shown — no coin/gem price on it), or that the purple one is free because it plays an ad (the ad icon is tiny). Prices/conditions must be on the buttons themselves.
+B. COUNTDOWN AND STAGE-INTRO ERRORS (still broken — same family as the old build)
+B1. "DIVING INTO STAGE" title is clipped off both sides of the screen — every stage
+Stage 5, ~00:43: only "VING INTO STAG" is readable, under a giant orange circle with the stage number.
+Stage 7, ~01:54–01:55: only "NG INTO STAG" is readable.
+The title is wider than the screen and is being centre-cropped. This exact bug was reported in the previous build and is STILL here. The text must fit inside the screen width (smaller font, two lines, or auto-shrink-to-fit) — test at 360px width.
+B2. The second intro card renders every value TWICE, offset — ~00:44, ~01:14, ~01:55
+On the dark countdown card ("STAGE 5 OF 200 / Zone 1: Neon Glade"):
+The 3 star outlines look like grey scribbles — each star is drawn twice, slightly offset.
+"Target 50 Pops" — the icon and text have a ghost copy underneath ("50 Pops" is doubled).
+"Time 50s" — doubled the same way.
+"Max Miss 5" — shows as "5 5".
+Same doubled rendering on the Stage 6 card (Target "48 Pops" doubled, Time 63s doubled, Max Miss "5 5") and the Stage 7 card.
+One element = one render. This looks like the card is being drawn by two overlapping layers (the modal layer + the gameplay layer underneath) — the agent must check for duplicate mounting, but whatever the cause, only one copy may be visible.
+B3. Wrong mode banner on a normal stage card — ~00:44
+The Stage 5 (normal campaign stage) countdown card carries an orange banner: "ARCADE FRENZY! RAPID RESPAWNS!"
+Stage 5 is not Arcade Frenzy — that is an Endless mode. A campaign stage card must show the campaign stage's own modifier, or no banner at all. Do not show an Endless-mode name inside a campaign stage.
+B4. Floating combat text still renders OVER / BEHIND the Victory card — ~01:12
+On the Stage 5 Victory card, "+50 / COMBO 7x!" floating text is visible through the middle of the card.
+When Victory (or Failed / Pause) opens, the gameplay floating-text layer must be cleared and stopped. Modals sit on a clean layer, always.
+C. GAMEPLAY FLOATING-TEXT ERRORS (the biggest visual problem in the game)
+C1. The same text is rendered twice, offset, all through gameplay
+Examples visible in the frames:
+~00:47–00:49: "COMBO 2x!" appears twice, stacked/offset, with a dark copy under the gold copy. "+30 +2 COMBO 2x!" overlaps itself.
+~00:53–00:54: "COMBO 5x! / CRIT POP! +5 / +50" — three lines printed on top of each other in the same spot, unreadable.
+~01:05–01:07: "COMBO 2x! CRIT POP! +5 / JACKPOT! +15 / +50 +2" all collide in one cluster at the bottom centre.
+~01:33: "THUNDER ZAP! COMBO 6x!" and "GHOST POP!" overlap each other and the balloons.
+This is the same double-render family as B2, plus no collision/queue system for where texts spawn.
+C2. Floating text is clipped at the screen edges
+Visible examples:
+~01:03: "HUNDER ZAP!" — the T is off the left edge.
+~00:50–00:51: "ARMOR BRO…" cut off at the right edge.
+~01:06: "OST POP!" (GHOST POP! cut) at the left edge, "D BONUS!" (SPEED BONUS! cut) at the left edge.
+~01:36: "R BROKEN!" (ARMOR BROKEN! cut) at the right edge.
+Floating text must be clamped inside the screen: if a balloon pops near an edge, its text shifts inward so the full text is always readable.
+C3. Giant centre banners fire too often, last too long, and block gameplay
+"SWEET!", "NICE!", "ICE COLD!", "TASTY!" — a very large pink-to-orange pill in the exact centre of the screen.
+It fires repeatedly in a single stage (SWEET! at ~00:52, again ~00:53, again ~01:10, again ~01:11, again ~01:35; NICE! at ~01:00, ~01:07, ~01:20, ~01:26, ~01:31).
+While it is up, it covers balloons rising through the centre — the player literally cannot see what to pop. At ~00:56–00:58 "ICE COLD!" sits in the centre while balloons pass behind it and the Miss counter rises 2/5 → 3/5.
+One celebration per combo milestone, shorter, smaller, and never in the centre play lane (move it to the upper third), with a cooldown so it cannot re-fire for several seconds.
+C4. The same combo is shown in THREE places at once
+At ~00:52–00:54, ~01:07, ~01:33 and many other moments, the player sees all of these simultaneously:
+A gold pill at top-right ("8x COMBO!" / "5x COMBO!" / "3x COMBO!")
+Floating text at the pop point ("COMBO 5x!")
+A giant centre banner ("SWEET!")
+Pick ONE home for combo feedback: the top-right pill updates live; floating text shows only points (+30, +50); centre banners (C3) only for true milestones (first time reaching 5x, 10x in that stage).
+C5. Top-right of the gameplay HUD is overcrowded and overlapping — all gameplay
+The small round profile avatar, the pause button, the timer pill, and — during play — an "ULTRA" flame tag and a "+2x" tag all stack on top of each other at the top-right corner (clearly visible ~00:55–00:59, ~01:17–01:19, ~01:37).
+At ~01:17 the pops HUD at top-left is also partially covered by a tag ("…/48 pops" is obscured).
+Reserve fixed slots: timer + pause top-right, nothing else. Move the avatar and the ULTRA/multiplier tags out of the gameplay HUD (multiplier belongs inside the combo pill in C4).
+C6. "SLOW MOTION" pill is cut off at the bottom-left — ~00:46–01:02 and Stage 6/7
+A dark pill labelled (partially) "SLOW MOTION" with a snowflake peeks from behind the bottom BOMB / LIGHTNING / FREEZE bar, half off-screen, for long stretches of Stage 5.
+Either it is an active-effect indicator that belongs in a visible slot above the power-up bar, or it is a stuck leftover element. It may never be half-hidden behind another bar.
+C7. Power-up bar gives no state information
+BOMB / LIGHTNING / FREEZE buttons look identical whether they are ready, on cooldown, or have 0 charges — only a tiny red corner tag differs, unreadable at a glance (~all gameplay frames).
+Each button needs: charge count badge, greyed/desaturated state at 0 charges, and a cooldown sweep if it has one.
+D. SHOP / VAULT & SHOP ERRORS (00:01–00:14)
+D1. Cards overlap and ghost while scrolling — every tab
+~00:04–00:05 (Themes): as the list scrolls, "Sunset Twilight / Midnight Obsidian" cards slide OVER the "Cyberpunk Neon / Crimson Eclipse" cards — titles, descriptions and price pills from two rows are visible on top of each other in the same space.
+Same overlap at ~00:06–00:07 (Hammers), ~00:12–00:13 (Blades), and in Quests (see E1).
+The scrolling list is rendering the outgoing row and the incoming row in the same position. One card, one position, no ghost copies — the agent must check list recycling / animation transforms.
+D2. Every item in a category uses the IDENTICAL icon — no item looks different
+Themes: all 6 themes show the same artist-palette icon. No preview of what the theme actually looks like.
+Hammers: Oak Wooden Mallet, Iron Sledgehammer, Gilded War Hammer, Cyber Neon Smasher, Thunder Mjolnir, Diamond Crusher — all show the same hammer image.
+Frames: all 6 frames show the same generic landscape-picture icon.
+Blades: all show the same crossed-swords icon.
+A shop where nothing looks different cannot sell anything. Minimum fix: Themes get a real gradient/preview swatch of their own colours; Hammers/Blades/Frames get at least a colour-tinted variant per item (gold for Gilded/Royal, neon cyan/pink for Cyber, icy blue for Diamond/Cosmic, etc.) using each item's own accent colour.
+D3. EQUIPPED + ACTIVE shown at the same time on the same item
+Themes ~00:02–00:05: Sunset Twilight has a green "✓ EQUIPPED" tag at the top of the card AND a green "ACTIVE" button at the bottom.
+Hammers ~00:05: Oak Wooden Mallet — "✓ EQUIPPED" tag + "ACTIVE" button.
+Blades ~00:12: Classic Pointer — "✓ EQUIPPED" tag + "ACTIVE" button.
+Use ONE state label per item. States allowed: EQUIP (button, not owned/equipped) / EQUIPPED (disabled button, currently on) / price button (not owned).
+D4. Price pills show a useless "0" second currency — many items
+Cyberpunk Neon: "300 (coins) | 0 (gems)". Crimson Eclipse: "400 | 0". Iron Sledgehammer: "200 | 0". Royal Gilded Gold frame: "600 | 0". Cosmic Aurora: "0 | 20". Laser Sabre: "0 | 66" style pills are also visible in Blades.
+If an item costs only coins, show only the coin pill. If only gems, only the gem pill. A "0" pill is noise and looks like a bug to players.
+D5. Tab content bleeds across tabs during switching — ~00:10–00:12
+At ~00:10, with Flames selected, the top cards visible are "Watch Short Ad" and "Exchange 500" — those are Gems-tab cards.
+At ~00:11, with Gems selected, Pouch/Bag of Gems cards appear from under Flames cards (Crimson Ember / Blazing Fire still half-visible).
+Switching tabs must instantly show only that tab's items, starting scrolled to the top, with no cards from the previous tab visible for any frame.
+D6. Item descriptions are clipped mid-sentence at the bottom of cards
+Blades ~00:13–00:14: Cyber Scythe "Futuristic hyper-tech neon scythe…" and Dragon Fang Blade "Forged from a real dragon's tooth with ember b…" are cut off by the next row / card edge.
+Card height must fit icon + name + 2 full lines of description + price/state button, with nothing cut.
+E. QUESTS ERRORS (00:20–00:28)
+E1. Reward values are rendered TWICE on quest cards — ghost/double pills
+~00:25–00:27 while scrolling: Daily Quest cards show e.g. "200 coins" as a pill AND a second fainter "200 coins" directly under/over it; "250 coins / 250 coins", "350 coins / 350 coins" the same.
+Weekly Quest "Pop 250 Total Balloons" shows two different reward pills side by side / stacked — "800 coins" and a second pill — and "Unleash a 10x Mega Combo" shows "1000 coins" with a ghost copy.
+Progress numbers also double-print while scrolling (~00:26: "6/10" and "10/10" overlap other numbers; "250/250" overlaps a pill).
+Same double-render family as B2/C1/D1. One label, one render, including while the list is moving.
+E2. Every quest is titled the same
+Every card's title is literally "Daily Quest" or "Weekly Quest", with the actual goal ("Pop 40 Balloons", "Reach 5x Combo") as a small subtitle.
+Title should be the goal itself. "Daily Quest" belongs only in the small DAILY/WEEKLY tag, which already exists on the card.
+F. DAILY SPIN WHEEL ERROR (00:16–00:17)
+F1. Wheel segment labels are unreadable at rest
+Several segment texts ("750 coins", "10 gems", "1000 coins") are upside-down or mirrored at rest position — the bottom segment reads as mirrored text ("suioɔ").
+Labels on a wheel will naturally rotate, but at the wheel's resting position every label must be oriented radially and readable when the wheel stops — rotate each label so its baseline follows the radius, and do not mirror any label.
+(The 7-day streak row D1–D7 with +10/+15/+20/+25/+30/+40/+50 gems and the "FREE DAILY SPIN" button itself look correct.)
+G. ENDLESS MODES ERRORS (00:30–00:33)
+G1. "BEST —" is empty on all four modes
+Classic Survival, Time Rush, Arcade Frenzy, Zen Popping all show "🏆 BEST —" with a dash.
+In this recording no Endless run is played, so a dash for a never-played mode is fair — BUT the agent must verify: play one Endless run, finish it, return to this screen, and confirm the best score is saved and shown. This exact row was a problem in an earlier build, so it must be proven working, not assumed.
+G2. Start button text glitches when switching modes — ~00:31–00:32
+When the selection changes, the bottom button briefly reads "START ARCADEH" — the old and new labels overlap ("START ARCADE" + leftover character from the previous state) before settling.
+The button label must swap in one frame with no leftover characters. Also keep one consistent format: "START CLASSIC / START TIME RUSH / START ARCADE / START ZEN" — note the button currently shortens "Arcade Frenzy" to "ARCADE"; use the mode's full name or the same short name everywhere, including the card title.
+H. SKILL VAULT ERRORS (00:35–00:37)
+H1. Two different skills show identical stats — copy-paste
+Hammer Slide LVL 1: "+15% range, +12% impact force, Cooldown: 17.5s"
+Chrono Stasis LVL 1: "+15% range, +12% impact force, Cooldown: 19.5s"
+Chrono Stasis slows time — "range" and "impact force" are Hammer Slide's stats, not time-slow stats. Each skill must show its own real stats (Chrono Stasis: slow strength 75% and duration 6s — which its own description already states).
+H2. Skill Vault header is inconsistent with the rest of the game
+This screen's top bar shows only a centred coins/gems pill — no hearts, different layout from Home/Map/Quests.
+Use the same single HUD component as every other screen.
+I. MAP ERRORS (00:40–00:41, 01:48–01:53, 02:24–02:39) — the locked zones are broken
+The Neon Glade section (Stages 1–10) looks good: green platforms, gold stars over completed nodes, thin dotted teal trail. Everything below is about the LOCKED zones and the scrolling list, which are visibly broken in this recording:
+I1. Stage numbers are DUPLICATED on locked-zone nodes
+Visible examples while scrolling:
+Sunset Mesa section (~02:27–02:28): the chain shows 28 twice, 27 twice, 24 twice, 30 twice, 26, 29, 23, 21 — out of order and repeated.
+Aqua Reef section (~02:27): 34 appears twice, 36 appears twice, 33 appears twice in one chain, alongside 31, 32, 35, 37, 38, 39, 40.
+Prism Peaks section (~02:29–02:30): 20, 19, 17, 16, 14, 13, 12 appear mixed with a second set of numbers (47 is even visible at the top of the Prism Peaks view at ~02:24 — a Candy/Cyber-range number inside Zone 2's screen).
+Each stage number 1–200 must appear exactly ONCE in the whole map, in order, inside its own zone.
+I2. Zone headers and zone banners disagree with each other and with the nodes
+Candy Wonderland: on-screen header says "Stages 41–50" in one view (~02:36) and nodes 51, 52, 54, 56, 57, 59, 60 are already shown underneath it before the "ZONE 6: CYBER METROPOLIS" banner appears — Cyber-range stages are drawn inside Candy's section.
+Cyber Metropolis: one header reads "Stages 61–60" (~02:37) — an impossible range (start higher than end). The correct range is 51–60.
+Volcano Caldera: header says "Stages 61–70", but nodes numbered 71, 72, 73 are visible inside the Volcano section (~02:38) — stages from beyond this game's 70 shown here belong to no zone shown; if the game is 200 stages, zones must continue past 70 (see I4).
+Rule the agent must enforce everywhere: header range = banner range = the exact set of node numbers drawn in that section, no exceptions.
+I3. Two long straight gold vertical lines suddenly frame the screen in Cyber/Volcano — ~02:37–02:39
+While scrolling through Cyber Metropolis into Volcano Caldera, two thick straight orange/gold vertical bars appear at the left and right edges and run the full height of the map.
+No other zone has them. They look like a background/border element from one zone rendering on top of the next. Remove them, or — if a zone frame is intended — it must belong to one zone only and end where that zone ends.
+I4. The map implies the game ends at Stage 70 — but the game says 200 stages
+The full scroll in this recording goes: Neon Glade 1–10, Prism Peaks 11–20, Sunset Mesa 21–30, Aqua Reef 31–40, Candy Wonderland 41–50, Cyber Metropolis 51–60, Volcano Caldera 61–70 — and then the scroll ends.
+Every stage card in the same recording says "STAGE 5 OF 200", "STAGE 6 OF 200", "STAGE 7 OF 200", and Victory says "5/200 Stages Cleared".
+Either zones for 71–200 are missing from the map, or the map in this build only renders 7 zones of 10 while the stage data is 200. The agent must check the real stage/zone data and make the map render ALL of it, with zone ranges that match. Do not silently cut the map at 70. (If there really are more zones, their names/ranges must come from the game's own data — do not invent new zone names.)
+I5. Speech bubble / avatar marker on the map is garbled and doubled — ~00:40, ~01:49–01:53, ~02:30–02:32
+The current-stage marker shows a speech bubble reading "Woof! Let's pop 'em all!" — but in the frames it is clipped at the bubble edge ("Woof! Let's pop…"), printed TWICE stacked ("Woolf! Let's pop / Woof! Let's pop" ~01:49), and the name tag under the avatar ("Pip…") overlaps a gold pill so neither is readable.
+The marker also sits on top of the Stage 7/8 nodes and their lock icons (~01:52), hiding them.
+One bubble, full text inside it, name tag below the avatar not overlapping anything, and the marker offset to the side of the current node so the node and its number stay visible.
+I6. Locked nodes have no zone identity
+In every locked zone, nodes are the same dark circle + gold lock + small number, regardless of zone. Only the background colour changes.
+At minimum, tint locked node rings and the trail in the zone's accent colour (as Neon Glade's trail already is) so zones feel different before they are unlocked. Do not redesign the map layout — this is a tint/colour fix only.
+J. SMALLER POLISH ERRORS (visible, lower priority)
+J1. Home mascot is still an emoji. The gold circle above "BALLOON POP" still shows the party-face emoji (🥳 style), at 00:00, 01:48, 02:22, and the same emoji face is reused on the Pause screen (02:20) and an emoji on the Failed screen. A real balloon mascot was requested in earlier passes and is still not in this build. (Asset task, not code — do not let the agent draw a placeholder; leave a clearly marked 1:1 transparent slot sized exactly like the current circle if no asset is provided.)
+J2. Failed-screen emoji + text duplication risk: the Failed modal itself (02:06) is clean and readable — keep it that way; only fix A5 on it.
+J3. Inconsistent button verbs in the shop: owned items show "ACTIVE", unowned show "EQUIP" or a price — after D3, one system everywhere: price = buy, EQUIP = own but not on, EQUIPPED = on (disabled).
+
+PART 3 — COPY-READY PROMPT FOR GOOGLE AI STUDIO
+Copy everything inside the block below and paste it to the Google AI Studio agent in ONE message. Do not split it.
+BALLOON POP DELUXE — SURGICAL BUG-FIX PASS (from a frame-by-frame review of the latest 2:40 gameplay recording)
+
+You already built this game. Do NOT redesign anything. Do NOT change game logic, stage data, prices, rewards, or the visual design system, except where a fix below explicitly requires it. This is a bug-fix pass only. Fix ALL of the following, in this order. Every item includes how to verify it — run the verification yourself before saying it is done.
+
+=== P0 — CRITICAL LOGIC ===
+
+1. PAUSE THE GAME DURING ADS (unfair auto-fail bug)
+Reproduction: Open Stage 7, tap PLAY, countdown shows, an interstitial ad plays before gameplay, close the ad → the stage has already FAILED with "missed 6 balloons" at 0/50 pops. The game world kept spawning balloons and counting misses while the ad was on screen.
+Fix: The moment ANY full-screen ad (interstitial or rewarded) opens, fully pause the game: stop the stage timer, stop spawning, stop miss counting, freeze all balloons. Resume only from that exact frozen state after the ad closes. Also: an interstitial may NEVER fire between tapping PLAY / the countdown and the first balloon of a stage. Allowed interstitial moments: after a Victory or Failed screen is dismissed, or when returning to Home/Map — never before or during gameplay. Reduce frequency: at most 1 interstitial per 3 completed stages.
+
+2. STAGE SCORE SHOWING 0 ON VICTORY
+Reproduction: Clear Stage 6 (46/48 pops, combos up to 9x) → Victory card shows "Score: 0 points" while Stage 5's card correctly showed 856. Trace where the stage score is accumulated and when/where it is reset. The reset must happen when a NEW stage starts, never before the Victory card reads the score. Victory must show the real accumulated score for Stages 5, 6, 7 and every stage. Verify by clearing Stage 6 and Stage 7 and screenshotting both Victory cards.
+
+3. POP COUNTER GOING BACKWARDS
+During Stage 5 the counter visibly drops: 14/50 → 12/50, and later 23/50 → 20/50, with no explanation shown to the player. Find the cause. If a game system (special balloon, combo, floating-text, score) is overwriting the pop count, fix it so the pop count changes ONLY by +1 per valid pop. If a penalty mechanic is intended, it must display explicit floating text ("−3") at the moment it applies — silent decreases are not allowed. Verify: record a full Stage 5 playthrough and confirm the pop counter never decreases without an on-screen reason.
+
+4. REVIVE OPTIONS ON THE FAILED SCREEN
+The Failed screen shows "PLAY ON (+15s & RESET MISSES)" (green) and "REVIVE FREE (+15s & 3 hearts)" (purple). Both start with "+15s" and the green one shows no cost. Fix: each button must state exactly what it gives AND what it costs, e.g. green: "PLAY ON — +15s, Reset Misses — [coin/gem cost or FREE, written on the button]"; purple: "WATCH AD — +15s, +3 Hearts — FREE". No tiny icons as the only explanation.
+
+=== P1 — DOUBLE-RENDERING (one root family — find it and kill it everywhere) ===
+
+The same double-print appears in five places. Treat this as one rendering bug (duplicate mounted layer / recycled list item not cleared / text drawn by two components) and fix the root, not just the symptoms:
+a) Countdown stage card: stars, "Target / Time / Max Miss" values all print twice offset — Max Miss shows "5 5". Stage 5, 6, 7 cards all affected.
+b) Gameplay floating text: "COMBO 2x!", "CRIT POP!", point values print twice offset and stack unreadably.
+c) Quest cards: reward pills print twice ("200 coins / 200 coins") and progress numbers double-print while scrolling.
+d) Shop lists: while scrolling, outgoing and incoming cards overlap — two rows' titles, descriptions and prices visible in the same space (Themes, Hammers, Blades).
+e) Map current-stage speech bubble: "Woof! Let's pop 'em all!" prints twice, stacked and clipped.
+Acceptance: in a screen recording of all five areas, every text element exists exactly ONCE at all times, including DURING scroll animations and DURING tab switches. Also fix tab switching in the Shop: switching to Flames must never show Gems cards (or any previous tab's cards) for even one frame, and every tab opens scrolled to the top.
+
+=== P1 — COUNTDOWN / INTRO CARDS ===
+
+5. "DIVING INTO STAGE" TITLE CLIPPED: only "VING INTO STAG" / "NG INTO STAG" is visible — the title is wider than the screen. Make it fit: reduce font size and/or put it on two lines and/or auto-shrink-to-fit, centred, with at least 16px margin on both sides at 360px screen width. Test Stages 5 and 7.
+6. WRONG BANNER: the normal campaign Stage 5 countdown card shows "ARCADE FRENZY! RAPID RESPAWNS!" — an Endless mode name. Campaign stage cards show only the campaign stage's own modifier, or no banner. Never an Endless mode name.
+7. MODAL CLEANLINESS: when Victory / Failed / Pause opens, clear and stop ALL gameplay floating text and combo pills. No game text may render over or through a modal (currently "COMBO 7x! +50" shows through the Stage 5 Victory card).
+
+=== P1 — GAMEPLAY FEEDBACK ===
+
+8. FLOATING TEXT PLACEMENT SYSTEM: floating texts (points, combo, bonus) must (i) spawn in a small queue/lanes so they never overlap each other — offset each new text vertically from the last active one near that x position, fade older ones faster when a new one spawns at the same spot; (ii) be CLAMPED to the screen — measure text width and shift it inward so the full text is always visible (currently "THUNDER ZAP!" loses its T, "ARMOR BROKEN!" and "GHOST POP!" / "SPEED BONUS!" are cut at the edges).
+9. CENTRE BANNERS: "SWEET! / NICE! / ICE COLD! / TASTY!" — make them ~40% smaller, move them to the upper third (never the centre play lane), max 0.9 seconds on screen, and add a cooldown of at least 4 seconds between banners in the same stage. A banner may fire only on a NEW combo milestone in that stage.
+10. ONE COMBO DISPLAY: remove the duplication between the top-right combo pill, the floating "COMBO Nx!" text, and centre banners. Final system: the top-right pill is the only live combo counter; floating text shows POINTS ONLY (+30, +50); banners follow rule 9 only.
+11. GAMEPLAY HUD LAYOUT: top-right corner is overcrowded — profile avatar, pause, timer, "ULTRA" tag and "+2x" tag overlap each other and can cover the pops counter. Fixed slots: pops counter top-left; timer + pause top-right; NOTHING else in the top bar. Move the multiplier into the combo pill; remove the avatar and ULTRA tag from the gameplay HUD.
+12. STUCK "SLOW MOTION" PILL: a half-hidden pill sits behind the bottom power-up bar during Stages 5–7. Move active-effect indicators (Slow Motion, Freeze, etc.) to a visible row directly ABOVE the power-up bar, fully on screen, with a remaining-time indicator — or remove the pill if the effect is not active. Nothing may be half-covered by another UI element.
+13. POWER-UP BUTTON STATES: BOMB / LIGHTNING / FREEZE must show a charge-count badge, a greyed desaturated look at 0 charges, and a cooldown radial sweep while cooling down. Identical-looking buttons in all states are not acceptable.
+
+=== P2 — SHOP ===
+
+14. ONE STATE PER ITEM: remove the duplicate state — an item currently shows a "✓ EQUIPPED" tag AND an "ACTIVE" button. Final system: price button = not owned; "EQUIP" = owned, not active; "EQUIPPED" (disabled) = active. Applies to Themes, Hammers, Frames, Blades, Flames.
+15. NO "0" PRICE PILLS: if an item costs only coins, show only the coin pill; only gems → only the gem pill. Never render a "0 coins" or "0 gems" pill.
+16. ITEM ICONS MUST DIFFER: right now every Theme uses the same palette icon, every Hammer the same hammer, every Frame the same picture icon, every Blade the same swords. Minimum fix without new assets: Themes show a preview swatch filled with that theme's own gradient colours; Hammers / Blades / Frames are tinted with each item's own accent colour (gold = Gilded/Royal, cyan-magenta = Cyber, deep blue = Cosmic, red-orange = Crimson, etc.) and, for Themes, the swatch replaces the palette icon entirely.
+17. CARD HEIGHT: shop cards must fit icon + name + TWO FULL lines of description + price/state row with nothing clipped (currently Blade descriptions are cut mid-word, e.g. "Forged from a real dragon's tooth with ember b…").
+
+=== P2 — QUESTS / WHEEL / ENDLESS / SKILL VAULT ===
+
+18. QUEST TITLES: the card title must be the goal ("Pop 40 Balloons", "Reach 5x Combo", "Pop 250 Total Balloons"). "Daily Quest / Weekly Quest" appears ONLY in the small DAILY / WEEKLY tag. (Reward-pill double-print is fixed under the P1 double-render item — verify it here too.)
+19. WHEEL LABELS: at the wheel's resting position, every segment label must be readable and not mirrored — orient each label radially along its segment. Applies to all coin/gem labels on the Lucky Fortune Wheel.
+20. ENDLESS BEST SCORES: verify end-to-end — play one run of any Endless mode, finish it, return to the Endless Modes screen, and confirm "🏆 BEST" shows that run's score instead of "—". If it does not save/display, fix persistence. Also fix the start-button label glitch: when switching modes the button briefly shows overlapped text ("START ARCADEH") — swap labels atomically in one frame, and use consistent mode naming between the card and the button.
+21. SKILL VAULT STATS: Chrono Stasis currently copies Hammer Slide's stats ("+15% range, +12% impact force"). Give every skill its OWN stats from its own description (Chrono Stasis: 75% slow, 6s duration, its real cooldown). Audit all skills for copied stats.
+22. SKILL VAULT HUD: use the same single HUD component as Home/Map/Quests (hearts + coins + gems). Remove the special centred pill header on this screen.
+
+=== P2 — MAP (locked zones) ===
+
+23. UNIQUE, ORDERED NODE NUMBERS: in the locked zones, stage numbers are duplicated and out of order (Sunset Mesa shows 28, 27, 24, 30 twice each; Aqua Reef shows 34, 36, 33 twice; a "47" appears inside Prism Peaks' view). Every number from 1 to the final stage must appear EXACTLY ONCE in the whole map, in ascending order along the trail, inside its own zone's section.
+24. HEADERS = BANNERS = NODES: a zone's header range, its "ZONE N: NAME • Stages X–Y" banner, and the node numbers actually drawn in that section must all agree. Currently they do not: Cyber Metropolis has a header reading "Stages 61–60" (impossible — correct is 51–60); Candy Wonderland's section draws nodes 51–60 before the Cyber banner; Volcano Caldera's section (61–70) draws nodes 71–73.
+25. MAP MUST COVER THE WHOLE GAME: stage cards say "OF 200" and Victory says "5/200 Stages Cleared", but the map scroll ends at Volcano Caldera 61–70. Render zones/stages for the ENTIRE stage data of the game. Read zone names and ranges from the game's own data — do not invent zone names, and do not truncate the map at 70.
+26. STRAY GOLD BARS: two thick straight orange/gold vertical bars run down both screen edges while scrolling Cyber Metropolis → Volcano Caldera. No other zone has them. Remove them, or scope any zone-frame element strictly inside its own zone section.
+27. CURRENT-STAGE MARKER: the avatar speech bubble "Woof! Let's pop 'em all!" is clipped and double-printed (see P1) and the avatar + "Pip" name tag overlap a gold pill and hide the Stage 7/8 nodes. One bubble with the full text fitting inside it; name tag clear of all other elements; marker positioned beside (not on top of) the current node so the node, its number and its lock/star state stay visible.
+28. LOCKED NODE ZONE TINT: locked nodes are identical dark circles in every zone. Tint each locked node's ring and its trail segment in that zone's accent colour (follow Neon Glade's existing teal trail as the pattern). Colour/tint change only — do NOT change the map layout, node size, or trail shape.
+
+=== ASSET NOTE (do not fake this) ===
+29. The Home / Pause mascot is still a party emoji in a gold circle. If a real mascot asset is not provided in this project, leave a clearly marked transparent 1:1 placeholder slot at exactly the current circle size and list it as "AWAITING ASSET" in your summary — do not substitute another emoji and do not draw a replacement character.
+
+=== VERIFICATION CHECKLIST (do all of these and report pass/fail per item) ===
+[ ] Play Stage 7 from PLAY tap through countdown with an interstitial forced: game is frozen during the ad, 0 misses counted, stage starts normally after the ad.
+[ ] No interstitial fires before/during any stage in 5 consecutive stage starts; at most 1 interstitial per 3 stage completions.
+[ ] Clear Stage 6 and Stage 7: both Victory cards show a non-zero, different, real score.
+[ ] Full Stage 5 recording: pop counter never decreases silently.
+[ ] Failed screen: both revive buttons state reward + cost/ad clearly.
+[ ] Countdown cards for Stages 5, 6, 7: "DIVING INTO STAGE [n]" fully visible with margins; stars and Target/Time/Max Miss each rendered once; no Endless banner on campaign cards.
+[ ] Gameplay recording: no floating text overlaps another, none clipped at edges, centre banner appears at most once per milestone and never in the centre lane; Victory opens with zero floating text over it.
+[ ] Shop: scroll every tab top to bottom — no card overlap/ghosting, no cross-tab cards, no 0-price pills, no EQUIPPED+ACTIVE duplicates, no clipped descriptions.
+[ ] Quests: scroll the full list while claiming — every reward pill and progress number rendered once.
+[ ] Endless: finish one run, return — BEST shows the score; switch all 4 modes — start button text never glitches.
+[ ] Map: scroll the entire map — every stage number appears once in order; every header = banner = nodes; map reaches the game's final stage; no gold side bars; current-stage bubble is single, complete, and hides nothing.
+[ ] Skill Vault: every skill shows its own stats; HUD matches the rest of the game.
+
+In your final summary, list each numbered fix as DONE or NOT DONE with one line of evidence (what you changed / what you tested). Do not claim a fix you did not verify with the checklist above.
+
+PART 4 — HOW TO USE THIS
+Paste the Part 3 prompt into Google AI Studio in one message. Do not paste Part 1/2 — the prompt already contains everything the agent needs.
+When the new build is ready, record the same flow as this recording (Shop all tabs → Quests claim → Endless switch → Skill Vault → Map full scroll → Stages 5, 6, 7 with an ad) and send it here — I will check it against the 12-point verification checklist at the end of the prompt, item by item.
+Priority if the agent tries to do only part of it: A1 (ad pause) → A3 (score 0) → B1/B2 (countdown) → C1–C4 (floating text) → I1–I4 (map). The rest is polish; those five are player-facing breakage.

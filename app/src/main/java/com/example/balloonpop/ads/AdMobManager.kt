@@ -67,7 +67,24 @@ object AdMobManager {
     private var isRewardedLoading = false
     private var pendingRewardedShowCallback: ((Activity, (RewardItem?) -> Unit, () -> Unit) -> Unit)? = null
 
-    private var isShowingAd = false
+    private val _isShowingAdFlow = kotlinx.coroutines.flow.MutableStateFlow(false)
+    val isShowingAdFlow: kotlinx.coroutines.flow.StateFlow<Boolean> = _isShowingAdFlow
+
+    var isAdShowing: Boolean = false
+        private set
+
+    const val INTERSTITIAL_COOLDOWN_MS = 180_000L // At most 1 interstitial per ~3 minutes
+    private var lastInterstitialShownTimeMillis: Long = 0L
+    private var lastAnyAdClosedTimeMillis: Long = 0L
+
+    var isShowingAd: Boolean = false
+        private set
+
+    private fun setAdShowingState(showing: Boolean) {
+        isShowingAd = showing
+        isAdShowing = showing
+        _isShowingAdFlow.value = showing
+    }
 
     fun initialize(context: Context, onInitComplete: (() -> Unit)? = null) {
         if (isInitialized) {
@@ -214,7 +231,7 @@ object AdMobManager {
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 Log.d(TAG, "App Open Ad dismissed")
-                isShowingAd = false
+                setAdShowingState(false)
                 appOpenAd = null
                 loadAppOpenAd(activity.applicationContext)
                 onDismiss()
@@ -222,7 +239,7 @@ object AdMobManager {
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                 Log.w(TAG, "App Open Ad failed to show: ${adError.message}")
-                isShowingAd = false
+                setAdShowingState(false)
                 appOpenAd = null
                 loadAppOpenAd(activity.applicationContext)
                 onDismiss()
@@ -230,7 +247,7 @@ object AdMobManager {
 
             override fun onAdShowedFullScreenContent() {
                 Log.d(TAG, "App Open Ad showing")
-                isShowingAd = true
+                setAdShowingState(true)
             }
         }
         ad.show(activity)
@@ -280,8 +297,16 @@ object AdMobManager {
         }
     }
 
-    fun showInterstitialAd(activity: Activity, onDismiss: () -> Unit = {}) {
+    fun showInterstitialAd(activity: Activity, force: Boolean = false, onDismiss: () -> Unit = {}) {
+        val now = System.currentTimeMillis()
         if (isShowingAd) {
+            onDismiss()
+            return
+        }
+
+        // At most 1 interstitial per ~3 minutes, and never right after another ad
+        if (!force && (now - lastInterstitialShownTimeMillis < INTERSTITIAL_COOLDOWN_MS || now - lastAnyAdClosedTimeMillis < 60_000L)) {
+            Log.d(TAG, "Skipping interstitial due to 3-min cooldown (${(now - lastInterstitialShownTimeMillis) / 1000}s elapsed)")
             onDismiss()
             return
         }
@@ -291,7 +316,8 @@ object AdMobManager {
             ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     Log.d(TAG, "Interstitial Ad dismissed")
-                    isShowingAd = false
+                    setAdShowingState(false)
+                    lastAnyAdClosedTimeMillis = System.currentTimeMillis()
                     interstitialAd = null
                     loadInterstitialAd(activity.applicationContext)
                     onDismiss()
@@ -299,7 +325,8 @@ object AdMobManager {
 
                 override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                     Log.w(TAG, "Interstitial Ad failed to show: ${adError.message}")
-                    isShowingAd = false
+                    setAdShowingState(false)
+                    lastAnyAdClosedTimeMillis = System.currentTimeMillis()
                     interstitialAd = null
                     loadInterstitialAd(activity.applicationContext)
                     onDismiss()
@@ -307,7 +334,8 @@ object AdMobManager {
 
                 override fun onAdShowedFullScreenContent() {
                     Log.d(TAG, "Interstitial Ad showing")
-                    isShowingAd = true
+                    lastInterstitialShownTimeMillis = System.currentTimeMillis()
+                    setAdShowingState(true)
                 }
             }
             ad.show(activity)
@@ -420,7 +448,7 @@ object AdMobManager {
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 Log.d(TAG, "Rewarded Ad dismissed")
-                isShowingAd = false
+                setAdShowingState(false)
                 rewardedAd = null
                 loadRewardedAd(activity.applicationContext)
                 onDismiss()
@@ -428,7 +456,7 @@ object AdMobManager {
 
             override fun onAdFailedToShowFullScreenContent(adError: AdError) {
                 Log.w(TAG, "Rewarded Ad failed to show: ${adError.message}")
-                isShowingAd = false
+                setAdShowingState(false)
                 rewardedAd = null
                 loadRewardedAd(activity.applicationContext)
                 Toast.makeText(activity, "Ad playback failed: ${adError.message}", Toast.LENGTH_SHORT).show()
@@ -437,7 +465,7 @@ object AdMobManager {
 
             override fun onAdShowedFullScreenContent() {
                 Log.d(TAG, "Rewarded Ad showing")
-                isShowingAd = true
+                setAdShowingState(true)
             }
         }
 

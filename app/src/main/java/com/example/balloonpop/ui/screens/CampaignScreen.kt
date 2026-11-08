@@ -14,8 +14,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AllInclusive
+import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1287,7 +1292,7 @@ private fun VerticalLevelLadder(
                         } else {
                             (centerX + 44.dp).coerceAtMost(availableWidth - 92.dp)
                         }
-                        val petY = (centerY - 96.dp).coerceAtLeast(8.dp)
+                        val petY = (centerY - 18.dp).coerceAtLeast(8.dp)
                         Box(
                             modifier = Modifier.offset(x = petX, y = petY)
                         ) {
@@ -1403,7 +1408,7 @@ private fun ModernBottomFloatingDock(
         ) {
             // Tab 1: Home / Map (Active)
             DockItem(
-                icon = "🏠",
+                icon = Icons.Default.Home,
                 label = "Map",
                 isActive = true,
                 activeAccentColor = theme.primaryAccent,
@@ -1417,7 +1422,7 @@ private fun ModernBottomFloatingDock(
 
             // Tab 2: Endless Mode
             DockItem(
-                icon = "♾️",
+                icon = Icons.Default.AllInclusive,
                 label = "Endless",
                 isActive = false,
                 activeAccentColor = Color(0xFF00E5FF),
@@ -1474,16 +1479,16 @@ private fun ModernBottomFloatingDock(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
-                    modifier = Modifier.padding(horizontal = 2.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 ) {
-                    Text(text = theme.playButtonBadge, fontSize = 13.sp)
+                    Text(text = theme.playButtonBadge, fontSize = 14.sp)
                     Text(
-                        text = "Play Stage $currentLevel",
-                        fontSize = 11.sp,
+                        text = "Stage $currentLevel",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Black,
                         color = Color.White,
-                        letterSpacing = 0.1.sp,
+                        letterSpacing = 0.2.sp,
                         maxLines = 1,
                         softWrap = false
                     )
@@ -1492,7 +1497,7 @@ private fun ModernBottomFloatingDock(
 
             // Tab 3: Vault / Customize
             DockItem(
-                icon = "⚡",
+                icon = Icons.Default.Bolt,
                 label = "Vault",
                 isActive = false,
                 activeAccentColor = Color(0xFFA855F7),
@@ -1506,7 +1511,7 @@ private fun ModernBottomFloatingDock(
 
             // Tab 4: Shop (with tiny pulsing notification dot)
             DockItem(
-                icon = "🛒",
+                icon = Icons.Default.ShoppingCart,
                 label = "Shop",
                 isActive = false,
                 activeAccentColor = Color(0xFF38BDF8),
@@ -1525,7 +1530,7 @@ private fun ModernBottomFloatingDock(
 
 @Composable
 private fun DockItem(
-    icon: String,
+    icon: ImageVector,
     label: String,
     isActive: Boolean,
     activeAccentColor: Color,
@@ -1559,10 +1564,13 @@ private fun DockItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = icon,
-                fontSize = 18.sp,
-                modifier = Modifier.scale(if (isActive) 1.08f else 1.0f)
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (isActive) activeAccentColor else Color(0xFF94A3B8),
+                modifier = Modifier
+                    .size(20.dp)
+                    .scale(if (isActive) 1.1f else 1.0f)
             )
 
             Spacer(modifier = Modifier.height(2.dp))

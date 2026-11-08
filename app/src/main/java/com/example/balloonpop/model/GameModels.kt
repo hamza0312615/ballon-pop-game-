@@ -54,6 +54,16 @@ data class Balloon(
     var vx: Float = 0f
 )
 
+enum class ParticleType {
+    GLOW_SPARK,
+    RUBBER_SHRED,
+    SPARKLE_STAR,
+    RING_BURST,
+    ICE_CRYSTAL,
+    LIGHTNING_EMBER,
+    CONFETTI_RIBBON
+}
+
 data class Particle(
     var x: Float,
     var y: Float,
@@ -62,7 +72,11 @@ data class Particle(
     var radius: Float,
     val color: Color,
     var alpha: Float = 1.0f,
-    var isStar: Boolean = false
+    var isStar: Boolean = false,
+    var rotation: Float = 0f,
+    var vRot: Float = 0f,
+    var particleType: ParticleType = ParticleType.GLOW_SPARK,
+    var length: Float = 0f
 )
 
 data class PopShockwave(

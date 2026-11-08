@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -153,7 +154,7 @@ fun SkillVaultScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(text = "🪙", fontSize = 16.sp)
+                            com.example.balloonpop.ui.components.CurrencyArt("COIN", modifier = Modifier.size(16.dp))
                             Text(
                                 text = String.format("%,d", coins),
                                 fontFamily = Baloo2FontFamily,
@@ -182,7 +183,7 @@ fun SkillVaultScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(text = "💎", fontSize = 16.sp)
+                            com.example.balloonpop.ui.components.CurrencyArt("GEM", modifier = Modifier.size(16.dp))
                             Text(
                                 text = String.format("%,d", gems),
                                 fontFamily = Baloo2FontFamily,
@@ -279,7 +280,12 @@ fun SkillVaultScreen(
                             .border(1.5.dp, Color(0xFFF59E0B), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = "💡", fontSize = 22.sp)
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Tip",
+                            tint = Color(0xFFFFD54F),
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
 
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -404,16 +410,9 @@ private fun VaultSkillCard(
                             .border(1.5.dp, Color(0x66FFD54F), RoundedCornerShape(16.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = when (skill.id) {
-                                "skill_hammer_slide" -> "🔨"
-                                "skill_slice" -> "⚔️"
-                                "skill_freeze" -> "⏳"
-                                "skill_vortex" -> "🌀"
-                                "skill_supernova" -> "🌟"
-                                else -> "⚡"
-                            },
-                            fontSize = 28.sp
+                        com.example.balloonpop.ui.components.SkillVaultArt(
+                            skillId = skill.id,
+                            modifier = Modifier.size(38.dp)
                         )
                     }
 
@@ -466,7 +465,7 @@ private fun VaultSkillCard(
                 }
             }
 
-            // Stats Row: +15% range, +10% impact force
+            // Stats Row: Skill-tailored attributes
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -476,27 +475,51 @@ private fun VaultSkillCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "+${10 + currentLevel * 5}% range",
-                    fontFamily = NunitoFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF38BDF8)
-                )
-                Text(
-                    text = "+${8 + currentLevel * 4}% impact force",
-                    fontFamily = NunitoFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFD166)
-                )
-                Text(
-                    text = "Cooldown: ${(skill.cooldownSeconds - currentLevel * 0.5f).coerceAtLeast(4f)}s",
-                    fontFamily = NunitoFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFA78BFA)
-                )
+                if (skill.id == "skill_freeze") {
+                    Text(
+                        text = "+75% slow",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF38BDF8)
+                    )
+                    Text(
+                        text = "Freeze: ${3.5f + currentLevel * 0.5f}s",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF67E8F9)
+                    )
+                    Text(
+                        text = "Cooldown: ${(skill.cooldownSeconds - currentLevel * 0.5f).coerceAtLeast(4f)}s",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFA78BFA)
+                    )
+                } else {
+                    Text(
+                        text = "+${10 + currentLevel * 5}% range",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF38BDF8)
+                    )
+                    Text(
+                        text = "+${8 + currentLevel * 4}% impact force",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD166)
+                    )
+                    Text(
+                        text = "Cooldown: ${(skill.cooldownSeconds - currentLevel * 0.5f).coerceAtLeast(4f)}s",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFA78BFA)
+                    )
+                }
             }
 
             // Action Buttons: Equip or Upgrade or Unlock

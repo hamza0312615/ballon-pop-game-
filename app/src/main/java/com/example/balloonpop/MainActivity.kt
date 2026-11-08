@@ -51,22 +51,26 @@ class MainActivity : ComponentActivity() {
             BalloonPopTheme {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-                // Request POST_NOTIFICATIONS permission on Android 13+ (API 33+)
+                // Request POST_NOTIFICATIONS permission on Android 13+ (API 33+) only AFTER completing first stage
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val notifLauncher = rememberLauncherForActivityResult(
                         contract = ActivityResultContracts.RequestPermission()
                     ) { isGranted ->
+                        DailyNotificationHelper.setNotificationEnabled(this@MainActivity, isGranted)
                         if (isGranted) {
                             DailyNotificationHelper.scheduleDailyNotification(this@MainActivity)
                         }
                     }
-                    LaunchedEffect(Unit) {
-                        if (ContextCompat.checkSelfPermission(
+                    LaunchedEffect(uiState.shouldPromptFirstClearNotification) {
+                        // Only prompt the user after they successfully complete their first stage during gameplay
+                        if (uiState.shouldPromptFirstClearNotification &&
+                            ContextCompat.checkSelfPermission(
                                 this@MainActivity,
                                 Manifest.permission.POST_NOTIFICATIONS
                             ) != PackageManager.PERMISSION_GRANTED
                         ) {
                             notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            viewModel.onNotificationPromptDismissed()
                         }
                     }
                 }
@@ -194,9 +198,14 @@ class MainActivity : ComponentActivity() {
                                     }
                                     CurrentScreen.ENDLESS_SELECT -> {
                                         EndlessModeScreen(
+                                            highScore = uiState.lifetimeHighScore,
                                             lives = uiState.lives,
                                             coins = uiState.coins,
                                             gems = uiState.gems,
+                                            classicBest = viewModel.repository.getEndlessHighScore("CLASSIC"),
+                                            timeRushBest = viewModel.repository.getEndlessHighScore("TIME_RUSH"),
+                                            arcadeBest = viewModel.repository.getEndlessHighScore("ARCADE"),
+                                            zenBest = viewModel.repository.getEndlessHighScore("ZEN"),
                                             onStartMode = { mode ->
                                                 viewModel.startEndlessMode(mode)
                                             },
@@ -332,12 +341,14 @@ class MainActivity : ComponentActivity() {
                                             lightningBolts = viewModel.lightningBolts,
                                             screenFlashAlpha = uiState.screenFlashAlpha,
                                             boosterCounts = uiState.boosterCounts,
+                                            boosterCooldowns = uiState.boosterCooldowns,
                                             candyPraise = uiState.candyPraise,
                                             onTriggerBooster = { booster -> viewModel.triggerInGameBooster(booster) },
                                             coins = uiState.coins,
                                             equippedSkillId = uiState.equippedSkillId,
                                             skillEnergy = uiState.skillEnergy,
                                             skillCooldownRemaining = uiState.skillCooldownRemaining,
+                                            onPlayOnRevive = { withCoins -> viewModel.playOnRevive(withCoins) },
                                             isHammerSlideActive = uiState.isHammerSlideActive,
                                             hammerSlideTimeRemaining = uiState.hammerSlideTimeRemaining,
                                             stageBoosterUsesCount = uiState.stageBoosterUsesCount,

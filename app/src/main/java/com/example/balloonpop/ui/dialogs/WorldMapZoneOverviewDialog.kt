@@ -28,10 +28,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import com.example.balloonpop.ui.components.ZoneEmblemArt
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,7 +104,12 @@ fun WorldMapZoneOverviewDialog(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(text = "🗺️", fontSize = 22.sp)
+                            Icon(
+                                imageVector = Icons.Default.Place,
+                                contentDescription = "World Map",
+                                tint = Color(0xFF00F0FF),
+                                modifier = Modifier.size(22.dp)
+                            )
                             Text(
                                 text = "WORLD MAP",
                                 fontSize = 20.sp,
@@ -259,9 +266,10 @@ private fun ZoneSelectionCard(
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (isUnlocked) theme.titleOrnamentPrefix else theme.lockedIconSymbol,
-                        fontSize = 22.sp
+                    ZoneEmblemArt(
+                        zoneIndex = zoneIndex,
+                        isUnlocked = isUnlocked,
+                        modifier = Modifier.size(36.dp)
                     )
                 }
 

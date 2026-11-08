@@ -33,9 +33,13 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.balloonpop.model.WheelSegment
+import com.example.balloonpop.ui.components.CurrencyArt
+import com.example.balloonpop.ui.components.DailyFortuneWheelHubArt
+import com.example.balloonpop.ui.components.DailyWheelIconArt
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.NunitoFontFamily
 import kotlinx.coroutines.delay
@@ -177,7 +181,12 @@ fun DailyWheelScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.padding(start = 4.dp)
                 ) {
-                    Text(text = "🔥", fontSize = 14.sp)
+                    Icon(
+                        imageVector = Icons.Default.Whatshot,
+                        contentDescription = "Streak",
+                        tint = Color(0xFFFFB703),
+                        modifier = Modifier.size(16.dp)
+                    )
                     Text(
                         text = "7-DAY STREAK",
                         fontFamily = Baloo2FontFamily,
@@ -232,22 +241,8 @@ fun DailyWheelScreen(
                     )
                 }
 
-                // Center Gold Medallion Hub with Gift Box
-                Box(
-                    modifier = Modifier
-                        .size(66.dp)
-                        .shadow(12.dp, CircleShape, spotColor = Color(0xFFFFD700))
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                listOf(Color(0xFFFFFBEB), Color(0xFFFFE082), Color(0xFFF59E0B), Color(0xFFB45309))
-                            )
-                        )
-                        .border(3.dp, Color(0xFFFFFBEB), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "🎁", fontSize = 30.sp)
-                }
+                // Center Gold Medallion Hub with Mascot / Fortune Core
+                DailyFortuneWheelHubArt(modifier = Modifier.size(56.dp))
 
                 // Top Pointer Needle pointing down at 12 o'clock
                 Canvas(
@@ -334,7 +329,7 @@ fun DailyWheelScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(text = "🎁", fontSize = 26.sp)
+                        DailyWheelIconArt(modifier = Modifier.size(26.dp))
                         Text(
                             text = if (isFreeReady) "FREE DAILY SPIN" else "WATCH AD TO SPIN",
                             fontFamily = Baloo2FontFamily,
@@ -389,7 +384,7 @@ private fun StreakDayCard(
                 color = if (isToday) Color(0xFFFFD54F) else Color(0xCCFFFFFF)
             )
 
-            Text(text = "💎", fontSize = 16.sp)
+            CurrencyArt(currencyType = "gem", modifier = Modifier.size(16.dp))
 
             Text(
                 text = "+$gemAmount",
@@ -463,7 +458,8 @@ private fun FortuneWheelDisc(
             )
 
             // Text on segment
-            val midAngleRad = Math.toRadians((startAngle + sweepAngle / 2f).toDouble())
+            val midAngleDeg = ((startAngle + sweepAngle / 2f) % 360f + 360f) % 360f
+            val midAngleRad = Math.toRadians(midAngleDeg.toDouble())
             val textDist = radius * 0.65f
             val tx = (cx + textDist * cos(midAngleRad)).toFloat()
             val ty = (cy + textDist * sin(midAngleRad)).toFloat()
@@ -471,7 +467,8 @@ private fun FortuneWheelDisc(
             drawContext.canvas.nativeCanvas.apply {
                 save()
                 translate(tx, ty)
-                rotate((startAngle + sweepAngle / 2f + 90f).toFloat())
+                val textRotation = if (midAngleDeg in 90f..270f) midAngleDeg - 90f else midAngleDeg + 90f
+                rotate(textRotation)
                 val paint = Paint().apply {
                     color = android.graphics.Color.WHITE
                     textSize = 34f

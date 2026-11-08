@@ -16,10 +16,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import com.example.balloonpop.model.GameMode
+import com.example.balloonpop.ui.components.EndlessModeArt
+import com.example.balloonpop.ui.components.HomeNavIcon
+import com.example.balloonpop.ui.components.SkillVaultArt
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -180,27 +186,12 @@ fun HomeScreen(
                     .padding(vertical = DesignTokens.Space4),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Mascot Sitting above Title
-                Box(
-                    modifier = Modifier
-                        .offset(y = mascotBob.dp)
-                        .size(68.dp)
-                        .shadow(DesignTokens.ElevationActive, CircleShape, spotColor = DesignTokens.PrimaryBrand)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    Color(0xFFFEF08A),
-                                    DesignTokens.PrimaryBrandBright,
-                                    DesignTokens.PrimaryBrandDark
-                                )
-                            )
-                        )
-                        .border(2.5.dp, Color(0xFFFFEA00), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "🥳", fontSize = 38.sp)
-                }
+                // Friendly smiling balloon mascot character
+                com.example.balloonpop.ui.components.MascotCharacter(
+                    mood = com.example.balloonpop.ui.components.MascotMood.JOYFUL,
+                    size = 72.dp,
+                    modifier = Modifier.offset(y = mascotBob.dp)
+                )
 
                 Spacer(modifier = Modifier.height(DesignTokens.Space8))
 
@@ -238,7 +229,10 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "🎈", fontSize = 24.sp)
+                        com.example.balloonpop.ui.components.MascotCharacter(
+                            size = 34.dp,
+                            showGoldRing = true
+                        )
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = "BALLOON POP",
@@ -255,7 +249,11 @@ fun HomeScreen(
                                 letterSpacing = 1.sp
                             )
                         }
-                        Text(text = "✨", fontSize = 24.sp)
+                        com.example.balloonpop.ui.components.MascotCharacter(
+                            mood = com.example.balloonpop.ui.components.MascotMood.HAPPY,
+                            size = 34.dp,
+                            showGoldRing = true
+                        )
                     }
                 }
 
@@ -266,9 +264,16 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // "❓ HOW TO PLAY" Helper Pill
+                    // "HOW TO PLAY" Helper Pill
                     HomeHelperPill(
-                        icon = "❓",
+                        iconContent = {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "How to play",
+                                tint = Color(0xFF7DD3FC),
+                                modifier = Modifier.size(15.dp)
+                            )
+                        },
                         label = "HOW TO PLAY",
                         borderColor = DesignTokens.SecondaryAccentDeep,
                         textColor = Color(0xFF7DD3FC),
@@ -276,9 +281,16 @@ fun HomeScreen(
                         testTag = "how_to_play_button"
                     )
 
-                    // "⚡ CUSTOM LAB" Helper Pill
+                    // "CUSTOM LAB" Helper Pill
                     HomeHelperPill(
-                        icon = "⚡",
+                        iconContent = {
+                            Icon(
+                                imageVector = Icons.Default.Build,
+                                contentDescription = "Custom Lab",
+                                tint = Color(0xFFE9D5FF),
+                                modifier = Modifier.size(15.dp)
+                            )
+                        },
                         label = "CUSTOM LAB",
                         borderColor = Color(0xFFA855F7),
                         textColor = Color(0xFFE9D5FF),
@@ -345,7 +357,7 @@ fun HomeScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Text(
-                                text = "CONTINUE STAGE $currentLevel",
+                                text = "PLAY STAGE $currentLevel",
                                 fontFamily = Baloo2FontFamily,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Black,
@@ -381,7 +393,9 @@ fun HomeScreen(
 
                 // SECONDARY ACTION CARD 1: ENDLESS RUSH (Unified identical layout)
                 HomeSecondaryActionCard(
-                    icon = "⚡",
+                    iconContent = {
+                        EndlessModeArt(GameMode.ARCADE, modifier = Modifier.size(28.dp))
+                    },
                     iconBgColor = DesignTokens.SecondaryAccentDeep,
                     iconBorderColor = DesignTokens.SecondaryAccent,
                     title = "ENDLESS RUSH",
@@ -395,7 +409,9 @@ fun HomeScreen(
 
                 // SECONDARY ACTION CARD 2: SKILL VAULT (Unified identical layout)
                 HomeSecondaryActionCard(
-                    icon = "🔨",
+                    iconContent = {
+                        SkillVaultArt("skill_hammer_slide", modifier = Modifier.size(28.dp))
+                    },
                     iconBgColor = Color(0xFF6B21A8),
                     iconBorderColor = Color(0xFFA855F7),
                     title = "SKILL VAULT & HAMMERS",
@@ -417,8 +433,8 @@ fun HomeScreen(
             ) {
                 // 1. Daily Spin Button
                 HomeBottomNavButton(
-                    icon = "🎡",
-                    title = "Daily Spin",
+                    iconType = "SPIN",
+                    title = "Spin",
                     badge = "FREE",
                     color = Color(0xFF9333EA),
                     borderColor = Color(0xFFC084FC),
@@ -429,7 +445,7 @@ fun HomeScreen(
 
                 // 2. Balloon Shop Button
                 HomeBottomNavButton(
-                    icon = "🎁",
+                    iconType = "SHOP",
                     title = "Shop",
                     badge = "SALE",
                     color = DesignTokens.PrimaryBrandDark,
@@ -441,7 +457,7 @@ fun HomeScreen(
 
                 // 3. Quests Button
                 HomeBottomNavButton(
-                    icon = "🏆",
+                    iconType = "QUESTS",
                     title = "Quests",
                     badge = "NEW",
                     color = Color(0xFF059669),
@@ -542,7 +558,7 @@ fun HomeScreen(
  */
 @Composable
 private fun HomeSecondaryActionCard(
-    icon: String,
+    iconContent: @Composable () -> Unit,
     iconBgColor: Color,
     iconBorderColor: Color,
     title: String,
@@ -593,7 +609,7 @@ private fun HomeSecondaryActionCard(
                     .border(1.5.dp, iconBorderColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = icon, fontSize = 22.sp)
+                iconContent()
             }
 
             Column {
@@ -624,11 +640,11 @@ private fun HomeSecondaryActionCard(
 
 /**
  * 3-Column Bottom Navigation Button Component:
- * Uniform height (54dp), consistent icon/title stack, with notification badge support.
+ * Uniform height (52dp), consistent icon/title stack, with notification badge support.
  */
 @Composable
 private fun HomeBottomNavButton(
-    icon: String,
+    iconType: String,
     title: String,
     badge: String?,
     color: Color,
@@ -647,7 +663,7 @@ private fun HomeBottomNavButton(
 
     Box(
         modifier = modifier
-            .height(54.dp)
+            .height(52.dp)
             .scale(scale)
             .shadow(DesignTokens.ElevationAmbient, DesignTokens.ShapeCard)
             .clip(DesignTokens.ShapeCard)
@@ -666,19 +682,22 @@ private fun HomeBottomNavButton(
                 onClick = onClick
             )
             .testTag(testTag)
-            .padding(horizontal = DesignTokens.Space8, vertical = DesignTokens.Space4),
+            .padding(horizontal = DesignTokens.Space4, vertical = DesignTokens.Space4),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = icon, fontSize = 20.sp)
+            HomeNavIcon(type = iconType, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = title,
-                fontSize = DesignTokens.SizeCaption,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Black,
-                color = Color.White
+                color = Color.White,
+                maxLines = 1,
+                softWrap = false
             )
         }
 
@@ -706,7 +725,7 @@ private fun HomeBottomNavButton(
 
 @Composable
 private fun HomeHelperPill(
-    icon: String,
+    iconContent: @Composable () -> Unit,
     label: String,
     borderColor: Color,
     textColor: Color,
@@ -725,7 +744,7 @@ private fun HomeHelperPill(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space4)
     ) {
-        Text(text = icon, fontSize = 13.sp)
+        iconContent()
         Text(
             text = label,
             fontSize = DesignTokens.SizeCaption,

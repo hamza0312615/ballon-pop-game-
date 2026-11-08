@@ -234,6 +234,16 @@ class GameRepository(context: Context) {
         }
     }
 
+    fun getEndlessHighScore(mode: String): Int = SecurityGuard.sanitizeHighScore(prefs.getInt("endless_high_score_$mode", 0))
+    fun updateEndlessHighScore(mode: String, score: Int) {
+        val sanitized = SecurityGuard.sanitizeHighScore(score)
+        if (sanitized > getEndlessHighScore(mode)) {
+            prefs.edit().putInt("endless_high_score_$mode", sanitized).apply()
+            updateLifetimeHighScore(sanitized)
+            saveIntegritySignature()
+        }
+    }
+
     fun getLifetimeMaxCombo(): Int = prefs.getInt("stat_max_combo", 1)
     fun updateLifetimeMaxCombo(combo: Int) {
         if (combo > getLifetimeMaxCombo()) {

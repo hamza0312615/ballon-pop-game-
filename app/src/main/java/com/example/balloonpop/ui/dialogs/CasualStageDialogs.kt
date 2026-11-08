@@ -15,8 +15,15 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -200,8 +207,8 @@ fun VictoryStageDialog(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "🌈 STAGE $level CLEARED! 🌈",
-                    fontSize = 16.sp,
+                    text = "STAGE $level CLEARED!",
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
                     letterSpacing = 1.sp
@@ -224,14 +231,20 @@ fun VictoryStageDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Header
-                Text(
-                    text = "Stage $level of 200",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.White,
-                    letterSpacing = 1.sp
-                )
+                // Header with Golden Chalice Trophy
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    VictoryTrophyArt(modifier = Modifier.size(38.dp))
+                    Text(
+                        text = "Stage $level of 200",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        letterSpacing = 1.sp
+                    )
+                }
 
                 // High Score Badge if Achieved
                 if (isNewHighScore) {
@@ -283,7 +296,7 @@ fun VictoryStageDialog(
                         }
                     }
 
-                    // Reward Badges (Coins & Gems)
+                    // Reward Badges (Coins & Gems with Vector Art)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -294,18 +307,30 @@ fun VictoryStageDialog(
                         horizontalArrangement = Arrangement.SpaceAround,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "+$coinsEarned 🪙 Coins",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFFFBBF24)
-                        )
-                        Text(
-                            text = "+$gemsEarned 💎 Gems",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color(0xFF38BDF8)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            CurrencyArt(currencyType = "coin", modifier = Modifier.size(18.dp))
+                            Text(
+                                text = "+$coinsEarned Coins",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFFFBBF24)
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            CurrencyArt(currencyType = "gem", modifier = Modifier.size(18.dp))
+                            Text(
+                                text = "+$gemsEarned Gems",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFF38BDF8)
+                            )
+                        }
                     }
 
                     // Visual Stage Bridge (Level N -> Level N+1 across 200 stages)
@@ -368,14 +393,14 @@ fun VictoryStageDialog(
                         ) {
                             VictoryActionButton(
                                 text = "Main Menu",
-                                icon = "🏠",
+                                icon = Icons.Default.Home,
                                 onClick = onMainMenu,
                                 testTag = "victory_menu_button",
                                 modifier = Modifier.weight(1f)
                             )
                             VictoryActionButton(
                                 text = "Stage Map",
-                                icon = "🗺️",
+                                icon = Icons.Default.Map,
                                 onClick = onMap,
                                 testTag = "victory_map_button",
                                 modifier = Modifier.weight(1f)
@@ -387,14 +412,14 @@ fun VictoryStageDialog(
                         ) {
                             VictoryActionButton(
                                 text = "Replay",
-                                icon = "🔄",
+                                icon = Icons.Default.Refresh,
                                 onClick = onReplay,
                                 testTag = "victory_replay_button",
                                 modifier = Modifier.weight(1f)
                             )
                             VictoryActionButton(
                                 text = "Share",
-                                icon = "📣",
+                                icon = Icons.Default.Share,
                                 onClick = {
                                     val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                         type = "text/plain"
@@ -425,7 +450,7 @@ fun VictoryStageDialog(
 @Composable
 private fun VictoryActionButton(
     text: String,
-    icon: String,
+    icon: ImageVector,
     onClick: () -> Unit,
     testTag: String,
     modifier: Modifier = Modifier
@@ -460,7 +485,12 @@ private fun VictoryActionButton(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
-        Text(text = icon, fontSize = 16.sp)
+        Icon(
+            imageVector = icon,
+            contentDescription = text,
+            tint = Color(0xFFFFD700),
+            modifier = Modifier.size(16.dp)
+        )
         Spacer(modifier = Modifier.width(DesignTokens.Space4))
         Text(
             text = text,
@@ -495,8 +525,14 @@ fun FailedStageDialog(
         title = stageTitle,
         onClose = onMap
     ) {
-        // Mascot showing sad emotion
-        MascotCharacter(mood = MascotMood.SAD, size = 64.dp)
+        // Mascot showing sad emotion alongside bespoke Defeat Hazard Art
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            MascotCharacter(mood = MascotMood.SAD, size = 60.dp)
+            DefeatHazardArt(reason = reason, modifier = Modifier.size(54.dp))
+        }
 
         // Specific failure reason banner & description
         when (reason) {
@@ -512,7 +548,7 @@ fun FailedStageDialog(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "💨 TOO MANY BALLOONS MISSED!",
+                            text = "TOO MANY BALLOONS MISSED!",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFFCA5A5),
@@ -548,7 +584,7 @@ fun FailedStageDialog(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "⏱️ TIME'S UP! (${timeLimit}s EXPIRED)",
+                            text = "TIME'S UP! (${timeLimit}s EXPIRED)",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFFED7AA),
@@ -584,7 +620,7 @@ fun FailedStageDialog(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "💣 BOMB DETONATION!",
+                            text = "BOMB DETONATION!",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFFDA4AF),
@@ -610,7 +646,7 @@ fun FailedStageDialog(
             }
             GameOverReason.LIVES_DEPLETED -> {
                 Text(
-                    text = "💔 NO LIVES REMAINING!",
+                    text = "NO LIVES REMAINING!",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFFF87171),
@@ -626,12 +662,12 @@ fun FailedStageDialog(
             }
         }
 
-        // Play On (+15s Time & Reset Misses) Button
+        // Play On (+15s Time & Reset Misses — 100 Coins)
         JellyButton(
-            text = "PLAY ON (+15s ⏱️ & RESET MISSES)",
+            text = "PLAY ON — +15s, Reset Misses (100 Coins)",
             onClick = onPlayOn,
             height = 52.dp,
-            fontSize = 15,
+            fontSize = 14,
             colorVariant = JellyColorVariant.GREEN,
             testTag = "failed_play_on_button",
             modifier = Modifier.fillMaxWidth()
@@ -640,10 +676,10 @@ fun FailedStageDialog(
         // Free Continue / Revive via Rewarded Ad
         if (onWatchAdToRevive != null) {
             JellyButton(
-                text = "REVIVE FREE (+15s & 3 ❤️) 🎬",
+                text = "WATCH AD — +15s, +3 Hearts (FREE)",
                 onClick = onWatchAdToRevive,
                 height = 50.dp,
-                fontSize = 15,
+                fontSize = 14,
                 colorVariant = JellyColorVariant.PURPLE,
                 testTag = "failed_watch_ad_revive_button",
                 modifier = Modifier.fillMaxWidth()
@@ -656,21 +692,21 @@ fun FailedStageDialog(
         ) {
             VictoryActionButton(
                 text = "Retry",
-                icon = "🔄",
+                icon = Icons.Default.Refresh,
                 onClick = onRetry,
                 testTag = "failed_retry_button",
                 modifier = Modifier.weight(1f)
             )
             VictoryActionButton(
                 text = "Map",
-                icon = "🗺️",
+                icon = Icons.Default.Map,
                 onClick = onMap,
                 testTag = "failed_map_button",
                 modifier = Modifier.weight(1f)
             )
             VictoryActionButton(
                 text = "Menu",
-                icon = "🏠",
+                icon = Icons.Default.Home,
                 onClick = onMainMenu,
                 testTag = "failed_menu_button",
                 modifier = Modifier.weight(1f)

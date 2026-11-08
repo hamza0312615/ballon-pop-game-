@@ -159,20 +159,38 @@ fun GameCanvas(
         val h = size.height
         val timeSec = (frameTick % 100_000_000_000L) / 1_000_000_000f
 
-        // 1. Draw Vibrant High-Contrast Gameplay Background (Deep Purple to Warm Orange Sunset Gradient)
+        // 1. Draw Vibrant High-Depth Gameplay Background (Deep Cosmic Navy through Rich Sunset Rose)
         drawRect(
             brush = cachedBgBrush ?: Brush.verticalGradient(
                 listOf(
-                    Color(0xFF1B0B38),
-                    Color(0xFF330D52),
-                    Color(0xFF5A1466),
-                    Color(0xFF8C1D5D),
-                    Color(0xFFC43345),
-                    Color(0xFFE65100),
-                    Color(0xFFFFA726)
+                    Color(0xFF080B1C),
+                    Color(0xFF0F1532),
+                    Color(0xFF191C47),
+                    Color(0xFF271F54),
+                    Color(0xFF3E1F58),
+                    Color(0xFF5A2254),
+                    Color(0xFF78254C),
+                    Color(0xFF9E2E48)
                 )
             )
         )
+
+        // Layered Atmospheric God Rays (Sunbeams breaking through upper sky)
+        for (i in 0..4) {
+            val rayAngle = (22f + i * 14f) * (kotlin.math.PI.toFloat() / 180f)
+            val rayLength = h * 0.95f
+            val startX = w * 0.20f + i * 15f
+            drawLine(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0x28FFD700), Color(0x1238BDF8), Color.Transparent),
+                    start = Offset(startX, 0f),
+                    end = Offset(startX + kotlin.math.cos(rayAngle) * rayLength, kotlin.math.sin(rayAngle) * rayLength)
+                ),
+                start = Offset(startX, 0f),
+                end = Offset(startX + kotlin.math.cos(rayAngle) * rayLength, kotlin.math.sin(rayAngle) * rayLength),
+                strokeWidth = 35f + i * 15f
+            )
+        }
 
         // Radial ambient glow orbs for depth
         cachedOrb1?.let { drawRect(brush = it) }
@@ -291,26 +309,154 @@ fun GameCanvas(
             }
         }
 
-        // Pop Shockwaves (Dynamic visual burst rings)
+        // Pop Shockwaves (Dynamic dual-layer visual burst rings)
         synchronized(shockwaves) {
             for (sw in shockwaves) {
+                val clampedAlpha = sw.alpha.coerceIn(0f, 1f)
+                // Outer soft atmospheric wave
                 drawCircle(
-                    color = sw.color.copy(alpha = sw.alpha.coerceIn(0f, 1f)),
+                    color = sw.color.copy(alpha = clampedAlpha * 0.35f),
+                    radius = sw.radius * 1.08f,
+                    center = Offset(sw.x, sw.y),
+                    style = Stroke(width = (6f * clampedAlpha).coerceAtLeast(1.5f))
+                )
+                // Inner bright sharp wavefront line
+                drawCircle(
+                    color = Color.White.copy(alpha = clampedAlpha * 0.85f),
                     radius = sw.radius,
                     center = Offset(sw.x, sw.y),
-                    style = Stroke(width = (4f * sw.alpha).coerceAtLeast(1.5f))
+                    style = Stroke(width = (2.5f * clampedAlpha).coerceAtLeast(1f))
                 )
             }
         }
 
-        // 3. Draw Particles
+        // 3. Draw Ultra-Realistic Explosion Particles
         synchronized(particles) {
             for (p in particles) {
-                drawCircle(
-                    color = p.color.copy(alpha = p.alpha.coerceIn(0f, 1f)),
-                    radius = p.radius,
-                    center = Offset(p.x, p.y)
-                )
+                val pAlpha = p.alpha.coerceIn(0f, 1f)
+                val baseColor = p.color.copy(alpha = pAlpha)
+                when (p.particleType) {
+                    ParticleType.RUBBER_SHRED -> {
+                        val len = if (p.length > 0f) p.length else p.radius * 2.8f
+                        val wShred = p.radius * 1.2f
+                        rotate(degrees = p.rotation, pivot = Offset(p.x, p.y)) {
+                            reusablePath1.reset()
+                            reusablePath1.moveTo(p.x - wShred, p.y)
+                            reusablePath1.quadraticTo(p.x, p.y - len * 0.55f, p.x + wShred, p.y - len)
+                            reusablePath1.quadraticTo(p.x + wShred * 0.5f, p.y - len * 0.4f, p.x - wShred, p.y)
+                            reusablePath1.close()
+                            drawPath(reusablePath1, color = baseColor)
+
+                            drawLine(
+                                color = Color.White.copy(alpha = pAlpha * 0.65f),
+                                start = Offset(p.x - wShred * 0.6f, p.y),
+                                end = Offset(p.x + wShred * 0.8f, p.y - len * 0.9f),
+                                strokeWidth = 1.6f
+                            )
+                        }
+                    }
+                    ParticleType.GLOW_SPARK -> {
+                        drawCircle(
+                            color = baseColor.copy(alpha = pAlpha * 0.4f),
+                            radius = p.radius * 2.2f,
+                            center = Offset(p.x, p.y)
+                        )
+                        drawCircle(
+                            color = baseColor,
+                            radius = p.radius,
+                            center = Offset(p.x, p.y)
+                        )
+                        drawCircle(
+                            color = Color.White.copy(alpha = pAlpha * 0.9f),
+                            radius = p.radius * 0.45f,
+                            center = Offset(p.x, p.y)
+                        )
+                    }
+                    ParticleType.SPARKLE_STAR -> {
+                        val starR = p.radius * 1.8f
+                        rotate(degrees = p.rotation, pivot = Offset(p.x, p.y)) {
+                            drawLine(
+                                color = baseColor,
+                                start = Offset(p.x - starR, p.y),
+                                end = Offset(p.x + starR, p.y),
+                                strokeWidth = 2.4f,
+                                cap = StrokeCap.Round
+                            )
+                            drawLine(
+                                color = baseColor,
+                                start = Offset(p.x, p.y - starR),
+                                end = Offset(p.x, p.y + starR),
+                                strokeWidth = 2.4f,
+                                cap = StrokeCap.Round
+                            )
+                            drawCircle(
+                                color = Color.White.copy(alpha = pAlpha),
+                                radius = p.radius * 0.5f,
+                                center = Offset(p.x, p.y)
+                            )
+                        }
+                    }
+                    ParticleType.ICE_CRYSTAL -> {
+                        val crR = p.radius * 1.5f
+                        rotate(degrees = p.rotation, pivot = Offset(p.x, p.y)) {
+                            for (a in 0 until 3) {
+                                val deg = a * 60f
+                                rotate(degrees = deg, pivot = Offset(p.x, p.y)) {
+                                    drawLine(
+                                        color = Color(0xFFE0F7FA).copy(alpha = pAlpha),
+                                        start = Offset(p.x - crR, p.y),
+                                        end = Offset(p.x + crR, p.y),
+                                        strokeWidth = 1.8f
+                                    )
+                                    drawLine(
+                                        color = Color.White.copy(alpha = pAlpha * 0.8f),
+                                        start = Offset(p.x + crR * 0.5f, p.y - crR * 0.25f),
+                                        end = Offset(p.x + crR * 0.5f, p.y + crR * 0.25f),
+                                        strokeWidth = 1.2f
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    ParticleType.LIGHTNING_EMBER -> {
+                        rotate(degrees = p.rotation, pivot = Offset(p.x, p.y)) {
+                            val r = p.radius * 2f
+                            drawLine(
+                                color = Color(0xFF00E5FF).copy(alpha = pAlpha),
+                                start = Offset(p.x - r, p.y - r * 0.5f),
+                                end = Offset(p.x, p.y + r * 0.3f),
+                                strokeWidth = 2.5f,
+                                cap = StrokeCap.Round
+                            )
+                            drawLine(
+                                color = Color.White.copy(alpha = pAlpha * 0.9f),
+                                start = Offset(p.x, p.y + r * 0.3f),
+                                end = Offset(p.x + r, p.y - r * 0.2f),
+                                strokeWidth = 2f,
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
+                    ParticleType.CONFETTI_RIBBON -> {
+                        val rLen = if (p.length > 0f) p.length else 18f
+                        val twist = kotlin.math.cos(Math.toRadians(p.rotation.toDouble())).toFloat()
+                        rotate(degrees = p.rotation * 0.5f, pivot = Offset(p.x, p.y)) {
+                            drawRoundRect(
+                                color = baseColor,
+                                topLeft = Offset(p.x - (p.radius * twist).coerceAtLeast(1.5f), p.y - rLen * 0.5f),
+                                size = Size((p.radius * 2f * kotlin.math.abs(twist)).coerceAtLeast(2f), rLen),
+                                cornerRadius = CornerRadius(2f, 2f)
+                            )
+                        }
+                    }
+                    else -> {
+                        drawCircle(
+                            color = baseColor,
+                            radius = p.radius,
+                            center = Offset(p.x, p.y)
+                        )
+                    }
+                }
             }
         }
 
@@ -529,30 +675,60 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
         size = Size(r * 1.8f, r * 2.2f)
     )
 
-    // Main Oval Balloon Body (Zero GC allocation, runs at solid 120 FPS)
+    // Volumetric 3D Spherical balloon body (Zero GC allocation, runs at solid 120 FPS)
+    val shadowTone = Color(
+        (b.color.red * 0.40f).coerceIn(0f, 1f),
+        (b.color.green * 0.40f).coerceIn(0f, 1f),
+        (b.color.blue * 0.40f).coerceIn(0f, 1f),
+        curAlpha
+    )
+    val highlightTone = Color(
+        (b.color.red * 0.45f + 0.55f).coerceIn(0f, 1f),
+        (b.color.green * 0.45f + 0.55f).coerceIn(0f, 1f),
+        (b.color.blue * 0.45f + 0.55f).coerceIn(0f, 1f),
+        curAlpha
+    )
+
     drawOval(
-        color = b.color.copy(alpha = curAlpha),
+        brush = Brush.radialGradient(
+            colors = listOf(
+                highlightTone,
+                b.color.copy(alpha = curAlpha),
+                shadowTone
+            ),
+            center = Offset(x - r * 0.32f, y - r * 0.38f),
+            radius = r * 1.55f
+        ),
         topLeft = Offset(x - r * 0.9f, y - r * 1.1f),
         size = Size(r * 1.8f, r * 2.2f)
     )
 
-    // 3D Volumetric Depth Reflection
+    // Bottom bounce rim reflection
     drawOval(
-        color = Color.White.copy(alpha = 0.25f * curAlpha),
-        topLeft = Offset(x - r * 0.75f, y - r * 0.95f),
-        size = Size(r * 1.35f, r * 1.55f)
+        brush = Brush.verticalGradient(
+            colors = listOf(Color.Transparent, Color(0x55FFFFFF)),
+            startY = y,
+            endY = y + r * 1.1f
+        ),
+        topLeft = Offset(x - r * 0.85f, y - r * 1.05f),
+        size = Size(r * 1.7f, r * 2.1f),
+        style = Stroke(width = 1.6f)
     )
 
-    // Highlight Gloss
-    drawOval(
-        color = Color.White.copy(alpha = 0.75f * curAlpha),
-        topLeft = Offset(x - r * 0.55f, y - r * 0.85f),
-        size = Size(r * 0.45f, r * 0.6f)
+    // Curved Glossy Crescent Specular Highlight (Upper Left)
+    drawArc(
+        color = Color.White.copy(alpha = 0.72f * curAlpha),
+        startAngle = 195f,
+        sweepAngle = 72f,
+        useCenter = false,
+        topLeft = Offset(x - r * 0.72f, y - r * 0.92f),
+        size = Size(r * 1.44f, r * 1.64f),
+        style = Stroke(width = r * 0.14f, cap = StrokeCap.Round)
     )
 
     // Specular Pin-Dot Flare
     drawCircle(
-        color = Color.White.copy(alpha = 0.90f * curAlpha),
+        color = Color.White.copy(alpha = 0.95f * curAlpha),
         radius = r * 0.12f,
         center = Offset(x - r * 0.35f, y - r * 0.65f)
     )
@@ -582,18 +758,21 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
         }
     }
 
-    // Knot & String
+    // Balloon Knot & Smooth Wavy String
+    val knotY = y + r * 1.08f
     drawCircle(
-        color = b.color.copy(alpha = curAlpha),
+        color = shadowTone,
         radius = r * 0.18f,
-        center = Offset(x, y + r * 1.1f)
+        center = Offset(x, knotY)
     )
 
+    // Elegant Wavy Spline String
+    val stringSway = kotlin.math.sin(b.wobblePhase.toDouble()).toFloat() * (r * 0.35f)
     drawLine(
-        color = Color.White.copy(alpha = 0.45f * curAlpha),
-        start = Offset(x, y + r * 1.15f),
-        end = Offset(x + sin(b.wobblePhase) * 6f, y + r * 1.65f),
-        strokeWidth = 2.5f,
+        color = Color.White.copy(alpha = 0.55f * curAlpha),
+        start = Offset(x, knotY + r * 0.08f),
+        end = Offset(x + stringSway, knotY + r * 0.70f),
+        strokeWidth = 2.4f,
         cap = StrokeCap.Round
     )
 
