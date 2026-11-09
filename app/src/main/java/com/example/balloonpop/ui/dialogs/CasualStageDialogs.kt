@@ -111,8 +111,11 @@ fun StageIntroRibbon(
                                 .border(1.dp, Color(0xFFFFD700), RoundedCornerShape(8.dp))
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
+                            val zoneName = if (level > 0) {
+                                GameConstants.WORLD_ZONES.find { level in it.startLevel..it.endLevel }?.name ?: "Twilight Grove"
+                            } else null
                             Text(
-                                text = if (level > 0) "STAGE $level" else "CUSTOM CHALLENGE",
+                                text = if (level > 0) "STAGE $level \u2022 $zoneName" else "CUSTOM CHALLENGE",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
                                 color = Color(0xFFFDE68A)
@@ -163,10 +166,14 @@ fun VictoryStageDialog(
     val animatedCoinsText = AnimatedScoreCounter(coinsEarned, formatPrefix = "+")
     val animatedGemsText = AnimatedScoreCounter(gemsEarned, formatPrefix = "+")
 
-    // Pass 5 motion: card pops in with a slight overshoot spring.
+    // Card pops in with a slight overshoot spring and slides up gently
     val cardPop = remember { Animatable(0.85f) }
+    val cardSlideY = remember { Animatable(45f) }
     LaunchedEffect(Unit) {
         cardPop.animateTo(1f, DesignTokens.DialogPopSpring)
+    }
+    LaunchedEffect(Unit) {
+        cardSlideY.animateTo(0f, tween(320, easing = FastOutSlowInEasing))
     }
 
     Box(
@@ -188,6 +195,7 @@ fun VictoryStageDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .widthIn(max = 400.dp)
+                .offset(y = cardSlideY.value.dp)
                 .scale(cardPop.value)
                 .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeCardStory)
                 .clip(DesignTokens.ShapeCardStory)
@@ -436,10 +444,14 @@ fun FailedStageDialog(
     onMap: () -> Unit,
     onMainMenu: () -> Unit = onMap
 ) {
-    // Pass 5 motion: card pops in with a slight overshoot spring.
+    // Card pops in with a slight overshoot spring and slides up gently
     val cardPop = remember { Animatable(0.85f) }
+    val cardSlideY = remember { Animatable(45f) }
     LaunchedEffect(Unit) {
         cardPop.animateTo(1f, DesignTokens.DialogPopSpring)
+    }
+    LaunchedEffect(Unit) {
+        cardSlideY.animateTo(0f, tween(320, easing = FastOutSlowInEasing))
     }
 
     val resultLine = when (reason) {
@@ -460,6 +472,7 @@ fun FailedStageDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .widthIn(max = 400.dp)
+                .offset(y = cardSlideY.value.dp)
                 .scale(cardPop.value)
                 .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeCardStory)
                 .clip(DesignTokens.ShapeCardStory)

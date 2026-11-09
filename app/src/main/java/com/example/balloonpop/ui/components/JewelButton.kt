@@ -1,6 +1,12 @@
 package com.example.balloonpop.ui.components
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -129,6 +135,18 @@ fun JewelButtonContainer(
     )
     val faceAlpha = if (enabled) 1f else 0.55f
 
+    // Slow subtle shine sweep so the main call-to-action feels alive
+    val infiniteTransition = rememberInfiniteTransition(label = "jewelShineTransition")
+    val shineProgress by infiniteTransition.animateFloat(
+        initialValue = -0.5f,
+        targetValue = 1.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 2800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "jewelShineProgress"
+    )
+
     Box(
         modifier = modifier
             .padding(bottom = DesignTokens.ShelfDepth)
@@ -185,5 +203,28 @@ fun JewelButtonContainer(
                     )
                 )
         )
+        // Slow, subtle shine sweep overlay for primary CTA (SUNSET style)
+        if (style == JewelButtonStyle.SUNSET && enabled) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(minHeight)
+                    .offset(y = sink)
+                    .clip(shape)
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                Color.White.copy(alpha = 0.12f),
+                                Color.White.copy(alpha = 0.28f),
+                                Color.White.copy(alpha = 0.12f),
+                                Color.Transparent
+                            ),
+                            start = Offset(shineProgress * 360f, 0f),
+                            end = Offset(shineProgress * 360f + 140f, 150f)
+                        )
+                    )
+            )
+        }
     }
 }

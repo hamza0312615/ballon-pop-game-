@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -112,9 +114,25 @@ fun GamePlayScreen(
     isTransitioningLevel: Boolean = false,
     transitionTargetLevel: Int? = null,
     onFinishLevelTransition: () -> Unit = {},
+    showComboHintBanner: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var resumeCountdown by remember { mutableStateOf<Int?>(null) }
+
+    // In-game score counter scale punch when points land
+    val scoreScale = remember { Animatable(1f) }
+    LaunchedEffect(score) {
+        if (score > 0) {
+            scoreScale.snapTo(1.22f)
+            scoreScale.animateTo(
+                targetValue = 1f,
+                animationSpec = spring(
+                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                    stiffness = Spring.StiffnessLow
+                )
+            )
+        }
+    }
 
     // Pass 4: tapping a 0-charge booster opens the one-tap coin buy dialog
     // instead of triggering (and instead of leaving the level for the shop).
@@ -302,8 +320,11 @@ fun GamePlayScreen(
                     }
                 }
 
-                // Center: Score — one large readable number (Pass 4 HUD rule)
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Center: Score — one large readable number with scale punch animation
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.scale(scoreScale.value)
+                ) {
                     Text(
                         text = "SCORE",
                         fontFamily = NunitoFontFamily,
@@ -385,6 +406,47 @@ fun GamePlayScreen(
                     .align(Alignment.TopCenter)
                     .padding(top = 58.dp)
             )
+        }
+
+        // One-time Combo Hint Banner for Stages 1–2
+        AnimatedVisibility(
+            visible = showComboHintBanner && gameState == GameState.PLAYING,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 74.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .shadow(12.dp, DesignTokens.ShapePill, spotColor = Color(0x66000000))
+                    .clip(DesignTokens.ShapePill)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFF2E1922),
+                                Color(0xFF4A1A35),
+                                Color(0xFF2E1922)
+                            )
+                        )
+                    )
+                    .border(2.dp, StoryGold, DesignTokens.ShapePill)
+                    .padding(horizontal = 18.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(text = "🎈✨", fontSize = 16.sp)
+                    Text(
+                        text = "Pop 3 of the same colour for a combo!",
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFDE68A)
+                    )
+                }
+            }
         }
 
         // Pass 5 (audit L3): endless modes get an explicit FINISH & SAVE

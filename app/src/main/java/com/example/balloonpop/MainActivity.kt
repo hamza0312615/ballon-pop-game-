@@ -387,7 +387,8 @@ class MainActivity : ComponentActivity() {
                                             previousHighScore = uiState.previousHighScore,
                                             isTransitioningLevel = uiState.isTransitioningLevel,
                                             transitionTargetLevel = uiState.transitionTargetLevel,
-                                            onFinishLevelTransition = { viewModel.finishLevelTransition() }
+                                            onFinishLevelTransition = { viewModel.finishLevelTransition() },
+                                            showComboHintBanner = uiState.showComboHintBanner
                                         )
                                     }
                                 }

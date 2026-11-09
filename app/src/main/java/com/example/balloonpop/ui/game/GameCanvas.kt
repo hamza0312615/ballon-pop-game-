@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import com.example.balloonpop.model.*
@@ -87,7 +88,7 @@ fun GameCanvas(
     // Cached gradients for zero-allocation rendering
     var cachedWidth by remember { mutableFloatStateOf(0f) }
     var cachedHeight by remember { mutableFloatStateOf(0f) }
-    var cachedBgBrush by remember(equippedTheme) { mutableStateOf<Brush?>(null) }
+    var cachedBgBrush by remember(equippedTheme, currentLevel) { mutableStateOf<Brush?>(null) }
     var cachedOrb1 by remember { mutableStateOf<Brush?>(null) }
     var cachedOrb2 by remember { mutableStateOf<Brush?>(null) }
 
@@ -117,11 +118,15 @@ fun GameCanvas(
         @Suppress("UNUSED_VARIABLE")
         val tick = frameTick
 
-        // Update cached background brushes when size changes
+        // Update cached background brushes when size or level changes
         if (size.width != cachedWidth || size.height != cachedHeight || cachedBgBrush == null) {
             cachedWidth = size.width
             cachedHeight = size.height
-            val themeColors = if (equippedTheme.id == "theme_sunset_twilight" || equippedTheme.gradientColors.size < 2) {
+            val themeColors = if (currentLevel > 0) {
+                val currentZone = GameConstants.WORLD_ZONES.find { currentLevel in it.startLevel..it.endLevel }
+                    ?: GameConstants.WORLD_ZONES.first()
+                currentZone.bgGradient
+            } else if (equippedTheme.id == "theme_sunset_twilight" || equippedTheme.gradientColors.size < 2) {
                 listOf(
                     Color(0xFF1B0B38), // Deep purple
                     Color(0xFF330D52), // Rich twilight violet
@@ -159,7 +164,7 @@ fun GameCanvas(
         val h = size.height
         val timeSec = (frameTick % 100_000_000_000L) / 1_000_000_000f
 
-        // 1. Draw Vibrant High-Depth Gameplay Background (Deep Cosmic Navy through Rich Sunset Rose)
+        // 1. Draw Zone Environment Gameplay Background
         drawRect(
             brush = cachedBgBrush ?: Brush.verticalGradient(
                 listOf(
@@ -174,6 +179,12 @@ fun GameCanvas(
                 )
             )
         )
+
+        // Zone signature floating decorations
+        if (currentLevel > 0) {
+            val zoneIndex = ((currentLevel - 1) / 10).coerceIn(0, GameConstants.WORLD_ZONES.size - 1)
+            drawZoneSignatureDecorations(zoneIndex = zoneIndex, w = w, h = h, timeSec = timeSec)
+        }
 
         // Layered Atmospheric God Rays (Sunbeams breaking through upper sky)
         for (i in 0..4) {
@@ -551,25 +562,29 @@ fun GameCanvas(
         // Pass 6: explicit dark-plum outline pass (offset copy under the
         // bright face) — the paint's soft shadow alone left dark texts
         // unreadable on the gradient in the user's recording.
+        // Scale bounce pop-in animation:
         synchronized(floatingTexts) {
             for (ft in floatingTexts) {
                 val alphaInt = (ft.alpha.coerceIn(0f, 1f) * 255).toInt()
-                textPaint.color = android.graphics.Color.rgb(23, 18, 51)
-                textPaint.alpha = (alphaInt * 0.6f).toInt()
-                drawContext.canvas.nativeCanvas.drawText(
-                    ft.text,
-                    ft.x + 2.5f,
-                    ft.y + 2.5f,
-                    textPaint
-                )
-                textPaint.color = ft.color.toArgb()
-                textPaint.alpha = alphaInt
-                drawContext.canvas.nativeCanvas.drawText(
-                    ft.text,
-                    ft.x,
-                    ft.y,
-                    textPaint
-                )
+                val ftScale = ft.scale.coerceIn(0.1f, 2f)
+                scale(scaleX = ftScale, scaleY = ftScale, pivot = Offset(ft.x, ft.y)) {
+                    textPaint.color = android.graphics.Color.rgb(23, 18, 51)
+                    textPaint.alpha = (alphaInt * 0.6f).toInt()
+                    drawContext.canvas.nativeCanvas.drawText(
+                        ft.text,
+                        ft.x + 2.5f,
+                        ft.y + 2.5f,
+                        textPaint
+                    )
+                    textPaint.color = ft.color.toArgb()
+                    textPaint.alpha = alphaInt
+                    drawContext.canvas.nativeCanvas.drawText(
+                        ft.text,
+                        ft.x,
+                        ft.y,
+                        textPaint
+                    )
+                }
             }
         }
 
@@ -615,18 +630,33 @@ private fun DrawScope.drawStylizedBalloon(
     path1: Path,
     path2: Path
 ) {
-    when (b.shapeStyle) {
-        BalloonShapeStyle.STAR_SHAPE -> {
-            drawStarBalloon(b, path1)
-        }
-        BalloonShapeStyle.HEART_SHAPE -> {
-            drawHeartBalloon(b, path1)
-        }
-        BalloonShapeStyle.CAT_FACE -> {
-            drawCatBalloon(b, emojiPaint, path1, path2)
-        }
-        else -> {
-            drawRoundBalloonWithFace(b, emojiPaint)
+    // Springy scale-in overshoot: grow 0.6 -> 1.05 -> 1.0
+    val p = (b.spawnAge / 0.32f).coerceIn(0f, 1f)
+    val overshoot = if (p < 0.7f) (p / 0.7f) * 0.45f else 0.45f - ((p - 0.7f) / 0.3f) * 0.05f
+    val spawnScale = if (p < 1f) 0.6f + overshoot else 1f
+
+    // Squash slightly when tapped just before popping
+    val squashProgress = (b.squashTimer / 0.15f).coerceIn(0f, 1f)
+    val scaleX = spawnScale * (1f + 0.18f * squashProgress)
+    val scaleY = spawnScale * (1f - 0.22f * squashProgress)
+
+    // Gentle sway tilt while rising
+    rotate(degrees = b.tiltAngle, pivot = Offset(b.x, b.y)) {
+        scale(scaleX = scaleX, scaleY = scaleY, pivot = Offset(b.x, b.y)) {
+            when (b.shapeStyle) {
+                BalloonShapeStyle.STAR_SHAPE -> {
+                    drawStarBalloon(b, path1)
+                }
+                BalloonShapeStyle.HEART_SHAPE -> {
+                    drawHeartBalloon(b, path1)
+                }
+                BalloonShapeStyle.CAT_FACE -> {
+                    drawCatBalloon(b, emojiPaint, path1, path2)
+                }
+                else -> {
+                    drawRoundBalloonWithFace(b, emojiPaint)
+                }
+            }
         }
     }
 }
@@ -1374,4 +1404,187 @@ private fun DrawScope.drawAestheticFrame(frame: PlayFrame) {
     drawLine(cornerColor, Offset(w - inset - cornerLen, h - inset - 4f), Offset(w - inset - 4f, h - inset - 4f), strokeWidth = 5f, cap = StrokeCap.Round)
     drawLine(cornerColor, Offset(w - inset - 4f, h - inset - 4f), Offset(w - inset - 4f, h - inset - 4f), strokeWidth = 5f, cap = StrokeCap.Round)
     drawCircle(cornerColor, radius = 4f, center = Offset(w - inset - 4f, h - inset - 4f))
+}
+
+private fun DrawScope.drawZoneSignatureDecorations(
+    zoneIndex: Int,
+    w: Float,
+    h: Float,
+    timeSec: Float
+) {
+    when (zoneIndex) {
+        0 -> {
+            // Zone 1: Twilight Grove — Drifting forest leaves / gentle willow pollen
+            for (i in 0..7) {
+                val seed = i * 47.3f
+                val y = ((timeSec * 22f + seed * 13f) % (h + 80f)) - 40f
+                val sway = sin((timeSec * 1.5f + i).toDouble()).toFloat() * 28f
+                val x = ((w * (0.12f + i * 0.11f) + sway) % w + w) % w
+                val leafAlpha = (0.22f + 0.12f * sin((timeSec + i).toDouble()).toFloat()).coerceIn(0.1f, 0.35f)
+                drawOval(
+                    color = Color(0xFF4ADE80).copy(alpha = leafAlpha),
+                    topLeft = Offset(x - 5f, y - 9f),
+                    size = Size(10f, 18f)
+                )
+            }
+        }
+        1 -> {
+            // Zone 2: Prism Peaks — Floating crystal glints / amethyst diamonds
+            for (i in 0..6) {
+                val seed = i * 31.7f
+                val y = ((seed * 19f - timeSec * 15f) % (h + 60f) + (h + 60f)) % (h + 60f) - 30f
+                val x = (w * (0.08f + i * 0.14f)) % w
+                val sparkle = (sin((timeSec * 3f + i * 2f).toDouble()).toFloat() * 0.4f + 0.6f).coerceIn(0.15f, 0.45f)
+                rotate(degrees = 45f + i * 15f, pivot = Offset(x, y)) {
+                    drawRect(
+                        color = Color(0xFFC084FC).copy(alpha = sparkle),
+                        topLeft = Offset(x - 5f, y - 5f),
+                        size = Size(10f, 10f)
+                    )
+                }
+            }
+        }
+        2 -> {
+            // Zone 3: Sunset Mesa — Warm amber desert haze / drifting golden dust
+            for (i in 0..8) {
+                val seed = i * 53.1f
+                val y = h * (0.2f + (i * 0.08f)) + sin((timeSec * 1.2f + i).toDouble()).toFloat() * 15f
+                val x = ((timeSec * 28f + seed * 23f) % (w + 60f)) - 30f
+                val alpha = (0.2f + 0.15f * sin((timeSec * 2f + i).toDouble()).toFloat()).coerceIn(0.1f, 0.35f)
+                drawCircle(
+                    color = Color(0xFFFBBF24).copy(alpha = alpha),
+                    radius = 3f + (i % 3) * 1.5f,
+                    center = Offset(x, y)
+                )
+            }
+        }
+        3 -> {
+            // Zone 4: Aqua Reef — Gentle undersea rising bubbles
+            for (i in 0..7) {
+                val seed = i * 29.3f
+                val y = ((seed * 37f - timeSec * 32f) % (h + 60f) + (h + 60f)) % (h + 60f) - 30f
+                val wobble = sin((timeSec * 2.2f + i).toDouble()).toFloat() * 16f
+                val x = ((w * (0.1f + i * 0.12f) + wobble) % w + w) % w
+                val bubbleAlpha = (0.22f + 0.12f * cos((timeSec * 1.8f + i).toDouble()).toFloat()).coerceIn(0.12f, 0.38f)
+                drawCircle(
+                    color = Color(0xFF38BDF8).copy(alpha = bubbleAlpha),
+                    radius = 5f + (i % 4) * 2.5f,
+                    center = Offset(x, y),
+                    style = Stroke(width = 1.8f)
+                )
+            }
+        }
+        4 -> {
+            // Zone 5: Candy Wonderland — Drifting sweet sugar sparkles
+            for (i in 0..8) {
+                val seed = i * 39.1f
+                val y = ((seed * 17f - timeSec * 18f) % (h + 60f) + (h + 60f)) % (h + 60f) - 30f
+                val x = ((w * (0.07f + i * 0.11f) + sin((timeSec + i).toDouble()).toFloat() * 12f) % w + w) % w
+                val col = if (i % 2 == 0) Color(0xFFF472B6) else Color(0xFFFCD34D)
+                val alpha = (0.2f + 0.15f * sin((timeSec * 2.5f + i).toDouble()).toFloat()).coerceIn(0.1f, 0.35f)
+                drawCircle(color = col.copy(alpha = alpha), radius = 3.5f, center = Offset(x, y))
+            }
+        }
+        5 -> {
+            // Zone 6: Clockwork City — Slow-spinning distant brass cog silhouettes
+            for (i in 0..3) {
+                val cx = w * (0.18f + i * 0.24f)
+                val cy = h * (0.25f + (i % 2) * 0.35f)
+                val rot = (timeSec * 12f * if (i % 2 == 0) 1f else -1f) + i * 45f
+                val cogRadius = 18f + (i % 2) * 6f
+                rotate(degrees = rot, pivot = Offset(cx, cy)) {
+                    drawCircle(
+                        color = Color(0xFFD97706).copy(alpha = 0.18f),
+                        radius = cogRadius,
+                        center = Offset(cx, cy),
+                        style = Stroke(width = 2.5f)
+                    )
+                    for (t in 0 until 6) {
+                        val angle = (t * 60f) * (kotlin.math.PI.toFloat() / 180f)
+                        val tx = cx + cos(angle) * cogRadius
+                        val ty = cy + sin(angle) * cogRadius
+                        drawCircle(
+                            color = Color(0xFFD97706).copy(alpha = 0.22f),
+                            radius = 3.2f,
+                            center = Offset(tx, ty)
+                        )
+                    }
+                }
+            }
+        }
+        6 -> {
+            // Zone 7: Volcano Caldera — Drifting warm ember particles rising upwards
+            for (i in 0..8) {
+                val seed = i * 41.3f
+                val y = ((seed * 23f - timeSec * 38f) % (h + 60f) + (h + 60f)) % (h + 60f) - 30f
+                val sway = sin((timeSec * 2.5f + i * 1.5f).toDouble()).toFloat() * 14f
+                val x = ((w * (0.08f + i * 0.11f) + sway) % w + w) % w
+                val flicker = (0.22f + 0.18f * sin((timeSec * 6f + i).toDouble()).toFloat()).coerceIn(0.12f, 0.42f)
+                drawCircle(
+                    color = Color(0xFFF97316).copy(alpha = flicker),
+                    radius = 2.5f + (i % 3) * 1.5f,
+                    center = Offset(x, y)
+                )
+            }
+        }
+        7 -> {
+            // Zone 8: Starry Cosmos — Twinkling astral stardust & constellation points
+            for (i in 0..9) {
+                val sx = (w * (0.06f + i * 0.1f)) % w
+                val sy = h * (0.1f + ((i * 0.085f) % 0.65f))
+                val twinkle = (sin((timeSec * 4f + i * 1.7f).toDouble()).toFloat() * 0.4f + 0.6f).coerceIn(0.2f, 0.5f)
+                drawCircle(
+                    color = Color(0xFFE0E7FF).copy(alpha = twinkle),
+                    radius = 2.5f,
+                    center = Offset(sx, sy)
+                )
+            }
+        }
+        9 -> {
+            // Zone 10: Frozen Tundra — Drifting frost flakes swaying downwards
+            for (i in 0..7) {
+                val seed = i * 37.5f
+                val y = ((timeSec * 24f + seed * 19f) % (h + 60f)) - 30f
+                val sway = sin((timeSec * 1.6f + i).toDouble()).toFloat() * 22f
+                val x = ((w * (0.1f + i * 0.12f) + sway) % w + w) % w
+                val alpha = (0.25f + 0.15f * cos((timeSec + i).toDouble()).toFloat()).coerceIn(0.15f, 0.4f)
+                drawCircle(
+                    color = Color(0xFFBAE6FD).copy(alpha = alpha),
+                    radius = 3.5f,
+                    center = Offset(x, y)
+                )
+            }
+        }
+        10 -> {
+            // Zone 11: Sakura Sanctuary — Drifting cherry blossom petals
+            for (i in 0..7) {
+                val seed = i * 43.1f
+                val y = ((timeSec * 20f + seed * 15f) % (h + 60f)) - 30f
+                val sway = sin((timeSec * 1.4f + i).toDouble()).toFloat() * 26f
+                val x = ((w * (0.11f + i * 0.12f) + sway) % w + w) % w
+                val alpha = (0.25f + 0.12f * sin((timeSec + i).toDouble()).toFloat()).coerceIn(0.15f, 0.38f)
+                rotate(degrees = 25f + sin((timeSec + i).toDouble()).toFloat() * 20f, pivot = Offset(x, y)) {
+                    drawOval(
+                        color = Color(0xFFFBCFE8).copy(alpha = alpha),
+                        topLeft = Offset(x - 5f, y - 8f),
+                        size = Size(10f, 16f)
+                    )
+                }
+            }
+        }
+        else -> {
+            // Generic atmospheric motes for later celestial/mythic zones
+            for (i in 0..6) {
+                val seed = i * 49.3f
+                val y = ((seed * 19f - timeSec * 20f) % (h + 60f) + (h + 60f)) % (h + 60f) - 30f
+                val x = (w * (0.1f + i * 0.13f)) % w
+                val alpha = (0.2f + 0.15f * sin((timeSec * 2f + i).toDouble()).toFloat()).coerceIn(0.1f, 0.35f)
+                drawCircle(
+                    color = Color(0xFFFDE68A).copy(alpha = alpha),
+                    radius = 3f,
+                    center = Offset(x, y)
+                )
+            }
+        }
+    }
 }

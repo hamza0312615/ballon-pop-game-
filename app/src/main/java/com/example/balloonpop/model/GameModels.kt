@@ -64,7 +64,16 @@ data class Balloon(
     // Pass 5 balloon skins: pattern overlay + specular gloss strength,
     // assigned at spawn from the equipped BalloonSkin (standard balloons).
     val pattern: BalloonPattern = BalloonPattern.SOLID,
-    val glossStrength: Float = 1.0f
+    val glossStrength: Float = 1.0f,
+    var spawnAge: Float = 0f,
+    var squashTimer: Float = 0f,
+    var tiltAngle: Float = 0f,
+    var isRingFormation: Boolean = false,
+    var ringAngle: Float = 0f,
+    var ringCenterX: Float = 0f,
+    var ringCenterY: Float = 0f,
+    var ringTargetRadius: Float = 135f,
+    var isGoldRush: Boolean = false
 )
 
 enum class ParticleType {
@@ -128,7 +137,9 @@ data class FloatingText(
     val text: String,
     val color: Color,
     var alpha: Float = 1.0f,
-    var vy: Float = -2.5f
+    var vy: Float = -2.5f,
+    var age: Float = 0f,
+    var scale: Float = 0.5f
 )
 
 data class BladeTrailPoint(
@@ -290,6 +301,184 @@ data class CampaignLevel(
 ) {
     val isBossStage: Boolean get() = (level % 10 == 0)
 }
+
+enum class SpawnFormation {
+    CLUSTER,
+    STREAM,
+    RING,
+    MIXED_RAIN,
+    BOMB_DODGE,
+    GOLD_RUSH
+}
+
+enum class StagePacingRole(val displayName: String) {
+    LEARN("Learn"),
+    MIX("Mix"),
+    CHALLENGE("Challenge"),
+    CELEBRATION("Celebration")
+}
+
+data class StageRecipe(
+    val level: Int,
+    val zoneNumber: Int,
+    val zoneStage: Int,
+    val role: StagePacingRole,
+    val targetPops: Int,
+    val timeLimit: Int,
+    val maxMisses: Int,
+    val unlockedBalloonTypes: List<BalloonType>,
+    val allowedFormations: List<SpawnFormation>,
+    val specialChance: Float,
+    val goldRushChance: Float
+)
+
+object StageRecipes {
+    fun getRecipe(lvl: Int): StageRecipe {
+        val safeLvl = lvl.coerceAtLeast(1)
+        val zoneNumber = (((safeLvl - 1) / 10) + 1).coerceIn(1, 20)
+        val zoneStage = (((safeLvl - 1) % 10) + 1).coerceIn(1, 10)
+        val isBossStage = (safeLvl % 10 == 0)
+
+        val role = when (zoneStage) {
+            in 1..3 -> StagePacingRole.LEARN
+            in 4..6 -> StagePacingRole.MIX
+            in 7..9 -> StagePacingRole.CHALLENGE
+            else -> StagePacingRole.CELEBRATION
+        }
+
+        // Unlocked balloon types introduced gradually across the whole game:
+        // Frozen from stage 3, bombs from stage 4, Armored from stage 6, Splitter from stage 8
+        val unlockedTypes = mutableListOf(BalloonType.STANDARD)
+        if (safeLvl >= 1) unlockedTypes.add(BalloonType.GOLDEN)
+        if (safeLvl >= 2) unlockedTypes.add(BalloonType.RAINBOW)
+        if (safeLvl >= 3) unlockedTypes.add(BalloonType.FREEZE)
+        if (safeLvl >= 4) unlockedTypes.add(BalloonType.BOMB)
+        if (safeLvl >= 5) unlockedTypes.add(BalloonType.FAST_ROCKET)
+        if (safeLvl >= 6) unlockedTypes.add(BalloonType.SHIELDED)
+        if (safeLvl >= 7) {
+            unlockedTypes.add(BalloonType.HEART)
+            unlockedTypes.add(BalloonType.MULTIPLIER)
+        }
+        if (safeLvl >= 8) unlockedTypes.add(BalloonType.SPLITTER)
+        if (safeLvl >= 10) {
+            unlockedTypes.add(BalloonType.ELECTRIC_STORM)
+            if (isBossStage) unlockedTypes.add(BalloonType.MEGA_BOSS)
+        }
+        if (safeLvl >= 15) unlockedTypes.add(BalloonType.MYSTERY_GIFT)
+        if (safeLvl >= 20) {
+            unlockedTypes.add(BalloonType.GHOST_PHANTOM)
+            unlockedTypes.add(BalloonType.GOLDEN_PIGGY)
+        }
+
+        // Formations unlock progressively:
+        // Early stages use CLUSTER / STREAM / RING only; heavier patterns unlock as stages progress.
+        // Bomb Dodge never before stage 4.
+        val allowedFormations = when {
+            safeLvl < 4 -> listOf(
+                SpawnFormation.CLUSTER,
+                SpawnFormation.STREAM,
+                SpawnFormation.RING,
+                SpawnFormation.MIXED_RAIN
+            )
+            role == StagePacingRole.CELEBRATION -> listOf(
+                SpawnFormation.GOLD_RUSH,
+                SpawnFormation.CLUSTER,
+                SpawnFormation.STREAM,
+                SpawnFormation.RING,
+                SpawnFormation.MIXED_RAIN,
+                SpawnFormation.BOMB_DODGE
+            )
+            role == StagePacingRole.CHALLENGE -> listOf(
+                SpawnFormation.BOMB_DODGE,
+                SpawnFormation.STREAM,
+                SpawnFormation.RING,
+                SpawnFormation.CLUSTER,
+                SpawnFormation.MIXED_RAIN,
+                SpawnFormation.GOLD_RUSH
+            )
+            role == StagePacingRole.MIX -> listOf(
+                SpawnFormation.CLUSTER,
+                SpawnFormation.STREAM,
+                SpawnFormation.BOMB_DODGE,
+                SpawnFormation.RING,
+                SpawnFormation.MIXED_RAIN,
+                SpawnFormation.GOLD_RUSH
+            )
+            else -> listOf(
+                SpawnFormation.CLUSTER,
+                SpawnFormation.STREAM,
+                SpawnFormation.RING,
+                SpawnFormation.MIXED_RAIN
+            )
+        }
+
+        val (targetPops, timeLimit, maxMisses, specialChance, goldRushChance) = when (role) {
+            StagePacingRole.LEARN -> {
+                // Zone stages 1–3 "Learn": lower target, generous time, very few specials
+                val target = when (zoneStage) {
+                    1 -> (18 + (zoneNumber - 1) * 3).coerceIn(18, 45)
+                    2 -> (22 + (zoneNumber - 1) * 3).coerceIn(22, 50)
+                    else -> (26 + (zoneNumber - 1) * 3).coerceIn(26, 55)
+                }
+                val time = (55 + (zoneNumber / 4) * 2).coerceIn(52, 65)
+                val misses = 6
+                val specials = if (safeLvl <= 2) 0.05f else 0.08f
+                val goldChance = 0.05f
+                RecipeStats(target, time, misses, specials, goldChance)
+            }
+            StagePacingRole.MIX -> {
+                // Zone stages 4–6 "Mix": standard values
+                val target = (32 + (zoneNumber - 1) * 3 + (zoneStage - 4) * 4).coerceIn(32, 66)
+                val time = (48 + (zoneNumber / 5) * 2).coerceIn(48, 56)
+                val misses = 5
+                val specials = 0.22f
+                val goldChance = 0.08f
+                RecipeStats(target, time, misses, specials, goldChance)
+            }
+            StagePacingRole.CHALLENGE -> {
+                // Zone stages 7–9 "Challenge": denser targets, more specials, slightly tighter time
+                val target = (46 + (zoneNumber - 1) * 3 + (zoneStage - 7) * 5).coerceIn(46, 84)
+                val time = (44 + (zoneNumber / 6) * 2).coerceIn(42, 50)
+                val misses = 4
+                val specials = 0.38f
+                val goldChance = 0.10f
+                RecipeStats(target, time, misses, specials, goldChance)
+            }
+            StagePacingRole.CELEBRATION -> {
+                // Zone stage 10 "Celebration": GOLD RUSH chance up, generous time
+                val target = (56 + (zoneNumber - 1) * 4).coerceIn(56, 95)
+                val time = (80 + (zoneNumber / 4) * 2).coerceIn(80, 110)
+                val misses = 6
+                val specials = 0.30f
+                val goldChance = 0.40f // GOLD RUSH chance up!
+                RecipeStats(target, time, misses, specials, goldChance)
+            }
+        }
+
+        return StageRecipe(
+            level = safeLvl,
+            zoneNumber = zoneNumber,
+            zoneStage = zoneStage,
+            role = role,
+            targetPops = targetPops,
+            timeLimit = timeLimit,
+            maxMisses = maxMisses,
+            unlockedBalloonTypes = unlockedTypes,
+            allowedFormations = allowedFormations,
+            specialChance = specialChance,
+            goldRushChance = goldRushChance
+        )
+    }
+
+    private data class RecipeStats(
+        val targetPops: Int,
+        val timeLimit: Int,
+        val maxMisses: Int,
+        val specialChance: Float,
+        val goldRushChance: Float
+    )
+}
+
 
 enum class GameOverReason(val title: String, val subtitle: String, val icon: String) {
     MISSED_LIMIT(
@@ -1103,9 +1292,10 @@ object GameConstants {
     )
 
     val CAMPAIGN_LEVELS: List<CampaignLevel> = (1..200).map { lvl ->
-        val isBossStage = (lvl % 10 == 0)
+        val recipe = StageRecipes.getRecipe(lvl)
+        val isBossStage = recipe.role == StagePacingRole.CELEBRATION
         val isFrenzyStage = (lvl % 5 == 0 && !isBossStage)
-        // Generous rewards matching deep playtime
+
         val baseCoins = if (lvl <= 5) 250 + lvl * 50 else 300 + lvl * 30
         val baseGems = when {
             isBossStage -> 30 + (lvl / 10) * 8
@@ -1114,45 +1304,15 @@ object GameConstants {
             else -> 6 + (lvl / 20)
         }
 
-        // Calibrated deep session playtime in seconds so levels provide rich engagement
-        val time = when {
-            isBossStage -> (80 + (lvl / 10) * 4).coerceIn(80, 120) // Epic extended boss battle
-            isFrenzyStage -> (50 + (lvl / 10) * 2).coerceIn(50, 75)
-            lvl == 1 -> 45
-            lvl == 2 -> 48
-            lvl == 3 -> 50
-            lvl == 4 -> 54
-            else -> (45 + (lvl % 10) * 3).coerceIn(45, 75)
-        }
-
-        // Calibrated target pops for satisfying combo chaining and multi-wave feel
-        val targetPops = when {
-            isBossStage -> (60 + (lvl / 5) * 4).coerceIn(60, 110) // Includes Boss Multi-HP pops!
-            isFrenzyStage -> (50 + (lvl / 6) * 3).coerceIn(50, 85)
-            lvl == 1 -> 35
-            lvl == 2 -> 40
-            lvl == 3 -> 44
-            lvl == 4 -> 48
-            else -> (36 + (lvl * 2)).coerceIn(36, 80)
-        }
-
-        val maxMisses = when {
-            isBossStage -> 7
-            lvl <= 3 -> 6
-            lvl <= 20 -> 5
-            lvl > 100 -> 4
-            else -> 5
-        }
-
         CampaignLevel(
             level = lvl,
-            targetPops = targetPops,
-            targetScore = if (isBossStage) 1500 + lvl * 350 else 500 + targetPops * 40,
-            timeLimit = time,
-            maxBombs = if (isBossStage) (lvl / 8).coerceIn(2, 6) else (lvl / 10).coerceIn(0, 8),
+            targetPops = recipe.targetPops,
+            targetScore = if (isBossStage) 1500 + lvl * 350 else 500 + recipe.targetPops * 40,
+            timeLimit = recipe.timeLimit,
+            maxBombs = if (lvl < 4) 0 else if (isBossStage) (lvl / 8).coerceIn(2, 6) else (lvl / 10).coerceIn(1, 8),
             rewardCoins = if (isBossStage) baseCoins + 1000 else baseCoins,
             rewardGems = baseGems,
-            maxMissesAllowed = maxMisses
+            maxMissesAllowed = recipe.maxMisses
         )
     }
 

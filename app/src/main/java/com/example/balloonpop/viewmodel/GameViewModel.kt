@@ -139,7 +139,8 @@ data class UiState(
     val previousHighScore: Int = 0,
     val isTransitioningLevel: Boolean = false,
     val transitionTargetLevel: Int? = null,
-    val shouldPromptFirstClearNotification: Boolean = false
+    val shouldPromptFirstClearNotification: Boolean = false,
+    val showComboHintBanner: Boolean = false
 )
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
@@ -202,6 +203,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var stageReviveUsesCount = 0
     private var uiSyncAccumulator = 0f
     private var sessionBaselineHighScore = 0
+
+    data class PendingSpawn(
+        var delayRemaining: Float,
+        val x: Float,
+        val y: Float,
+        val radius: Float,
+        val vy: Float,
+        val type: BalloonType,
+        val color: Color,
+        val shapeStyle: BalloonShapeStyle,
+        val hp: Int = 1,
+        val isRingFormation: Boolean = false,
+        val ringAngle: Float = 0f,
+        val ringCenterX: Float = 0f,
+        val ringCenterY: Float = 0f,
+        val ringTargetRadius: Float = 135f,
+        val isGoldRush: Boolean = false
+    )
+
+    private val pendingSpawns = mutableListOf<PendingSpawn>()
+    private var patternCycleIndex = 0
+    private var hasShownComboHint = false
+    private var goldRushParticleAccumulator = 0f
 
     val currentShake: Float
         get() = if (_uiState.value.isScreenShakeEnabled) currentScreenShake else 0f
@@ -1039,7 +1063,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         synchronized(hammerStrikes) { hammerStrikes.clear() }
         synchronized(shockwaves) { shockwaves.clear() }
         synchronized(lightningBolts) { lightningBolts.clear() }
+        synchronized(pendingSpawns) { pendingSpawns.clear() }
 
+        patternCycleIndex = 0
+        hasShownComboHint = false
+        goldRushParticleAccumulator = 0f
         spawnAccumulator = 0f
         spawnIntervalSeconds = when {
             state.gameMode == GameMode.CAMPAIGN -> {
@@ -1087,7 +1115,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 earnedCoinsThisSession = 0,
                 earnedGemsThisSession = 0,
                 isNewHighScoreAchieved = false,
-                previousHighScore = sessionBaselineHighScore
+                previousHighScore = sessionBaselineHighScore,
+                showComboHintBanner = false
             )
         }
 
@@ -1217,15 +1246,52 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             currentScreenShake = 0f
         }
 
-        // 5. Spawning Balloons based on precise delta time
-        // Pass 6 (user's screen recording): Stage 1 repeatedly sat EMPTY —
-        // escaped balloons outpaced the plain interval timer (19/35 pops at
-        // timeout). Density floor: while PLAYING (stepFrame's gate), if the
-        // unpopped balloons on screen drop below the floor for this part of
-        // the game, spawn immediately instead of waiting for the interval.
+        // 5. Spawning Formations & Pending Balloons
+        synchronized(pendingSpawns) {
+            if (pendingSpawns.isNotEmpty()) {
+                val it = pendingSpawns.iterator()
+                while (it.hasNext()) {
+                    val pending = it.next()
+                    pending.delayRemaining -= dtSeconds
+                    if (pending.delayRemaining <= 0f) {
+                        it.remove()
+                        val skin = equippedBalloonSkin()
+                        synchronized(balloons) {
+                            if (balloons.size < 32) {
+                                balloons.add(
+                                    Balloon(
+                                        id = ++balloonIdCounter,
+                                        x = pending.x,
+                                        y = pending.y,
+                                        radius = pending.radius,
+                                        vy = pending.vy,
+                                        type = pending.type,
+                                        color = pending.color,
+                                        wobblePhase = Random.nextFloat() * 6.28f,
+                                        shapeStyle = pending.shapeStyle,
+                                        hp = pending.hp,
+                                        maxHp = pending.hp,
+                                        pattern = if (pending.type == BalloonType.STANDARD) skin.pattern else BalloonPattern.SOLID,
+                                        glossStrength = if (pending.type == BalloonType.STANDARD) skin.glossStrength else 1.0f,
+                                        isRingFormation = pending.isRingFormation,
+                                        ringAngle = pending.ringAngle,
+                                        ringCenterX = pending.ringCenterX,
+                                        ringCenterY = pending.ringCenterY,
+                                        ringTargetRadius = pending.ringTargetRadius,
+                                        isGoldRush = pending.isGoldRush
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         spawnAccumulator += dtSeconds
         val effectiveInterval = if (freezeTimeRemaining > 0f) spawnIntervalSeconds * 2f else spawnIntervalSeconds
         val activeBalloons = synchronized(balloons) { balloons.count { !it.popped } }
+        val pendingCount = synchronized(pendingSpawns) { pendingSpawns.size }
         val densityFloor = if (state.gameMode == GameMode.CAMPAIGN) {
             when {
                 state.currentLevel <= 20 -> 7  // zones 1-2 (stages 1-20)
@@ -1235,15 +1301,33 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             8 // endless modes
         }
-        if (activeBalloons < densityFloor) {
+
+        if (activeBalloons + pendingCount < densityFloor) {
             spawnAccumulator = 0f
-            spawnBalloon()
-        } else if (spawnAccumulator >= effectiveInterval) {
+            triggerNextFormation()
+        } else if (spawnAccumulator >= effectiveInterval && pendingCount == 0) {
             spawnAccumulator = 0f
-            spawnBalloon()
+            triggerNextFormation()
         }
 
-        // 6. Update Balloons
+        // Check for first-stage combo hint: 3 same-colour balloons on screen
+        if (state.gameMode == GameMode.CAMPAIGN && state.currentLevel <= 2 && !hasShownComboHint && state.gameState == GameState.PLAYING) {
+            val maxSameColor = synchronized(balloons) {
+                balloons.filter { !it.popped && it.type == BalloonType.STANDARD }
+                    .groupBy { it.color }
+                    .values.maxOfOrNull { it.size } ?: 0
+            }
+            if (maxSameColor >= 3) {
+                hasShownComboHint = true
+                _uiState.update { it.copy(showComboHintBanner = true) }
+                viewModelScope.launch {
+                    delay(4500L)
+                    _uiState.update { it.copy(showComboHintBanner = false) }
+                }
+            }
+        }
+
+        // 6. Update Balloons (motion, scale-in, ring expansion, sway tilt, and gold rush sparkle trail)
         val speedFactor = if (freezeTimeRemaining > 0f) 0.35f else 1.0f
         synchronized(balloons) {
             val it = balloons.iterator()
@@ -1253,10 +1337,43 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     it.remove()
                     continue
                 }
+                b.spawnAge += dtSeconds
+                if (b.squashTimer > 0f) {
+                    b.squashTimer = (b.squashTimer - dtSeconds).coerceAtLeast(0f)
+                }
+
                 val speedMult = if (b.type == BalloonType.FAST_ROCKET) 1.65f else 1.0f
-                b.y -= b.vy * speedFactor * speedMult * step
-                b.wobblePhase += 0.04f * step
-                b.x += sin(b.wobblePhase) * 0.9f * step
+                val deltaY = b.vy * speedFactor * speedMult * step
+
+                if (b.isRingFormation) {
+                    // RING formation expands outward from center while drifting up
+                    b.ringCenterY -= deltaY
+                    val expansionProgress = (b.spawnAge / 0.60f).coerceIn(0.20f, 1.0f)
+                    val currentRingR = b.ringTargetRadius * expansionProgress
+                    b.x = b.ringCenterX + kotlin.math.cos(b.ringAngle) * currentRingR
+                    b.y = b.ringCenterY + kotlin.math.sin(b.ringAngle) * currentRingR
+                } else {
+                    b.y -= deltaY
+                    b.wobblePhase += 0.045f * step
+                    b.x += sin(b.wobblePhase) * 0.95f * step
+                }
+
+                // Sway tilt
+                b.tiltAngle = sin(b.wobblePhase) * 6.5f
+
+                // Gold rush sparkle trails
+                if (b.isGoldRush && b.y < canvasHeight + 10f) {
+                    goldRushParticleAccumulator += dtSeconds
+                    if (goldRushParticleAccumulator >= 0.07f) {
+                        goldRushParticleAccumulator = 0f
+                        createSparks(
+                            b.x + (Random.nextFloat() - 0.5f) * (b.radius * 0.7f),
+                            b.y + b.radius * 0.85f,
+                            Color(0xFFFFD700),
+                            count = 2
+                        )
+                    }
+                }
 
                 // Ghost Phantom alpha shimmer
                 if (b.type == BalloonType.GHOST_PHANTOM) {
@@ -1347,13 +1464,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        // 11. Update Floating Texts
+        // 11. Update Floating Texts (bounce in and fade)
         synchronized(floatingTexts) {
             val it = floatingTexts.iterator()
             while (it.hasNext()) {
                 val ft = it.next()
+                ft.age += dtSeconds
                 ft.y += ft.vy * step
                 ft.alpha -= 0.035f * step
+                val t = (ft.age / 0.22f).coerceIn(0f, 1f)
+                ft.scale = if (t < 0.6f) 0.5f + 0.75f * (t / 0.6f) else 1.25f - 0.25f * ((t - 0.6f) / 0.4f)
                 if (ft.alpha <= 0f) {
                     it.remove()
                 }
@@ -1392,58 +1512,255 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun spawnBalloon() {
-        // Pass 6: balloons were too small to tap comfortably (user recording).
-        val radius = 56f + Random.nextFloat() * 26f
-        val x = radius + Random.nextFloat() * (canvasWidth - radius * 2).coerceAtLeast(100f)
-        val y = canvasHeight + radius + 15f
+        triggerNextFormation()
+    }
 
+    private fun triggerNextFormation() {
         val mode = _uiState.value.gameMode
         val lvl = _uiState.value.currentLevel
+        val recipe = if (mode == GameMode.CAMPAIGN && lvl > 0) StageRecipes.getRecipe(lvl) else null
 
-        // Milestone boss spawn on level 10, 20, 30... 150
-        val isBossLevel = mode == GameMode.CAMPAIGN && (lvl % 10 == 0)
-        val bossAlreadySpawned = balloons.any { it.type == BalloonType.MEGA_BOSS && !it.popped }
-
-        val type: BalloonType = if (isBossLevel && !bossAlreadySpawned && (balloons.size <= 2 || Random.nextInt(100) < 60)) {
-            BalloonType.MEGA_BOSS
+        val formation: SpawnFormation = if (recipe != null) {
+            val allowed = recipe.allowedFormations
+            if (allowed.contains(SpawnFormation.GOLD_RUSH) && Random.nextFloat() < recipe.goldRushChance) {
+                SpawnFormation.GOLD_RUSH
+            } else {
+                patternCycleIndex = (patternCycleIndex + 1) % allowed.size
+                allowed[patternCycleIndex]
+            }
         } else if (mode == GameMode.ZEN) {
-            val nonBombs = listOf(
-                BalloonType.STANDARD, BalloonType.GOLDEN, BalloonType.RAINBOW,
-                BalloonType.FREEZE, BalloonType.MULTIPLIER, BalloonType.MYSTERY_GIFT,
-                BalloonType.GOLDEN_PIGGY
-            )
-            nonBombs.random()
+            listOf(SpawnFormation.CLUSTER, SpawnFormation.STREAM, SpawnFormation.RING, SpawnFormation.MIXED_RAIN).random()
         } else {
-            val roll = Random.nextInt(100)
-            val bombThreshold = when {
-                lvl >= 25 -> 88 // 12% bombs
-                lvl >= 10 -> 90 // 10% bombs
-                lvl >= 5 -> 92  // 8% bombs
-                else -> 94      // 6% bombs
-            }
-            when {
-                roll < 18 -> BalloonType.STANDARD
-                // Pass 5 (audit L7): HEART and MULTIPLIER were fully wired
-                // (pop behaviour, HUD, canvas) but could never spawn in a
-                // campaign stage. They now take a rare ~2% slice each,
-                // carved from the STANDARD band so every other spawn rate
-                // (including FREEZE and BOMB) is unchanged at all levels.
-                roll < 20 -> BalloonType.HEART
-                roll < 22 -> BalloonType.MULTIPLIER
-                roll < 32 -> BalloonType.GOLDEN
-                roll < 39 -> BalloonType.RAINBOW
-                roll < 50 -> BalloonType.FAST_ROCKET
-                roll < 58 -> BalloonType.SPLITTER
-                roll < 68 -> BalloonType.SHIELDED
-                roll < 76 -> BalloonType.ELECTRIC_STORM
-                roll < 81 -> BalloonType.MYSTERY_GIFT
-                roll < 85 -> BalloonType.GHOST_PHANTOM
-                roll < 88 -> BalloonType.GOLDEN_PIGGY
-                roll < bombThreshold -> BalloonType.FREEZE
-                else -> BalloonType.BOMB // Challenging bombs requiring swift focus & accuracy!
-            }
+            listOf(
+                SpawnFormation.CLUSTER,
+                SpawnFormation.STREAM,
+                SpawnFormation.RING,
+                SpawnFormation.BOMB_DODGE,
+                SpawnFormation.MIXED_RAIN,
+                SpawnFormation.GOLD_RUSH
+            ).random()
         }
 
+        scheduleFormation(formation, recipe)
+    }
+
+    private fun scheduleFormation(formation: SpawnFormation, recipe: StageRecipe?) {
+        val skin = equippedBalloonSkin()
+        when (formation) {
+            SpawnFormation.CLUSTER -> {
+                // CLUSTER: 5–7 balloons of one colour in a loose bunch
+                val count = Random.nextInt(5, 8)
+                val clusterColor = skin.palette.random()
+                val cx = (radiusBase() + 30f + Random.nextFloat() * (canvasWidth - radiusBase() * 2f - 60f).coerceAtLeast(100f))
+                val cy = canvasHeight + radiusBase() + 30f
+                val clusterSpeed = computeBaseSpeed(BalloonType.STANDARD)
+
+                synchronized(pendingSpawns) {
+                    for (i in 0 until count) {
+                        val ox = (Random.nextFloat() - 0.5f) * 150f
+                        val oy = (Random.nextFloat() - 0.5f) * 130f
+                        val r = computeBalloonRadius(BalloonType.STANDARD)
+                        pendingSpawns.add(
+                            PendingSpawn(
+                                delayRemaining = i * 0.04f,
+                                x = (cx + ox).coerceIn(r + 15f, canvasWidth - r - 15f),
+                                y = cy + oy,
+                                radius = r,
+                                vy = clusterSpeed * (0.94f + Random.nextFloat() * 0.12f),
+                                type = BalloonType.STANDARD,
+                                color = clusterColor,
+                                shapeStyle = skin.faceStyles.random()
+                            )
+                        )
+                    }
+                }
+            }
+            SpawnFormation.STREAM -> {
+                // STREAM: 6–8 balloons along a diagonal, released in quick sequence
+                val count = Random.nextInt(6, 9)
+                val goRight = Random.nextBoolean()
+                val startX = if (goRight) canvasWidth * 0.16f else canvasWidth * 0.84f
+                val dx = if (goRight) (canvasWidth * 0.68f / count) else (-canvasWidth * 0.68f / count)
+                val streamSpeed = computeBaseSpeed(BalloonType.STANDARD)
+
+                synchronized(pendingSpawns) {
+                    for (i in 0 until count) {
+                        val type = pickBalloonType(recipe)
+                        val color = getBalloonColor(type, skin)
+                        val r = computeBalloonRadius(type)
+                        val maxHp = if (type == BalloonType.SHIELDED) 2 else 1
+                        pendingSpawns.add(
+                            PendingSpawn(
+                                delayRemaining = i * 0.14f,
+                                x = (startX + i * dx).coerceIn(r + 15f, canvasWidth - r - 15f),
+                                y = canvasHeight + r + 20f,
+                                radius = r,
+                                vy = streamSpeed,
+                                type = type,
+                                color = color,
+                                shapeStyle = getBalloonShape(type, skin),
+                                hp = maxHp
+                            )
+                        )
+                    }
+                }
+            }
+            SpawnFormation.RING -> {
+                // RING: 8 balloons in a circle drifting up together
+                val cx = canvasWidth * (0.35f + Random.nextFloat() * 0.30f)
+                val cy = canvasHeight + 115f
+                val ringSpeed = computeBaseSpeed(BalloonType.STANDARD)
+                val targetR = 135f
+
+                synchronized(pendingSpawns) {
+                    for (i in 0 until 8) {
+                        val angle = (i.toFloat() / 8f) * 6.2831853f
+                        val type = pickBalloonType(recipe)
+                        val color = getBalloonColor(type, skin)
+                        val r = computeBalloonRadius(type)
+                        val maxHp = if (type == BalloonType.SHIELDED) 2 else 1
+                        pendingSpawns.add(
+                            PendingSpawn(
+                                delayRemaining = 0f,
+                                x = cx + 25f * kotlin.math.cos(angle),
+                                y = cy + 25f * kotlin.math.sin(angle),
+                                radius = r,
+                                vy = ringSpeed,
+                                type = type,
+                                color = color,
+                                shapeStyle = getBalloonShape(type, skin),
+                                hp = maxHp,
+                                isRingFormation = true,
+                                ringAngle = angle,
+                                ringCenterX = cx,
+                                ringCenterY = cy,
+                                ringTargetRadius = targetR
+                            )
+                        )
+                    }
+                }
+            }
+            SpawnFormation.BOMB_DODGE -> {
+                // BOMB DODGE: 6 normal balloons arranged around 1 bomb balloon (never before stage 4)
+                val cx = canvasWidth * (0.35f + Random.nextFloat() * 0.30f)
+                val cy = canvasHeight + 120f
+                val dodgeSpeed = computeBaseSpeed(BalloonType.STANDARD)
+                val surroundR = 125f
+
+                synchronized(pendingSpawns) {
+                    // Center Bomb
+                    pendingSpawns.add(
+                        PendingSpawn(
+                            delayRemaining = 0f,
+                            x = cx,
+                            y = cy,
+                            radius = computeBalloonRadius(BalloonType.BOMB),
+                            vy = dodgeSpeed,
+                            type = BalloonType.BOMB,
+                            color = Color(0xFF222226),
+                            shapeStyle = BalloonShapeStyle.ANGRY
+                        )
+                    )
+                    // 6 normal balloons arranged around it
+                    for (k in 0 until 6) {
+                        val angle = (k.toFloat() / 6f) * 6.2831853f
+                        val color = skin.palette.random()
+                        val r = computeBalloonRadius(BalloonType.STANDARD)
+                        pendingSpawns.add(
+                            PendingSpawn(
+                                delayRemaining = 0f,
+                                x = cx + surroundR * kotlin.math.cos(angle),
+                                y = cy + surroundR * kotlin.math.sin(angle),
+                                radius = r,
+                                vy = dodgeSpeed,
+                                type = BalloonType.STANDARD,
+                                color = color,
+                                shapeStyle = skin.faceStyles.random()
+                            )
+                        )
+                    }
+                }
+            }
+            SpawnFormation.GOLD_RUSH -> {
+                // GOLD RUSH: a short burst of 4–6 golden balloons (rare, celebratory)
+                val count = Random.nextInt(4, 7)
+                val cx = canvasWidth * (0.30f + Random.nextFloat() * 0.40f)
+                val cy = canvasHeight + 90f
+                val goldSpeed = computeBaseSpeed(BalloonType.GOLDEN)
+
+                synchronized(pendingSpawns) {
+                    for (i in 0 until count) {
+                        val ox = (Random.nextFloat() - 0.5f) * 180f
+                        val oy = (Random.nextFloat() - 0.5f) * 120f
+                        val r = computeBalloonRadius(BalloonType.GOLDEN)
+                        pendingSpawns.add(
+                            PendingSpawn(
+                                delayRemaining = i * 0.08f,
+                                x = (cx + ox).coerceIn(r + 20f, canvasWidth - r - 20f),
+                                y = cy + oy,
+                                radius = r,
+                                vy = goldSpeed * (0.94f + Random.nextFloat() * 0.12f),
+                                type = BalloonType.GOLDEN,
+                                color = Color(0xFFFFD700),
+                                shapeStyle = BalloonShapeStyle.STAR_SHAPE,
+                                isGoldRush = true
+                            )
+                        )
+                    }
+                }
+            }
+            SpawnFormation.MIXED_RAIN -> {
+                // MIXED RAIN: standard single balloon (used sparingly as filler between patterns)
+                scheduleSingleBalloon(recipe, skin)
+            }
+        }
+    }
+
+    private fun scheduleSingleBalloon(recipe: StageRecipe?, skin: BalloonSkin) {
+        val type = pickBalloonType(recipe)
+        val radius = computeBalloonRadius(type)
+        val x = radius + Random.nextFloat() * (canvasWidth - radius * 2).coerceAtLeast(100f)
+        val y = canvasHeight + radius + 15f
+        val vy = computeBaseSpeed(type)
+        val color = getBalloonColor(type, skin)
+        val shape = getBalloonShape(type, skin)
+        val maxHp = when (type) {
+            BalloonType.MEGA_BOSS -> (15 + (_uiState.value.currentLevel / 10) * 5).coerceIn(15, 45)
+            BalloonType.SHIELDED -> 2
+            else -> 1
+        }
+        synchronized(pendingSpawns) {
+            pendingSpawns.add(
+                PendingSpawn(
+                    delayRemaining = 0f,
+                    x = x,
+                    y = y,
+                    radius = radius,
+                    vy = vy,
+                    type = type,
+                    color = color,
+                    shapeStyle = shape,
+                    hp = maxHp
+                )
+            )
+        }
+    }
+
+    private fun radiusBase(): Float {
+        val mode = _uiState.value.gameMode
+        val lvl = _uiState.value.currentLevel
+        val isEarlyStage = mode == GameMode.CAMPAIGN && lvl <= 2
+        return if (isEarlyStage) (68f + Random.nextFloat() * 20f) else (56f + Random.nextFloat() * 24f)
+    }
+
+    private fun computeBalloonRadius(type: BalloonType): Float {
+        val baseR = radiusBase()
+        return if (type == BalloonType.MEGA_BOSS) baseR * 1.6f else baseR
+    }
+
+    private fun computeBaseSpeed(type: BalloonType): Float {
+        val mode = _uiState.value.gameMode
+        val lvl = _uiState.value.currentLevel
         val rawSpeed = when {
             type == BalloonType.MEGA_BOSS -> 2.4f
             type == BalloonType.FAST_ROCKET -> 7.8f + Random.nextFloat() * 3.5f
@@ -1452,17 +1769,51 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             mode == GameMode.ZEN -> 2.6f + Random.nextFloat() * 1.5f
             else -> 4.8f + (lvl * 0.05f).coerceAtMost(4.5f) + Random.nextFloat() * 2.8f
         }
+        return when {
+            mode == GameMode.CAMPAIGN && lvl <= 2 -> rawSpeed * 0.70f
+            mode == GameMode.CAMPAIGN && lvl <= 20 -> rawSpeed * 0.85f
+            else -> rawSpeed
+        }
+    }
 
-        // Pass 6: zone 1-2 stages (1-20) rise ~15% slower so balloons live
-        // longer on screen — in the recording they escaped before they
-        // could be popped.
-        val baseSpeed = if (mode == GameMode.CAMPAIGN && lvl <= 20) rawSpeed * 0.85f else rawSpeed
+    private fun pickBalloonType(recipe: StageRecipe?): BalloonType {
+        val mode = _uiState.value.gameMode
+        val lvl = _uiState.value.currentLevel
 
-        // Pass 5: standard balloons are painted by the equipped balloon
-        // skin (palette + face set + pattern + gloss) instead of the old
-        // global palette — skins are the game's most visible cosmetic.
-        val skin = equippedBalloonSkin()
-        val color = when (type) {
+        val isBossLevel = mode == GameMode.CAMPAIGN && (lvl % 10 == 0)
+        val bossAlreadySpawned = synchronized(balloons) { balloons.any { it.type == BalloonType.MEGA_BOSS && !it.popped } }
+            || synchronized(pendingSpawns) { pendingSpawns.any { it.type == BalloonType.MEGA_BOSS } }
+        if (isBossLevel && !bossAlreadySpawned && (balloons.size <= 2 || Random.nextInt(100) < 50)) {
+            return BalloonType.MEGA_BOSS
+        }
+
+        if (mode == GameMode.ZEN) {
+            val nonBombs = listOf(
+                BalloonType.STANDARD, BalloonType.GOLDEN, BalloonType.RAINBOW,
+                BalloonType.FREEZE, BalloonType.MULTIPLIER, BalloonType.MYSTERY_GIFT,
+                BalloonType.GOLDEN_PIGGY
+            )
+            return nonBombs.random()
+        }
+
+        if (recipe == null) {
+            val roll = Random.nextInt(100)
+            return if (roll < 75) BalloonType.STANDARD else BalloonType.GOLDEN
+        }
+
+        val roll = Random.nextFloat()
+        if (roll >= recipe.specialChance || recipe.unlockedBalloonTypes.size <= 1) {
+            return BalloonType.STANDARD
+        }
+
+        val availableSpecials = recipe.unlockedBalloonTypes.filter {
+            it != BalloonType.STANDARD && it != BalloonType.MEGA_BOSS
+        }
+        return if (availableSpecials.isNotEmpty()) availableSpecials.random() else BalloonType.STANDARD
+    }
+
+    private fun getBalloonColor(type: BalloonType, skin: BalloonSkin): Color {
+        return when (type) {
             BalloonType.GOLDEN -> Color(0xFFFFD700)
             BalloonType.BOMB -> Color(0xFF222226)
             BalloonType.FREEZE -> Color(0xFF38BDF8)
@@ -1479,8 +1830,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             BalloonType.MEGA_BOSS -> Color(0xFF7C3AED)
             else -> skin.palette.random()
         }
+    }
 
-        val shapeStyle = when (type) {
+    private fun getBalloonShape(type: BalloonType, skin: BalloonSkin): BalloonShapeStyle {
+        return when (type) {
             BalloonType.BOMB -> BalloonShapeStyle.ANGRY
             BalloonType.GOLDEN, BalloonType.GOLDEN_PIGGY -> BalloonShapeStyle.STAR_SHAPE
             BalloonType.HEART -> BalloonShapeStyle.HEART_SHAPE
@@ -1489,36 +1842,6 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             BalloonType.RAINBOW -> listOf(BalloonShapeStyle.COOL, BalloonShapeStyle.FUNNY, BalloonShapeStyle.CAT_FACE).random()
             BalloonType.MEGA_BOSS -> BalloonShapeStyle.ANGRY
             else -> skin.faceStyles.random()
-        }
-
-        val maxHp = when (type) {
-            BalloonType.MEGA_BOSS -> (15 + (lvl / 10) * 5).coerceIn(15, 45)
-            BalloonType.SHIELDED -> 2
-            else -> 1
-        }
-
-        val spawnRadius = if (type == BalloonType.MEGA_BOSS) radius * 1.6f else radius
-
-        synchronized(balloons) {
-            if (balloons.size < 28) {
-                balloons.add(
-                    Balloon(
-                        id = ++balloonIdCounter,
-                        x = x,
-                        y = y,
-                        radius = spawnRadius,
-                        vy = baseSpeed,
-                        type = type,
-                        color = color,
-                        wobblePhase = Random.nextFloat() * 6.28f,
-                        shapeStyle = shapeStyle,
-                        hp = maxHp,
-                        maxHp = maxHp,
-                        pattern = if (type == BalloonType.STANDARD) skin.pattern else BalloonPattern.SOLID,
-                        glossStrength = if (type == BalloonType.STANDARD) skin.glossStrength else 1.0f
-                    )
-                )
-            }
         }
     }
 
@@ -1620,9 +1943,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun popBalloon(b: Balloon) {
+    fun popBalloon(b: Balloon) {
         if (b.hp > 1) {
             b.hp -= 1
+            b.squashTimer = 0.15f
             sound.playShieldHit()
             triggerVibration(35L)
             if (b.type == BalloonType.MEGA_BOSS) {
@@ -1639,6 +1963,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         b.popped = true
+        b.squashTimer = 0.12f
         triggerSpecialBalloonShake(b.type)
 
         // Spawn visual pop shockwave
@@ -1685,6 +2010,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val comboMult = min(newCombo, 5) * multMultiplier
 
         if (newCombo >= 2) {
+            if (_uiState.value.showComboHintBanner) {
+                _uiState.update { it.copy(showComboHintBanner = false) }
+            }
             sound.playCombo(newCombo)
             addFloatingText(b.x, b.y - 20f, "COMBO ${newCombo}x!", Color(0xFFFFB703))
             when (newCombo) {
