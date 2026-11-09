@@ -80,11 +80,11 @@ fun EndlessModeScreen(
     // Deep navy/indigo game theme background with subtle gradient depth
     val cosmicGradient = Brush.verticalGradient(
         listOf(
-            Color(0xFF070B18),
-            Color(0xFF0D1429),
-            Color(0xFF131A36),
-            Color(0xFF0E1428),
-            Color(0xFF060914)
+            Color(0xFF171233),
+            Color(0xFF241A4D),
+            Color(0xFF2C2160),
+            Color(0xFF241A4D),
+            Color(0xFF171233)
         )
     )
 
@@ -312,8 +312,8 @@ fun EndlessModeScreen(
                     subtitle = "No Bombs • Relaxing Ambient",
                     mode = GameMode.ZEN,
                     badgeText = "ZEN",
-                    accentColor = Color(0xFF00E5FF),
-                    badgeBgColor = Color(0x3300E5FF),
+                    accentColor = Color(0xFF4A90C4),
+                    badgeBgColor = Color(0x334A90C4),
                     badgeTextColor = Color(0xFFBAE6FD),
                     isSelected = selectedMode == GameMode.ZEN,
                     glowPulse = glowPulse,
@@ -328,7 +328,7 @@ fun EndlessModeScreen(
                 GameMode.CLASSIC -> listOf(Color(0xFF10B981), Color(0xFF059669)) to "START CLASSIC"
                 GameMode.TIME_RUSH -> listOf(Color(0xFFF59E0B), Color(0xFFD97706)) to "START TIME RUSH"
                 GameMode.ARCADE -> listOf(Color(0xFFFF5722), Color(0xFFDC2626)) to "START ARCADE"
-                GameMode.ZEN -> listOf(Color(0xFF00E5FF), Color(0xFF0284C7)) to "START ZEN"
+                GameMode.ZEN -> listOf(Color(0xFF4A90C4), Color(0xFF0284C7)) to "START ZEN"
                 else -> listOf(Color(0xFF10B981), Color(0xFF059669)) to "START GAME"
             }
 
@@ -493,10 +493,11 @@ private fun EndlessModeCard(
         )
     }
 
+    // Pass 5 (amendment 10): endless cards are jewel tiles on the plum world.
     val cardBg = if (isSelected) {
-        Color(0xF0121A33)
+        Color(0xF02C2160)
     } else {
-        Color(0xD90E1428)
+        Color(0xE6241A4D)
     }
 
     Box(
@@ -506,15 +507,15 @@ private fun EndlessModeCard(
             .scale(scale)
             .shadow(
                 elevation = if (isSelected) 12.dp else 2.dp,
-                shape = DesignTokens.ShapeMedium,
+                shape = DesignTokens.ShapeCardStory,
                 spotColor = if (isSelected) accentColor else Color.Transparent
             )
-            .clip(DesignTokens.ShapeMedium)
+            .clip(DesignTokens.ShapeCardStory)
             .background(cardBg)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 brush = borderBrush,
-                shape = DesignTokens.ShapeMedium
+                shape = DesignTokens.ShapeCardStory
             )
             .clickable(
                 interactionSource = interaction,
@@ -586,17 +587,26 @@ private fun EndlessModeCard(
                         overflow = TextOverflow.Ellipsis
                     )
 
+                    // Pass 5 (amendment 10): BEST is the card's biggest
+                    // number — a gold ribbon chip, display type, plum text.
                     // Always rendered (even at 0) so every card keeps the same
-                    // height and the BEST line sits in the same place.
-                    Text(
-                        text = if (bestScore > 0) "BEST: $bestScore" else "BEST: —",
-                        fontFamily = Baloo2FontFamily,
-                        fontSize = DesignTokens.TypeTierCaption,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = accentColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    // height and the BEST chip sits in the same place.
+                    Box(
+                        modifier = Modifier
+                            .clip(DesignTokens.ShapePill)
+                            .background(DesignTokens.GoldFaceGradient)
+                            .padding(horizontal = 10.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = if (bestScore > 0) "🏆 BEST ${String.format("%,d", bestScore)}" else "🏆 BEST —",
+                            fontFamily = Baloo2FontFamily,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color(0xFF2A1B4E),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
 

@@ -477,7 +477,7 @@ private fun Candy3DText(
             fontFamily = Baloo2FontFamily,
             fontSize = fontSize,
             fontWeight = FontWeight.Black,
-            color = Color(0xFFFF2A75),
+            color = Color(0xFFC93A5E),
             modifier = Modifier.offset(y = 2.dp)
         )
 
@@ -551,12 +551,12 @@ private fun DrawScope.drawKawaiiPartyMascot(size: Size) {
 
     // 4. Rosy Blush Cheeks
     drawOval(
-        color = Color(0xFFFF2A75).copy(alpha = 0.45f),
+        color = Color(0xFFC93A5E).copy(alpha = 0.45f),
         topLeft = Offset(cx - r * 0.70f, cy + r * 0.12f),
         size = Size(r * 0.32f, r * 0.18f)
     )
     drawOval(
-        color = Color(0xFFFF2A75).copy(alpha = 0.45f),
+        color = Color(0xFFC93A5E).copy(alpha = 0.45f),
         topLeft = Offset(cx + r * 0.38f, cy + r * 0.12f),
         size = Size(r * 0.32f, r * 0.18f)
     )

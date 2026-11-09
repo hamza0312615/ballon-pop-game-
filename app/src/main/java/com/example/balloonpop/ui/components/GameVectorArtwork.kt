@@ -319,15 +319,15 @@ fun SkillVaultArt(
                 )
                 drawPath(headPath, color = Color.White, style = Stroke(width = 1.8f))
                 // Lightning spark
-                drawLine(Color(0xFF00E5FF), start = Offset(cx + w * 0.30f, cy - h * 0.22f), end = Offset(cx + w * 0.44f, cy - h * 0.32f), strokeWidth = 2.5f)
-                drawLine(Color(0xFF00E5FF), start = Offset(cx + w * 0.32f, cy + h * 0.04f), end = Offset(cx + w * 0.46f, cy + h * 0.12f), strokeWidth = 2.5f)
+                drawLine(Color(0xFF4A90C4), start = Offset(cx + w * 0.30f, cy - h * 0.22f), end = Offset(cx + w * 0.44f, cy - h * 0.32f), strokeWidth = 2.5f)
+                drawLine(Color(0xFF4A90C4), start = Offset(cx + w * 0.32f, cy + h * 0.04f), end = Offset(cx + w * 0.46f, cy + h * 0.12f), strokeWidth = 2.5f)
             }
 
             "skill_slice" -> {
                 // Dual Crossing Laser Plasma Blades
                 // Blade 1 (Cyan)
                 drawLine(
-                    brush = Brush.linearGradient(listOf(Color(0xFF00F0FF), Color(0xFF80D8FF), Color.White)),
+                    brush = Brush.linearGradient(listOf(Color(0xFF2F6DB3), Color(0xFF80D8FF), Color.White)),
                     start = Offset(cx - w * 0.35f, cy + h * 0.35f),
                     end = Offset(cx + w * 0.35f, cy - h * 0.35f),
                     strokeWidth = 5.5f,
@@ -348,7 +348,7 @@ fun SkillVaultArt(
 
             "skill_freeze" -> {
                 // Frosted Ice Crystal Hexagram with Frost Crystals
-                val iceCyan = Color(0xFF00E5FF)
+                val iceCyan = Color(0xFF4A90C4)
                 for (i in 0 until 6) {
                     val angle = (i * 60f) * (PI.toFloat() / 180f)
                     val r1 = w * 0.38f
@@ -373,7 +373,7 @@ fun SkillVaultArt(
             "skill_vortex" -> {
                 // Gravitational Vortex Galaxy Spiral
                 val vortexPurple = Color(0xFFA855F7)
-                val vortexCyan = Color(0xFF06D6A0)
+                val vortexCyan = Color(0xFF2FA36B)
                 drawCircle(
                     brush = Brush.sweepGradient(listOf(vortexPurple, vortexCyan, Color(0xFFEC4899), vortexPurple)),
                     radius = w * 0.36f,
@@ -437,8 +437,8 @@ fun ShopItemArt(
     modifier: Modifier = Modifier.fillMaxSize()
 ) {
     val (type, title, color) = when {
-        itemId.contains("freeze") -> Triple("booster", "Freeze", Color(0xFF00E5FF))
-        itemId.contains("color_bomb") || itemId.contains("rainbow") -> Triple("booster", "Rainbow", Color(0xFFFF2A75))
+        itemId.contains("freeze") -> Triple("booster", "Freeze", Color(0xFF4A90C4))
+        itemId.contains("color_bomb") || itemId.contains("rainbow") -> Triple("booster", "Rainbow", Color(0xFFC93A5E))
         itemId.contains("thunder") -> Triple("booster", "Thunder", Color(0xFFFFB703))
         itemId.contains("vortex") -> Triple("booster", "Vortex", Color(0xFF10B981))
         itemId.contains("hammer") -> Triple("hammer", "Hammer", Color(0xFFFFD700))
@@ -781,9 +781,9 @@ fun ZoneEmblemArt(
             }
             5 -> {
                 // Zone 6: Cyber Metropolis - Circuit matrix node
-                drawRoundRect(brush = Brush.linearGradient(listOf(Color(0xFF00F0FF), Color(0xFF06D6A0))), topLeft = Offset(cx - w * 0.32f, cy - h * 0.32f), size = Size(w * 0.64f, h * 0.64f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f))
+                drawRoundRect(brush = Brush.linearGradient(listOf(Color(0xFF2F6DB3), Color(0xFF2FA36B))), topLeft = Offset(cx - w * 0.32f, cy - h * 0.32f), size = Size(w * 0.64f, h * 0.64f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(6f, 6f))
                 drawCircle(Color(0xFF0B1622), radius = w * 0.18f, center = Offset(cx, cy))
-                drawCircle(Color(0xFF00F0FF), radius = w * 0.08f, center = Offset(cx, cy))
+                drawCircle(Color(0xFF2F6DB3), radius = w * 0.08f, center = Offset(cx, cy))
             }
             6 -> {
                 // Zone 7: Volcano Caldera - Molten fire droplet
@@ -1002,7 +1002,7 @@ fun DailyFortuneWheelHubArt(
         )
         // Inner ruby core
         drawCircle(
-            brush = Brush.radialGradient(listOf(Color(0xFFFF2A75), Color(0xFF880E4F))),
+            brush = Brush.radialGradient(listOf(Color(0xFFC93A5E), Color(0xFF880E4F))),
             radius = w * 0.36f,
             center = Offset(cx, cy)
         )
@@ -1031,7 +1031,7 @@ fun DailyWheelIconArt(
         val cy = h / 2f
         val r = w * 0.44f
 
-        val colors = listOf(Color(0xFFFF5D8F), Color(0xFF00F0FF), Color(0xFFFFC93C), Color(0xFF9D4EDD), Color(0xFF10B981), Color(0xFFFF7A00))
+        val colors = listOf(Color(0xFFFF5D8F), Color(0xFF2F6DB3), Color(0xFFFFC93C), Color(0xFF9D4EDD), Color(0xFF10B981), Color(0xFFFF7A00))
         val sweep = 360f / colors.size
         for (i in colors.indices) {
             drawArc(colors[i], startAngle = i * sweep, sweepAngle = sweep, useCenter = true, topLeft = Offset(cx - r, cy - r), size = Size(r * 2, r * 2))
@@ -1132,7 +1132,7 @@ fun HomeNavIcon(
         when (type.uppercase()) {
             "SPIN" -> {
                 // Fortune Wheel
-                val colors = listOf(Color(0xFFFF5D8F), Color(0xFF00F0FF), Color(0xFFFFC93C), Color(0xFF9D4EDD), Color(0xFF10B981))
+                val colors = listOf(Color(0xFFFF5D8F), Color(0xFF2F6DB3), Color(0xFFFFC93C), Color(0xFF9D4EDD), Color(0xFF10B981))
                 val sweep = 360f / colors.size
                 for (i in colors.indices) {
                     drawArc(colors[i], startAngle = i * sweep, sweepAngle = sweep, useCenter = true, topLeft = Offset(cx - w * 0.42f, cy - h * 0.42f), size = Size(w * 0.84f, h * 0.84f))

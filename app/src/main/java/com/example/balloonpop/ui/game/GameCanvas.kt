@@ -136,12 +136,12 @@ fun GameCanvas(
             }
             cachedBgBrush = Brush.verticalGradient(themeColors)
             cachedOrb1 = Brush.radialGradient(
-                colors = listOf(Color(0x2800F0FF), Color.Transparent),
+                colors = listOf(Color(0x282F6DB3), Color.Transparent),
                 center = Offset(size.width * 0.2f, size.height * 0.3f),
                 radius = size.width * 0.6f
             )
             cachedOrb2 = Brush.radialGradient(
-                colors = listOf(Color(0x28FF2A75), Color.Transparent),
+                colors = listOf(Color(0x28C93A5E), Color.Transparent),
                 center = Offset(size.width * 0.85f, size.height * 0.7f),
                 radius = size.width * 0.7f
             )
@@ -422,7 +422,7 @@ fun GameCanvas(
                         rotate(degrees = p.rotation, pivot = Offset(p.x, p.y)) {
                             val r = p.radius * 2f
                             drawLine(
-                                color = Color(0xFF00E5FF).copy(alpha = pAlpha),
+                                color = Color(0xFF4A90C4).copy(alpha = pAlpha),
                                 start = Offset(p.x - r, p.y - r * 0.5f),
                                 end = Offset(p.x, p.y + r * 0.3f),
                                 strokeWidth = 2.5f,
@@ -566,7 +566,7 @@ fun GameCanvas(
         if (isFreezeActive) {
             drawRect(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color.Transparent, Color(0x2500E5FF), Color(0x6000B4D8)),
+                    colors = listOf(Color.Transparent, Color(0x254A90C4), Color(0x6000B4D8)),
                     center = Offset(size.width / 2f, size.height / 2f),
                     radius = size.maxDimension / 1.4f
                 )
@@ -635,7 +635,7 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
             center = Offset(x, y + r * 1.25f)
         )
         drawCircle(
-            color = Color(0xFFFF007F).copy(alpha = 0.6f * curAlpha),
+            color = Color(0xFFB03060).copy(alpha = 0.6f * curAlpha),
             radius = flameLen * 0.6f,
             center = Offset(x, y + r * 1.35f)
         )
@@ -647,9 +647,9 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
         BalloonType.GOLDEN, BalloonType.GOLDEN_PIGGY -> Color(0xFFFFD700)
         BalloonType.RAINBOW -> Color(0xFF38BDF8)
         BalloonType.FREEZE -> Color(0xFF67E8F9)
-        BalloonType.MEGA_BOSS -> Color(0xFFFF007F)
+        BalloonType.MEGA_BOSS -> Color(0xFFB03060)
         BalloonType.ELECTRIC_STORM -> Color(0xFFFACC15)
-        BalloonType.HEART -> Color(0xFFFF2A75)
+        BalloonType.HEART -> Color(0xFFC93A5E)
         else -> b.color
     }
 
@@ -703,6 +703,79 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
         size = Size(r * 1.8f, r * 2.2f)
     )
 
+    // Pass 5: equipped balloon-skin pattern overlay (standard balloons only
+    // carry a pattern; special types keep their plain jewel body).
+    when (b.pattern) {
+        BalloonPattern.STRIPES -> {
+            drawOval(
+                color = Color.White.copy(alpha = 0.16f * curAlpha),
+                topLeft = Offset(x - r * 0.48f, y - r * 1.02f),
+                size = Size(r * 0.30f, r * 2.04f)
+            )
+            drawOval(
+                color = Color.White.copy(alpha = 0.16f * curAlpha),
+                topLeft = Offset(x + r * 0.18f, y - r * 1.02f),
+                size = Size(r * 0.30f, r * 2.04f)
+            )
+        }
+        BalloonPattern.POLKA -> {
+            val dots = listOf(
+                -0.42f to -0.55f, 0.30f to -0.22f, -0.14f to 0.14f,
+                0.44f to 0.42f, -0.48f to 0.58f
+            )
+            for ((dx, dy) in dots) {
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.25f * curAlpha),
+                    radius = r * 0.13f,
+                    center = Offset(x + dx * r, y + dy * r)
+                )
+            }
+        }
+        BalloonPattern.SWIRL -> {
+            drawArc(
+                color = Color.White.copy(alpha = 0.22f * curAlpha),
+                startAngle = 20f,
+                sweepAngle = 200f,
+                useCenter = false,
+                topLeft = Offset(x - r * 0.55f, y - r * 0.75f),
+                size = Size(r * 1.1f, r * 1.1f),
+                style = Stroke(width = r * 0.10f, cap = StrokeCap.Round)
+            )
+            drawArc(
+                color = Color.White.copy(alpha = 0.22f * curAlpha),
+                startAngle = 200f,
+                sweepAngle = 200f,
+                useCenter = false,
+                topLeft = Offset(x - r * 0.30f, y - r * 0.45f),
+                size = Size(r * 0.6f, r * 0.6f),
+                style = Stroke(width = r * 0.08f, cap = StrokeCap.Round)
+            )
+        }
+        BalloonPattern.SPARKLE -> {
+            val sparks = listOf(-0.40f to -0.60f, 0.35f to -0.10f, -0.10f to 0.50f)
+            for ((dx, dy) in sparks) {
+                val cx = x + dx * r
+                val cy = y + dy * r
+                val arm = r * 0.15f
+                drawLine(
+                    color = Color.White.copy(alpha = 0.85f * curAlpha),
+                    start = Offset(cx, cy - arm),
+                    end = Offset(cx, cy + arm),
+                    strokeWidth = r * 0.05f,
+                    cap = StrokeCap.Round
+                )
+                drawLine(
+                    color = Color.White.copy(alpha = 0.85f * curAlpha),
+                    start = Offset(cx - arm, cy),
+                    end = Offset(cx + arm, cy),
+                    strokeWidth = r * 0.05f,
+                    cap = StrokeCap.Round
+                )
+            }
+        }
+        BalloonPattern.SOLID -> Unit
+    }
+
     // Bottom bounce rim reflection
     drawOval(
         brush = Brush.verticalGradient(
@@ -716,8 +789,9 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
     )
 
     // Curved Glossy Crescent Specular Highlight (Upper Left)
+    // Pass 5: specular intensity is scaled by the equipped skin's gloss.
     drawArc(
-        color = Color.White.copy(alpha = 0.72f * curAlpha),
+        color = Color.White.copy(alpha = (0.72f * b.glossStrength).coerceAtMost(1f) * curAlpha),
         startAngle = 195f,
         sweepAngle = 72f,
         useCenter = false,
@@ -728,7 +802,7 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
 
     // Specular Pin-Dot Flare
     drawCircle(
-        color = Color.White.copy(alpha = 0.95f * curAlpha),
+        color = Color.White.copy(alpha = (0.95f * b.glossStrength).coerceAtMost(1f) * curAlpha),
         radius = r * 0.12f,
         center = Offset(x - r * 0.35f, y - r * 0.65f)
     )
@@ -736,7 +810,7 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
     // Shield barrier aura & cracks
     if (b.type == BalloonType.SHIELDED || b.maxHp > 1) {
         drawOval(
-            color = Color(0xFF00E5FF).copy(alpha = 0.6f * curAlpha),
+            color = Color(0xFF4A90C4).copy(alpha = 0.6f * curAlpha),
             topLeft = Offset(x - r * 1.05f, y - r * 1.25f),
             size = Size(r * 2.1f, r * 2.5f),
             style = Stroke(width = 4f)
@@ -807,7 +881,7 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
         // Bar fill
         val hpPercent = (b.hp.toFloat() / b.maxHp.toFloat()).coerceIn(0f, 1f)
         drawRoundRect(
-            brush = Brush.horizontalGradient(listOf(Color(0xFFFF007F), Color(0xFFFFB703))),
+            brush = Brush.horizontalGradient(listOf(Color(0xFFB03060), Color(0xFFFFB703))),
             topLeft = Offset(barX + 1f, barY + 1f),
             size = Size((barW - 2f) * hpPercent, barH - 2f),
             cornerRadius = CornerRadius(4f, 4f)
@@ -878,12 +952,12 @@ private fun DrawScope.drawFaceExpressionsZeroAlloc(b: Balloon) {
 
             // Rosy Blush
             drawOval(
-                color = Color(0x66FF2A75),
+                color = Color(0x66C93A5E),
                 topLeft = Offset(x - r * 0.46f, y + r * 0.02f),
                 size = Size(r * 0.22f, r * 0.13f)
             )
             drawOval(
-                color = Color(0x66FF2A75),
+                color = Color(0x66C93A5E),
                 topLeft = Offset(x + r * 0.24f, y + r * 0.02f),
                 size = Size(r * 0.22f, r * 0.13f)
             )
@@ -1151,13 +1225,13 @@ private fun DrawScope.drawHeartBalloon(b: Balloon, heartPath: Path) {
     heartPath.close()
 
     // Subtle Outer Glow for Heart Balloon
-    drawPath(heartPath, color = Color(0xFFFF2A75).copy(alpha = 0.32f * curAlpha), style = Stroke(width = 8f))
+    drawPath(heartPath, color = Color(0xFFC93A5E).copy(alpha = 0.32f * curAlpha), style = Stroke(width = 8f))
     drawPath(heartPath, color = Color.White.copy(alpha = 0.40f * curAlpha), style = Stroke(width = 2.2f))
 
     drawPath(
         heartPath,
         brush = Brush.radialGradient(
-            colors = listOf(Color.White.copy(alpha = 0.5f), Color(0xFFFF2A75), Color(0xFFC2185B)),
+            colors = listOf(Color.White.copy(alpha = 0.5f), Color(0xFFC93A5E), Color(0xFFC2185B)),
             center = Offset(x - r * 0.3f, y - r * 0.3f),
             radius = r * 1.3f
         )

@@ -69,8 +69,8 @@ fun ConfettiCelebrationView(
     val confettiColors = remember {
         listOf(
             Color(0xFFFFD700), // Gold
-            Color(0xFFFF2A75), // Hot Pink
-            Color(0xFF00E5FF), // Cyan
+            Color(0xFFC93A5E), // Hot Pink
+            Color(0xFF4A90C4), // Cyan
             Color(0xFF10B981), // Emerald
             Color(0xFFA855F7), // Purple
             Color(0xFFFF9100), // Tangerine

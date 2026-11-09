@@ -47,6 +47,12 @@ import com.example.balloonpop.ui.theme.CosmosNavyDeep
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.DiamondBlue
 import com.example.balloonpop.ui.theme.GoldCoin
+import com.example.balloonpop.ui.theme.CreamSurface
+import com.example.balloonpop.ui.theme.PlumText
+import com.example.balloonpop.ui.theme.StoryGold
+import com.example.balloonpop.ui.theme.StorybookIndigo
+import com.example.balloonpop.ui.theme.StorybookPlum
+import com.example.balloonpop.ui.theme.StorybookPlumDeep
 import com.example.balloonpop.ui.theme.NunitoFontFamily
 
 enum class ShopTab(val label: String, val icon: String) {
@@ -56,6 +62,7 @@ enum class ShopTab(val label: String, val icon: String) {
     FRAMES("Frames", "🖼️"),
     BLADES("Blades", "⚔️"),
     FLAMES("Flames", "🔥"),
+    SKINS("Skins", "🎈"),
     DIAMONDS("Gems", "💎")
 }
 
@@ -88,17 +95,20 @@ fun ShopScreen(
     equippedFrameId: String,
     equippedBladeId: String,
     equippedFlameId: String = "flame_ember",
+    equippedBalloonSkinId: String = "balloon_classic",
     equippedThemeId: String = "theme_sunset_twilight",
     unlockedHammers: Set<String>,
     unlockedFrames: Set<String>,
     unlockedBlades: Set<String>,
     unlockedFlames: Set<String> = setOf("flame_ember"),
+    unlockedBalloonSkins: Set<String> = setOf("balloon_classic"),
     unlockedThemes: Set<String> = setOf("theme_sunset_twilight", "theme_obsidian"),
     boosterCounts: Map<String, Int> = emptyMap(),
     onBuyHammer: (HammerSkin) -> Unit,
     onBuyFrame: (PlayFrame) -> Unit,
     onBuyBlade: (BladeItem) -> Unit,
     onBuyFlame: (FlameItem) -> Unit = {},
+    onBuyBalloonSkin: (BalloonSkin) -> Unit = {},
     onBuyTheme: (ThemeConfig) -> Unit = {},
     onBuyBooster: (boosterId: String, withGems: Boolean) -> Unit = { _, _ -> },
     onClaimDiamondPack: (DiamondStorePack) -> Unit,
@@ -110,12 +120,13 @@ fun ShopScreen(
     var selectedTab by remember { mutableStateOf(ShopTab.THEMES) }
     var selectedIapPack by remember { mutableStateOf<DiamondStorePack?>(null) }
 
+    // Pass 5: Golden Storybook world gradient behind the shop sheets.
     val cosmicBg = Brush.verticalGradient(
         listOf(
-            CosmosNavyDeep,
-            CosmosNavy,
-            CosmosIndigo,
-            CosmosNavyDeep
+            StorybookPlumDeep,
+            StorybookPlum,
+            StorybookIndigo,
+            StorybookPlumDeep
         )
     )
 
@@ -372,18 +383,23 @@ fun ShopScreen(
                     )
                 }
 
-                // Row 3: Gems (kept the same tile width as every other tile)
+                // Row 3: Skins, Gems (kept the same tile width as every other tile)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    ShopCategoryTile(
+                        tab = ShopTab.SKINS,
+                        isSelected = selectedTab == ShopTab.SKINS,
+                        onClick = { selectedTab = ShopTab.SKINS },
+                        modifier = Modifier.weight(1f)
+                    )
                     ShopCategoryTile(
                         tab = ShopTab.DIAMONDS,
                         isSelected = selectedTab == ShopTab.DIAMONDS,
                         onClick = { selectedTab = ShopTab.DIAMONDS },
                         modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.weight(1f))
                     Spacer(modifier = Modifier.weight(1f))
                 }
             }
@@ -574,6 +590,37 @@ fun ShopScreen(
                             }
                         }
 
+                        ShopTab.SKINS -> {
+                            // Pass 5: balloon skins — the card art preview is
+                            // the skin's own palette gradient; owned/equipped
+                            // states and price pills reuse the uniform card.
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space12),
+                                verticalArrangement = Arrangement.spacedBy(DesignTokens.Space12),
+                                contentPadding = PaddingValues(bottom = DesignTokens.Space16),
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                items(GameConstants.SHOP_BALLOON_SKINS, key = { it.id }) { skin ->
+                                    val isUnlocked = unlockedBalloonSkins.contains(skin.id)
+                                    val isEquipped = equippedBalloonSkinId == skin.id
+
+                                    CosmeticItemCard(
+                                        title = skin.name,
+                                        description = skin.description,
+                                        icon = skin.icon,
+                                        iconBgColor = skin.palette.first(),
+                                        priceCoins = if (skin.currency == CurrencyType.COINS) skin.cost else 0,
+                                        priceGems = if (skin.currency == CurrencyType.GEMS) skin.cost else 0,
+                                        isUnlocked = isUnlocked,
+                                        isEquipped = isEquipped,
+                                        previewBrush = Brush.horizontalGradient(skin.palette),
+                                        onAction = { onBuyBalloonSkin(skin) }
+                                    )
+                                }
+                            }
+                        }
+
                         ShopTab.DIAMONDS -> {
                             LazyVerticalGrid(
                                 columns = GridCells.Fixed(2),
@@ -717,13 +764,13 @@ private fun UniformShopCard(
         modifier = modifier
             .fillMaxWidth()
             .height(ShopCardHeight)
-            .shadow(6.dp, DesignTokens.ShapeMedium)
-            .clip(DesignTokens.ShapeMedium)
-            .background(Color(0xEE12132C))
+            .shadow(6.dp, DesignTokens.ShapeCardStory)
+            .clip(DesignTokens.ShapeCardStory)
+            .background(CreamSurface)
             .border(
                 width = 1.dp,
                 brush = borderBrush,
-                shape = DesignTokens.ShapeMedium
+                shape = DesignTokens.ShapeCardStory
             )
             .padding(DesignTokens.Space12)
     ) {
@@ -744,7 +791,7 @@ private fun UniformShopCard(
                             listOf(artColor.copy(alpha = 0.40f), Color(0x11000000))
                         )
                     )
-                    .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(DesignTokens.RadiusSmall)),
+                    .border(1.dp, Color(0xFF2A1B4E).copy(alpha = 0.14f), RoundedCornerShape(DesignTokens.RadiusSmall)),
                 contentAlignment = Alignment.Center
             ) {
                 com.example.balloonpop.ui.components.ShopItemArt(
@@ -789,7 +836,7 @@ private fun UniformShopCard(
                     fontFamily = Baloo2FontFamily,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = PlumText,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -809,7 +856,7 @@ private fun UniformShopCard(
                     fontFamily = NunitoFontFamily,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFF6E6491),
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -845,12 +892,14 @@ private fun ShopPricePill(
     isGem: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val accent = if (isGem) DiamondBlue else GoldCoin
+    // Pass 5 (amendment 2): price pills are PLUM with a gold icon — sunset,
+    // gold and berry never compete on the same card.
+    val accent = if (isGem) Color(0xFFB8A9D9) else StoryGold
     Box(
         modifier = modifier
             .height(ShopCardPricePillHeight)
             .clip(DesignTokens.ShapePill)
-            .background(Color(0xCC05070F))
+            .background(Color(0xFF241A4D))
             .border(1.dp, accent.copy(alpha = 0.65f), DesignTokens.ShapePill)
             .padding(horizontal = DesignTokens.Space12),
         contentAlignment = Alignment.Center
@@ -860,7 +909,7 @@ private fun ShopPricePill(
             fontFamily = Baloo2FontFamily,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isGem) Color(0xFFE0F2FE) else Color(0xFFFEF3C7),
+            color = if (isGem) Color(0xFFE8E4F5) else StoryGold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -876,39 +925,41 @@ private fun ShopActionButton(
     enabled: Boolean = true,
     testTag: String? = null
 ) {
-    val taggedModifier = if (testTag != null) modifier.testTag(testTag) else modifier
-    Box(
-        modifier = taggedModifier
-            .fillMaxWidth()
-            .height(ShopBuyButtonHeight)
-            .clip(RoundedCornerShape(DesignTokens.RadiusSmall))
-            .background(gradient)
-            .clickable(enabled = enabled) { onClick() },
-        contentAlignment = Alignment.Center
+    // Pass 5: shop actions are JewelButtons — sunset for buying, mint for the
+    // equipped state. (The legacy gradient param is kept for call-site
+    // compatibility; the jewel style now owns the look.)
+    val style = if (text == "EQUIPPED") {
+        com.example.balloonpop.ui.components.JewelButtonStyle.MINT
+    } else {
+        com.example.balloonpop.ui.components.JewelButtonStyle.SUNSET
+    }
+    com.example.balloonpop.ui.components.JewelButtonContainer(
+        onClick = onClick,
+        style = style,
+        enabled = enabled,
+        minHeight = ShopBuyButtonHeight,
+        shape = DesignTokens.ShapeButtonStory,
+        testTag = testTag,
+        modifier = modifier.fillMaxWidth()
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space4),
-            modifier = Modifier.padding(horizontal = DesignTokens.Space8)
-        ) {
-            if (text == "EQUIPPED") {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-            Text(
-                text = text,
-                fontFamily = Baloo2FontFamily,
-                fontSize = DesignTokens.SizeBody,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        if (text == "EQUIPPED") {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = Color(0xFF0B2E23),
+                modifier = Modifier.size(16.dp)
             )
+            Spacer(modifier = Modifier.width(DesignTokens.Space4))
         }
+        Text(
+            text = text,
+            fontFamily = Baloo2FontFamily,
+            fontSize = DesignTokens.SizeBody,
+            fontWeight = FontWeight.ExtraBold,
+            color = if (text == "EQUIPPED") Color(0xFF0B2E23) else Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -926,9 +977,9 @@ private fun BoosterItemCard(
 ) {
     val accent = when (booster) {
         InGameBooster.THUNDER_STRIKE -> Color(0xFF38BDF8)
-        InGameBooster.COLOR_BOMB -> Color(0xFFFF007F)
+        InGameBooster.COLOR_BOMB -> Color(0xFFB03060)
         InGameBooster.HAMMER_SMASH -> Color(0xFFFBBF24)
-        InGameBooster.FREEZE_BLIZZARD -> Color(0xFF00E5FF)
+        InGameBooster.FREEZE_BLIZZARD -> Color(0xFF4A90C4)
         InGameBooster.TORNADO_VORTEX -> Color(0xFF34D399)
     }
 

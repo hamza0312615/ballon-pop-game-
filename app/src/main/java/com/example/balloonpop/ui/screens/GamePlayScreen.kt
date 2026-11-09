@@ -104,6 +104,9 @@ fun GamePlayScreen(
     onQuitToMenu: () -> Unit,
     onOpenSettings: () -> Unit,
     onPlayOnRevive: (Boolean) -> Unit = {},
+    // Pass 5: finalize an endless run (saves its best) — the only way a
+    // Zen run can end, and the clean quit path for the other endless modes.
+    onFinishRun: () -> Unit = {},
     isNewHighScore: Boolean = false,
     previousHighScore: Int = 0,
     isTransitioningLevel: Boolean = false,
@@ -119,6 +122,16 @@ fun GamePlayScreen(
 
     val context = LocalContext.current
     val activity = context as? Activity
+
+    // Pass 5 (audit §2.2): the interstitial show path finally exists in
+    // gameplay — stage clear and game over are the natural breaks. The
+    // manager enforces the 180s cooldown and 60s post-ad gap, preloads the
+    // next unit after each show, and no-ops when no ad is ready.
+    LaunchedEffect(gameState) {
+        if (gameState == GameState.LEVELCLEAR || gameState == GameState.GAMEOVER) {
+            activity?.let { AdMobManager.showInterstitialAd(it) }
+        }
+    }
 
     LaunchedEffect(resumeCountdown) {
         val c = resumeCountdown
@@ -174,13 +187,13 @@ fun GamePlayScreen(
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .shadow(12.dp, RoundedCornerShape(26.dp), spotColor = Color(0x6600E5FF))
+                .shadow(12.dp, RoundedCornerShape(26.dp), spotColor = Color(0x66171233))
                 .clip(RoundedCornerShape(26.dp))
-                .background(Color(0xD90D1326))
+                .background(Color(0xD9171233))
                 .border(
                     width = 1.5.dp,
                     brush = Brush.verticalGradient(
-                        listOf(Color(0x8893C5FD), Color(0x33A855F7), Color(0x22FFFFFF))
+                        listOf(Color(0x88FFD166), Color(0x33B8A9D9), Color(0x22FFFFFF))
                     ),
                     shape = RoundedCornerShape(26.dp)
                 )
@@ -240,8 +253,8 @@ fun GamePlayScreen(
                             drawCircle(Color.White, radius = r * 0.08f, center = Offset(cx + r * 0.35f, cy - 1.5f))
 
                             // Rosy blush
-                            drawCircle(Color(0x66FF2A75), radius = r * 0.14f, center = Offset(cx - r * 0.45f, cy + 4f))
-                            drawCircle(Color(0x66FF2A75), radius = r * 0.14f, center = Offset(cx + r * 0.45f, cy + 4f))
+                            drawCircle(Color(0x66C93A5E), radius = r * 0.14f, center = Offset(cx - r * 0.45f, cy + 4f))
+                            drawCircle(Color(0x66C93A5E), radius = r * 0.14f, center = Offset(cx + r * 0.45f, cy + 4f))
 
                             // Sweet smile
                             val mouthPath = Path().apply {
@@ -252,9 +265,18 @@ fun GamePlayScreen(
                         }
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                    // Pass 5 (amendment 7): the goal reads as a picture pill —
+                    // balloon count in its own plum pill, never a sentence.
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0x8C171233))
+                            .border(1.dp, Color.White.copy(alpha = 0.14f), RoundedCornerShape(14.dp))
+                            .padding(horizontal = 10.dp, vertical = 3.dp),
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
                         Text(
-                            text = if (gameMode == GameMode.CAMPAIGN) "$poppedCount/$targetPops pops" else "$poppedCount pops",
+                            text = if (gameMode == GameMode.CAMPAIGN) "🎈 $poppedCount/$targetPops" else "🎈 $poppedCount",
                             fontFamily = Baloo2FontFamily,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -328,9 +350,9 @@ fun GamePlayScreen(
                             Text(
                                 text = "${timeLeft}s",
                                 fontFamily = Baloo2FontFamily,
-                                fontSize = 20.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = if (timeLeft <= 5) Color(0xFFEF4444) else Color.White
+                                color = if (timeLeft <= 10) StoryBerry else Color.White
                             )
                         }
                     }
@@ -363,6 +385,32 @@ fun GamePlayScreen(
                     .align(Alignment.TopCenter)
                     .padding(top = 58.dp)
             )
+        }
+
+        // Pass 5 (audit L3): endless modes get an explicit FINISH & SAVE
+        // exit. Zen has no timer and no lives, so without this its BEST
+        // could never be recorded; the other endless modes gain a clean
+        // quit that keeps the run's score.
+        if (gameMode != GameMode.CAMPAIGN && gameState == GameState.PLAYING) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 80.dp, start = 16.dp)
+                    .shadow(8.dp, RoundedCornerShape(22.dp))
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Color(0xCC171233))
+                    .border(1.5.dp, Color(0xFFFFC93C), RoundedCornerShape(22.dp))
+                    .clickable { onFinishRun() }
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    text = "🏁 FINISH & SAVE",
+                    fontFamily = Baloo2FontFamily,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color(0xFFFFC93C)
+                )
+            }
         }
 
         // Mini Pet In-Game Companion cheering the player on!
@@ -479,7 +527,7 @@ fun GamePlayScreen(
                     .border(
                         width = 1.5.dp,
                         brush = Brush.verticalGradient(
-                            listOf(Color.White, Color(0xFFFFE082), Color(0xFFFF2A75))
+                            listOf(Color.White, Color(0xFFFFE082), Color(0xFFC93A5E))
                         ),
                         shape = RoundedCornerShape(18.dp)
                     )
@@ -520,7 +568,9 @@ fun GamePlayScreen(
             }
         }
 
-        // 5. High-End 3-Orb Power-Up & Booster Dock (Matching Image 1)
+        // 5. High-End 5-Orb Power-Up & Booster Dock (Pass 5: all five
+        //    boosters — HAMMER and VORTEX were sold in the shop but had no
+        //    orb here, so they could never be fired in a stage.)
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -528,11 +578,11 @@ fun GamePlayScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .shadow(16.dp, RoundedCornerShape(28.dp), spotColor = Color(0x99000000))
                 .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xD90D1326))
+                .background(Color(0xD9171233))
                 .border(
                     width = 1.5.dp,
                     brush = Brush.verticalGradient(
-                        listOf(Color(0x5538BDF8), Color(0x22A855F7), Color(0x11FFFFFF))
+                        listOf(Color(0x55FFD166), Color(0x22B8A9D9), Color(0x11FFFFFF))
                     ),
                     shape = RoundedCornerShape(28.dp)
                 )
@@ -574,7 +624,7 @@ fun GamePlayScreen(
                     cooldownRemaining = thunderCd,
                     badgeBgColor = if (thunderCount > 0) Color(0xFF0284C7) else Color(0xFFF59E0B),
                     orbGradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1)),
-                    glowColor = Color(0xFF00E5FF),
+                    glowColor = Color(0xFF4A90C4),
                     onClick = {
                         if (thunderCount > 0) onTriggerBooster(InGameBooster.THUNDER_STRIKE)
                         else boosterBuyTarget = InGameBooster.THUNDER_STRIKE
@@ -599,6 +649,44 @@ fun GamePlayScreen(
                         else boosterBuyTarget = InGameBooster.FREEZE_BLIZZARD
                     },
                     testTag = "booster_freeze"
+                )
+
+                // 4. HAMMER ORB BUTTON (Pass 5)
+                val hammerCount = boosterCounts["booster_hammer"] ?: 3
+                val hammerCd = boosterCooldowns["booster_hammer"] ?: 0f
+                GameOrbButton(
+                    icon = "🔨",
+                    label = "HAMMER",
+                    count = hammerCount,
+                    coins = coins,
+                    cooldownRemaining = hammerCd,
+                    badgeBgColor = if (hammerCount > 0) Color(0xFFB7791F) else Color(0xFFF59E0B),
+                    orbGradient = listOf(Color(0xFFF6C453), Color(0xFFB7791F), Color(0xFF7B341E)),
+                    glowColor = Color(0xFFF6C453),
+                    onClick = {
+                        if (hammerCount > 0) onTriggerBooster(InGameBooster.HAMMER_SMASH)
+                        else boosterBuyTarget = InGameBooster.HAMMER_SMASH
+                    },
+                    testTag = "booster_hammer"
+                )
+
+                // 5. VORTEX ORB BUTTON (Pass 5)
+                val vortexCount = boosterCounts["booster_vortex"] ?: 3
+                val vortexCd = boosterCooldowns["booster_vortex"] ?: 0f
+                GameOrbButton(
+                    icon = "🌀",
+                    label = "VORTEX",
+                    count = vortexCount,
+                    coins = coins,
+                    cooldownRemaining = vortexCd,
+                    badgeBgColor = if (vortexCount > 0) Color(0xFF0E7C61) else Color(0xFFF59E0B),
+                    orbGradient = listOf(Color(0xFF2E9E6B), Color(0xFF0E7C61), Color(0xFF14532D)),
+                    glowColor = Color(0xFF2E9E6B),
+                    onClick = {
+                        if (vortexCount > 0) onTriggerBooster(InGameBooster.TORNADO_VORTEX)
+                        else boosterBuyTarget = InGameBooster.TORNADO_VORTEX
+                    },
+                    testTag = "booster_vortex"
                 )
             }
         }
@@ -979,9 +1067,9 @@ private fun BoosterPowerUpButton(
 
     val boosterAccentColor = when (booster) {
         InGameBooster.THUNDER_STRIKE -> Color(0xFF38BDF8)
-        InGameBooster.COLOR_BOMB -> Color(0xFFFF007F)
+        InGameBooster.COLOR_BOMB -> Color(0xFFB03060)
         InGameBooster.HAMMER_SMASH -> Color(0xFFFBBF24)
-        InGameBooster.FREEZE_BLIZZARD -> Color(0xFF00E5FF)
+        InGameBooster.FREEZE_BLIZZARD -> Color(0xFF4A90C4)
         InGameBooster.TORNADO_VORTEX -> Color(0xFF34D399)
     }
 
@@ -1011,7 +1099,7 @@ private fun BoosterPowerUpButton(
                     if (isAvailable) {
                         when (booster) {
                             InGameBooster.THUNDER_STRIKE -> Brush.radialGradient(listOf(Color(0xFF38BDF8), Color(0xFF0284C7)))
-                            InGameBooster.COLOR_BOMB -> Brush.radialGradient(listOf(Color(0xFFFF007F), Color(0xFF7928CA)))
+                            InGameBooster.COLOR_BOMB -> Brush.radialGradient(listOf(Color(0xFFB03060), Color(0xFF7928CA)))
                             InGameBooster.HAMMER_SMASH -> Brush.radialGradient(listOf(Color(0xFFFBBF24), Color(0xFFD97706)))
                             InGameBooster.FREEZE_BLIZZARD -> Brush.radialGradient(listOf(Color(0xFFA5F3FC), Color(0xFF0891B2)))
                             InGameBooster.TORNADO_VORTEX -> Brush.radialGradient(listOf(Color(0xFF6EE7B7), Color(0xFF059669)))
@@ -1320,10 +1408,12 @@ private fun GameOrbButton(
         else -> "+" // Pass 4: 0 charges -> clear "+" buy affordance (opens buy dialog)
     }
 
+    // Pass 5 (research rule 6): count badges are plum with a white bold number;
+    // at 0 charges the badge becomes gold "+" (the buy affordance).
     val finalBadgeBgColor = when {
         isOnCooldown -> Color(0xFF475569)
-        !isAffordable -> Color(0xFF6B7280)
-        else -> badgeBgColor
+        count == 0 -> StoryGold
+        else -> Color(0xFF241A4D)
     }
 
     Column(
@@ -1400,7 +1490,7 @@ private fun GameOrbButton(
                     fontFamily = NunitoFontFamily,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
+                    color = if (count == 0 && !isOnCooldown) PlumText else Color.White
                 )
             }
         }

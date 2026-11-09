@@ -421,11 +421,11 @@ private fun FortuneWheelDisc(
 ) {
     val segments = listOf(
         WheelSegmentItem("750\ncoins", Color(0xFFFF5D8F), isCoin = true),
-        WheelSegmentItem("1500\ncoins", Color(0xFF00F0FF), isCoin = true),
+        WheelSegmentItem("1500\ncoins", Color(0xFF2F6DB3), isCoin = true),
         WheelSegmentItem("25\ngems", Color(0xFFFFC93C), isCoin = false),
         WheelSegmentItem("250\ncoins", Color(0xFF9D4EDD), isCoin = true),
         WheelSegmentItem("500\ncoins", Color(0xFF3B82F6), isCoin = true),
-        WheelSegmentItem("10\ngems", Color(0xFFE040FB), isCoin = false)
+        WheelSegmentItem("10\ngems", Color(0xFF7C4DBD), isCoin = false)
     )
 
     Canvas(modifier = modifier.rotate(rotation)) {

@@ -38,6 +38,10 @@ import com.example.balloonpop.model.GameConstants
 import com.example.balloonpop.model.GameOverReason
 import com.example.balloonpop.ui.components.*
 import com.example.balloonpop.ui.theme.DesignTokens
+import com.example.balloonpop.ui.theme.Baloo2FontFamily
+import com.example.balloonpop.ui.theme.CreamSurface
+import com.example.balloonpop.ui.theme.PlumText
+import com.example.balloonpop.ui.theme.StoryGold
 import kotlinx.coroutines.delay
 
 /**
@@ -118,7 +122,7 @@ fun StageIntroRibbon(
                             text = "START! 🎯",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFF00E5FF)
+                            color = Color(0xFF4A90C4)
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))
@@ -156,11 +160,19 @@ fun VictoryStageDialog(
     val nextLevelNum = GameConstants.CAMPAIGN_LEVELS.getOrNull(level)?.level ?: (level + 1)
     val hasNextLevel = nextLevelNum <= 200
     val animatedScoreText = AnimatedScoreCounter(score)
+    val animatedCoinsText = AnimatedScoreCounter(coinsEarned, formatPrefix = "+")
+    val animatedGemsText = AnimatedScoreCounter(gemsEarned, formatPrefix = "+")
+
+    // Pass 5 motion: card pops in with a slight overshoot spring.
+    val cardPop = remember { Animatable(0.85f) }
+    LaunchedEffect(Unit) {
+        cardPop.animateTo(1f, DesignTokens.DialogPopSpring)
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xDD000000)),
+            .background(Color(0xA6171233)),
         contentAlignment = Alignment.Center
     ) {
         // Rotating Sunburst God Rays Background
@@ -176,30 +188,26 @@ fun VictoryStageDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .widthIn(max = 400.dp)
-                .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeLarge)
-                .clip(DesignTokens.ShapeLarge)
-                .background(DesignTokens.SurfaceCardNavy)
-                .border(2.dp, DesignTokens.StarGoldFilled, DesignTokens.ShapeLarge)
+                .scale(cardPop.value)
+                .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeCardStory)
+                .clip(DesignTokens.ShapeCardStory)
+                .background(CreamSurface)
+                .border(2.dp, StoryGold, DesignTokens.ShapeCardStory)
                 .padding(DesignTokens.Space24),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(DesignTokens.Space16)
         ) {
-            VictoryTrophyArt(modifier = Modifier.size(48.dp))
+            // Ribbon headline overlapping the card's top edge (research rule 9).
+            DialogRibbon(text = "Stage $level Cleared!")
 
-            Text(
-                text = "Stage $level Cleared!",
-                fontSize = DesignTokens.SizeH1,
-                fontWeight = FontWeight.Black,
-                color = DesignTokens.TextPrimary,
-                textAlign = TextAlign.Center
-            )
+            VictoryTrophyArt(modifier = Modifier.size(48.dp))
 
             if (isNewHighScore) {
                 Text(
                     text = "New best score!",
                     fontSize = DesignTokens.SizeCaption,
                     fontWeight = FontWeight.Bold,
-                    color = DesignTokens.StarGoldFilled,
+                    color = Color(0xFFB7791F),
                     textAlign = TextAlign.Center
                 )
             }
@@ -214,7 +222,7 @@ fun VictoryStageDialog(
                 text = "Score: $animatedScoreText",
                 fontSize = DesignTokens.SizeH2,
                 fontWeight = FontWeight.Bold,
-                color = DesignTokens.TextPrimary,
+                color = PlumText,
                 textAlign = TextAlign.Center
             )
 
@@ -225,10 +233,10 @@ fun VictoryStageDialog(
             ) {
                 CurrencyArt(currencyType = "coin", modifier = Modifier.size(18.dp))
                 Text(
-                    text = "+$coinsEarned Coins \u00B7 +$gemsEarned Gems",
+                    text = "$animatedCoinsText Coins \u00B7 $animatedGemsText Gems",
                     fontSize = DesignTokens.SizeBody,
                     fontWeight = FontWeight.Bold,
-                    color = DesignTokens.TextPrimary
+                    color = PlumText
                 )
                 CurrencyArt(currencyType = "gem", modifier = Modifier.size(18.dp))
             }
@@ -273,8 +281,8 @@ fun VictoryStageDialog(
 }
 
 /**
- * Primary CTA for stage dialogs: CtaGradient, RadiusMedium corners,
- * at least DesignTokens.ButtonMinHeight tall.
+ * Primary CTA for stage dialogs (Pass 5): the shared JewelButton —
+ * sunset face, 5dp shelf, gloss, press-sink.
  */
 @Composable
 private fun StagePrimaryButton(
@@ -283,37 +291,56 @@ private fun StagePrimaryButton(
     testTag: String,
     modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1.0f,
-        animationSpec = DesignTokens.ButtonPressSpring,
-        label = "primary_btn_press"
-    )
-
-    Box(
+    JewelButton(
+        text = text,
+        onClick = onClick,
+        style = JewelButtonStyle.SUNSET,
+        testTag = testTag,
         modifier = modifier
-            .height(DesignTokens.ButtonMinHeight)
-            .scale(scale)
-            .shadow(DesignTokens.ElevationMedium, DesignTokens.ShapeMedium)
-            .clip(DesignTokens.ShapeMedium)
-            .background(DesignTokens.CtaGradient)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
+    )
+}
+
+/**
+ * Ribbon headline for storybook dialog cards: a gradient banner whose visual
+ * position overlaps the card's top edge (drawn shifted up over the padding).
+ */
+@Composable
+private fun DialogRibbon(
+    text: String,
+    berry: Boolean = false
+) {
+  Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(0.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+    Box(
+        modifier = Modifier
+            .offset(y = (-46).dp)
+            .shadow(DesignTokens.ElevationMedium, DesignTokens.ShapePill)
+            .clip(DesignTokens.ShapePill)
+            .background(
+                if (berry) {
+                    Brush.verticalGradient(listOf(Color(0xFF4A3A85), Color(0xFF241A4D)))
+                } else {
+                    DesignTokens.SunsetGradient
+                }
             )
-            .testTag(testTag)
-            .padding(horizontal = DesignTokens.Space16),
+            .border(2.dp, Color.White.copy(alpha = 0.85f), DesignTokens.ShapePill)
+            .padding(horizontal = DesignTokens.Space24, vertical = DesignTokens.Space8),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
+            fontFamily = Baloo2FontFamily,
             fontSize = DesignTokens.SizeH2,
             fontWeight = FontWeight.Black,
             color = Color.White,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 1
         )
+    }
     }
 }
 
@@ -328,35 +355,20 @@ private fun RevivePill(
     testTag: String,
     modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1.0f,
-        animationSpec = DesignTokens.ButtonPressSpring,
-        label = "revive_pill_press"
-    )
-
-    Box(
+    // Pass 5: the fail screen's ONE offer is a gold jewel pill (research rule 10).
+    JewelButtonContainer(
+        onClick = onClick,
+        style = JewelButtonStyle.GOLD,
+        minHeight = 44.dp,
+        shape = DesignTokens.ShapePill,
+        testTag = testTag,
         modifier = modifier
-            .height(40.dp)
-            .scale(scale)
-            .clip(DesignTokens.ShapePill)
-            .background(DesignTokens.SurfaceCardElevated)
-            .border(1.dp, DesignTokens.SurfaceBorder, DesignTokens.ShapePill)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .testTag(testTag)
-            .padding(horizontal = DesignTokens.Space12),
-        contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            fontSize = DesignTokens.SizeCaption,
-            fontWeight = FontWeight.Bold,
-            color = DesignTokens.TextPrimary,
+            fontSize = DesignTokens.SizeBody,
+            fontWeight = FontWeight.Black,
+            color = PlumText,
             textAlign = TextAlign.Center
         )
     }
@@ -370,36 +382,18 @@ private fun VictoryActionButton(
     testTag: String,
     modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1.0f,
-        animationSpec = DesignTokens.ButtonPressSpring,
-        label = "btn_press"
-    )
-
-    Row(
+    // Pass 5: secondary dialog actions are plum jewel buttons.
+    JewelButtonContainer(
+        onClick = onClick,
+        style = JewelButtonStyle.PLUM,
+        minHeight = DesignTokens.ButtonMinHeight,
+        testTag = testTag,
         modifier = modifier
-            .height(DesignTokens.ButtonMinHeight)
-            .scale(scale)
-            .shadow(DesignTokens.ElevationAmbient, DesignTokens.ShapeMedium)
-            .clip(DesignTokens.ShapeMedium)
-            .background(DesignTokens.SurfaceCardElevated)
-            .border(1.5.dp, DesignTokens.SurfaceBorder, DesignTokens.ShapeMedium)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
-            .testTag(testTag)
-            .padding(horizontal = DesignTokens.Space8),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = text,
-            tint = Color(0xFFFFD700),
+            tint = StoryGold,
             modifier = Modifier.size(18.dp)
         )
         Spacer(modifier = Modifier.width(DesignTokens.Space4))
@@ -436,6 +430,12 @@ fun FailedStageDialog(
     onMap: () -> Unit,
     onMainMenu: () -> Unit = onMap
 ) {
+    // Pass 5 motion: card pops in with a slight overshoot spring.
+    val cardPop = remember { Animatable(0.85f) }
+    LaunchedEffect(Unit) {
+        cardPop.animateTo(1f, DesignTokens.DialogPopSpring)
+    }
+
     val resultLine = when (reason) {
         GameOverReason.MISSED_LIMIT -> "Missed $missedCount of $maxMissesAllowed"
         GameOverReason.TIME_EXPIRED -> "Needed $missingPops more pops"
@@ -446,21 +446,25 @@ fun FailedStageDialog(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xDD000000)),
+            .background(Color(0xA6171233)),
         contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth(0.92f)
                 .widthIn(max = 400.dp)
-                .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeLarge)
-                .clip(DesignTokens.ShapeLarge)
-                .background(DesignTokens.SurfaceCardNavy)
-                .border(2.dp, DesignTokens.SurfaceBorder, DesignTokens.ShapeLarge)
+                .scale(cardPop.value)
+                .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeCardStory)
+                .clip(DesignTokens.ShapeCardStory)
+                .background(CreamSurface)
+                .border(2.dp, Color(0xFFD8CDBB), DesignTokens.ShapeCardStory)
                 .padding(DesignTokens.Space24),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(DesignTokens.Space16)
         ) {
+            // Ribbon headline names the near-miss, not the failure (research §5).
+            DialogRibbon(text = "So Close!", berry = true)
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
@@ -470,26 +474,10 @@ fun FailedStageDialog(
             }
 
             Text(
-                text = "Level Failed!",
-                fontSize = DesignTokens.SizeH1,
-                fontWeight = FontWeight.Black,
-                color = DesignTokens.TextPrimary,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = "So close \u2014 try again!",
-                fontSize = DesignTokens.SizeBody,
-                fontWeight = FontWeight.Bold,
-                color = DesignTokens.TextSecondary,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
                 text = resultLine,
                 fontSize = DesignTokens.SizeBody,
                 fontWeight = FontWeight.Bold,
-                color = DesignTokens.TextPrimary,
+                color = PlumText,
                 textAlign = TextAlign.Center
             )
 

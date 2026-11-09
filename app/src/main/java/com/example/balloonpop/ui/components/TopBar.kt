@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.balloonpop.ui.theme.DesignTokens
+import com.example.balloonpop.ui.theme.PlumPill
+import com.example.balloonpop.ui.theme.StoryGold
 
 /**
  * Slim single-row Top Resource Bar (Pass 4):
@@ -43,100 +45,50 @@ fun TopBar(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Pass 4: ONE slim single-row bar. The caller owns the screen-edge padding
-    // (Home uses DesignTokens.ScreenPadding); this bar only adds a small inset so
-    // it also sits correctly on screens that render it without outer padding.
-    Box(
+    // Pass 5 (research amendment 1): currency lives in SEPARATE dark translucent
+    // plum pills — never one shared bar — identical on every screen.
+    Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = DesignTokens.Space8, vertical = DesignTokens.Space4)
-            .shadow(DesignTokens.ElevationMedium, DesignTokens.ShapeMedium, spotColor = Color(0x66000000))
-            .clip(DesignTokens.ShapeMedium)
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xE6131D2E),
-                        Color(0xF00D1420),
-                        Color(0xE6080D16)
-                    )
-                )
-            )
-            .border(
-                1.5.dp,
-                Brush.verticalGradient(
-                    listOf(Color(0x66FFFFFF), Color(0x18FFFFFF), Color(0x3338BDF8))
-                ),
-                DesignTokens.ShapeMedium
-            )
-            .padding(horizontal = DesignTokens.Space8, vertical = DesignTokens.Space4)
+            .padding(horizontal = DesignTokens.Space8, vertical = DesignTokens.Space4),
+        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(40.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 1. Lives Heart Segment
-            ResourceSegment(
-                currencyType = "heart",
-                value = "$lives/$maxLives",
-                textColor = Color(0xFFFFF1F2),
-                showAdd = true,
-                onAddClick = onOpenShop,
-                onSegmentClick = onOpenShop,
-                testTag = "top_lives_badge",
-                modifier = Modifier.weight(1f)
-            )
+        // 1. Lives Heart Segment
+        ResourceSegment(
+            currencyType = "heart",
+            value = "$lives/$maxLives",
+            textColor = Color(0xFFFFF1F2),
+            showAdd = true,
+            onAddClick = onOpenShop,
+            onSegmentClick = onOpenShop,
+            testTag = "top_lives_badge",
+            modifier = Modifier.weight(1f)
+        )
 
-            // Subtle vertical glass divider
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(24.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0x15FFFFFF), Color(0x44FFFFFF), Color(0x15FFFFFF))
-                        )
-                    )
-            )
+        // 2. Coins Segment (icon + number + plus, same as every other segment)
+        ResourceSegment(
+            currencyType = "coin",
+            value = String.format("%,d", coins),
+            textColor = StoryGold,
+            showAdd = true,
+            onAddClick = onOpenShop,
+            onSegmentClick = onOpenShop,
+            testTag = "top_coins_badge",
+            modifier = Modifier.weight(1.15f)
+        )
 
-            // 2. Coins Segment (icon + number + plus, same as every other segment)
-            ResourceSegment(
-                currencyType = "coin",
-                value = String.format("%,d", coins),
-                textColor = DesignTokens.PrimaryBrandBright,
-                showAdd = true,
-                onAddClick = onOpenShop,
-                onSegmentClick = onOpenShop,
-                testTag = "top_coins_badge",
-                modifier = Modifier.weight(1.15f)
-            )
-
-            // Subtle vertical glass divider
-            Box(
-                modifier = Modifier
-                    .width(1.dp)
-                    .height(24.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0x15FFFFFF), Color(0x44FFFFFF), Color(0x15FFFFFF))
-                        )
-                    )
-            )
-
-            // 3. Gems Segment
-            ResourceSegment(
-                currencyType = "gem",
-                value = String.format("%,d", gems),
-                textColor = DesignTokens.SecondaryAccent,
-                showAdd = true,
-                onAddClick = onOpenShop,
-                onSegmentClick = onOpenShop,
-                testTag = "top_gems_badge",
-                modifier = Modifier.weight(1f)
-            )
-        }
+        // 3. Gems Segment
+        ResourceSegment(
+            currencyType = "gem",
+            value = String.format("%,d", gems),
+            textColor = Color(0xFF9FD8EF),
+            showAdd = true,
+            onAddClick = onOpenShop,
+            onSegmentClick = onOpenShop,
+            testTag = "top_gems_badge",
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -194,13 +146,16 @@ private fun ResourceSegment(
     Row(
         modifier = modifier
             .scale(pressScale)
+            .clip(DesignTokens.ShapePill)
+            .background(PlumPill)
+            .border(1.dp, Color.White.copy(alpha = 0.14f), DesignTokens.ShapePill)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onSegmentClick
             )
             .testTag(testTag)
-            .padding(horizontal = DesignTokens.Space4),
+            .padding(horizontal = DesignTokens.Space8, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center
     ) {
@@ -242,23 +197,22 @@ private fun ResourceSegment(
                     modifier = Modifier
                         .size(20.dp)
                         .scale(addPulse)
-                        .shadow(6.dp, CircleShape, spotColor = DesignTokens.SuccessGreenBright)
                         .clip(CircleShape)
                         .background(
                             Brush.verticalGradient(
                                 listOf(
-                                    DesignTokens.SuccessGreenBright,
-                                    DesignTokens.SuccessGreen
+                                    Color(0xFFFFD166),
+                                    StoryGold
                                 )
                             )
                         )
-                        .border(1.2.dp, Color(0xFFA7F3D0), CircleShape),
+                        .border(1.2.dp, Color(0xFFFFE9A8), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Add",
-                        tint = Color.White,
+                        tint = Color(0xFF2A1B4E),
                         modifier = Modifier.size(13.dp)
                     )
                 }

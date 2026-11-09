@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.balloonpop.model.AchievementItem
 import com.example.balloonpop.model.GameConstants
 import com.example.balloonpop.model.QuestCategory
 import com.example.balloonpop.model.QuestItem
@@ -56,6 +57,11 @@ fun QuestsScreen(
     claimedQuests: Set<String>,
     onClaimQuest: (QuestItem) -> Unit,
     onClose: () -> Unit,
+    // Pass 5 (audit L9): the 12 achievements finally get a list + claim UI.
+    achievements: List<AchievementItem> = emptyList(),
+    claimedAchievements: Set<String> = emptySet(),
+    onAchievementProgress: (AchievementItem) -> Int = { 0 },
+    onClaimAchievement: (AchievementItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val bgGradient = Brush.verticalGradient(
@@ -174,6 +180,163 @@ fun QuestsScreen(
                         isCompleted = isCompleted,
                         isClaimed = isClaimed,
                         onClaim = { onClaimQuest(quest) }
+                    )
+                }
+
+                // Pass 5 (audit L9): ACHIEVEMENTS section — previously the
+                // data, persistence and claimed-set all existed but no
+                // screen ever showed them and nothing could be claimed.
+                if (achievements.isNotEmpty()) {
+                    item {
+                        Column(modifier = Modifier.padding(top = 10.dp)) {
+                            Text(
+                                text = "🏆 ACHIEVEMENTS",
+                                fontFamily = Baloo2FontFamily,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color(0xFFFFC93C)
+                            )
+                            Text(
+                                text = "${claimedAchievements.size} of ${achievements.size} claimed",
+                                fontFamily = NunitoFontFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFCBD5E1)
+                            )
+                        }
+                    }
+                    items(achievements, key = { "ach_${it.id}" }) { achievement ->
+                        val progress = onAchievementProgress(achievement).coerceAtMost(achievement.target)
+                        AchievementItemCard(
+                            achievement = achievement,
+                            currentProgress = progress,
+                            isCompleted = progress >= achievement.target,
+                            isClaimed = claimedAchievements.contains(achievement.id),
+                            onClaim = { onClaimAchievement(achievement) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AchievementItemCard(
+    achievement: AchievementItem,
+    currentProgress: Int,
+    isCompleted: Boolean,
+    isClaimed: Boolean,
+    onClaim: () -> Unit
+) {
+    val progressFraction = (currentProgress.toFloat() / achievement.target.toFloat()).coerceIn(0f, 1f)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(16.dp, RoundedCornerShape(22.dp), spotColor = Color(0x66FFD700))
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color(0xF50D132A))
+            .border(
+                width = 1.5.dp,
+                brush = Brush.verticalGradient(
+                    listOf(Color(0x99FFD54F), Color(0x33FFD54F), Color(0x11FFFFFF), Color(0x66FFD54F))
+                ),
+                shape = RoundedCornerShape(22.dp)
+            )
+            .padding(18.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(text = achievement.icon, fontSize = 30.sp)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = achievement.title,
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                    Text(
+                        text = achievement.description,
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 12.sp,
+                        color = Color(0xFFCBD5E1)
+                    )
+                }
+                Text(
+                    text = "+${achievement.rewardCoins}🪙 +${achievement.rewardGems}💎",
+                    fontFamily = NunitoFontFamily,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFC93C)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(Color(0xFF1E293B))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progressFraction)
+                        .fillMaxHeight()
+                        .background(
+                            Brush.horizontalGradient(listOf(Color(0xFFFFD54F), Color(0xFFF59E0B)))
+                        )
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "$currentProgress / ${achievement.target}",
+                    fontFamily = NunitoFontFamily,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFCBD5E1)
+                )
+                when {
+                    isClaimed -> Text(
+                        text = "✅ CLAIMED",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF94A3B8)
+                    )
+                    isCompleted -> Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(
+                                Brush.verticalGradient(listOf(Color(0xFFFFB347), Color(0xFFFF6B4A)))
+                            )
+                            .clickable { onClaim() }
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .testTag("claim_achievement_${achievement.id}")
+                    ) {
+                        Text(
+                            text = "CLAIM",
+                            fontFamily = Baloo2FontFamily,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
+                        )
+                    }
+                    else -> Text(
+                        text = "🔒 IN PROGRESS",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF64748B)
                     )
                 }
             }

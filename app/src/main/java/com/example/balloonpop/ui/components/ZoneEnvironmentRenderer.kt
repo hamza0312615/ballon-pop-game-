@@ -38,11 +38,12 @@ object ZoneEnvironmentRenderer {
     ) {
         val w = size.width
         val h = size.height
-        val zoneName = theme.name.lowercase()
-        val isSakura = zoneName.contains("sakura")
-        val isFrozen = zoneName.contains("frozen") || zoneName.contains("tundra")
-        val isVolcano = zoneName.contains("volcano") || zoneName.contains("caldera") || zoneName.contains("molten")
-        val isNeon = zoneName.contains("neon") || zoneName.contains("glade")
+        // Pass 5: scenery keyed on zone id / env type, never on display names,
+        // so zone renames cannot silently change a zone's scenery layer.
+        val isSakura = theme.zoneId == 10
+        val isFrozen = theme.zoneId == 9
+        val isVolcano = theme.zoneId == 6 || theme.zoneId == 15
+        val isNeon = theme.zoneId == 0 || theme.envType == ZoneEnvironmentType.NEON_GLADE
 
         // ----------------------------------------------------
         // LAYER 1: Deep Sky & Atmospheric Background
@@ -135,7 +136,7 @@ object ZoneEnvironmentRenderer {
             val sway = sin((riverFlow * 2f + m * 1.5f) * PI.toFloat()) * (w * 0.08f)
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x2200F0FF), Color(0x0A06D6A0), Color.Transparent),
+                    colors = listOf(Color(0x222F6DB3), Color(0x0A2FA36B), Color.Transparent),
                     center = Offset(w * 0.45f + sway, mistY),
                     radius = w * 0.55f
                 ),
@@ -149,7 +150,7 @@ object ZoneEnvironmentRenderer {
             val sx = (w * ((s * 0.19f + 0.05f) % 1.0f))
             val sy = (h * ((s * 0.09f + 0.02f) % 0.4f))
             drawCircle(
-                color = Color(0x3300F0FF),
+                color = Color(0x332F6DB3),
                 radius = 6f,
                 center = Offset(sx, sy)
             )
@@ -192,7 +193,7 @@ object ZoneEnvironmentRenderer {
                 brush = Brush.radialGradient(
                     listOf(
                         Color(0xFF6EE7B7),
-                        Color(0xFF00F0FF).copy(alpha = pulse),
+                        Color(0xFF2F6DB3).copy(alpha = pulse),
                         Color(0xFF065F46)
                     ),
                     center = capCenter,
@@ -649,11 +650,11 @@ object ZoneEnvironmentRenderer {
             path = auroraPath,
             brush = Brush.horizontalGradient(
                 listOf(
-                    Color(0x1000F0FF),
-                    Color(0x4500F0FF), // Electric cyan
+                    Color(0x102F6DB3),
+                    Color(0x452F6DB3), // Electric cyan
                     Color(0x4034D399), // Emerald
                     Color(0x35C084FC), // Aurora magenta
-                    Color(0x1000F0FF)
+                    Color(0x102F6DB3)
                 )
             )
         )
@@ -905,10 +906,10 @@ object ZoneEnvironmentRenderer {
         h: Float,
         riverFlow: Float
     ) {
-        val zoneName = theme.name.lowercase()
-        val isSakura = zoneName.contains("sakura")
-        val isFrozen = zoneName.contains("frozen") || zoneName.contains("tundra")
-        val isVolcano = zoneName.contains("volcano") || zoneName.contains("caldera") || zoneName.contains("molten")
+        // Pass 5: id-keyed scenery selection (see drawScenicBackground).
+        val isSakura = theme.zoneId == 10
+        val isFrozen = theme.zoneId == 9
+        val isVolcano = theme.zoneId == 6 || theme.zoneId == 15
 
         if (isVolcano) {
             // Molten Glowing Lava River with basalt crust banks
@@ -1118,17 +1119,17 @@ object ZoneEnvironmentRenderer {
         val w = size.width
         val d = density.density
 
-        val zoneName = theme.name.lowercase()
-        val isSakura = zoneName.contains("sakura")
-        val isFrozen = zoneName.contains("frozen") || zoneName.contains("tundra")
-        val isVolcano = zoneName.contains("volcano") || zoneName.contains("caldera") || zoneName.contains("molten")
-        val isNeon = zoneName.contains("neon") || zoneName.contains("glade")
+        // Pass 5: id-keyed scenery selection (see drawScenicBackground).
+        val isSakura = theme.zoneId == 10
+        val isFrozen = theme.zoneId == 9
+        val isVolcano = theme.zoneId == 6 || theme.zoneId == 15
+        val isNeon = theme.zoneId == 0 || theme.envType == ZoneEnvironmentType.NEON_GLADE
 
         val pathGlowColor = when {
-            isSakura -> Color(0xFFF472B6)
+            isSakura -> Color(0xFFD96C8A)
             isFrozen -> Color(0xFF38BDF8)
             isVolcano -> Color(0xFFFF7A00)
-            isNeon -> Color(0xFF00F0FF)
+            isNeon -> Color(0xFFF6C453)
             else -> theme.primaryAccent
         }
 
@@ -1342,7 +1343,7 @@ object ZoneEnvironmentRenderer {
 
         // Bio-luminescent Sap Flow Wave traveling along the central vine
         if (isUnlocked) {
-            val sapWaveColor = Color(0xFF00F0FF)
+            val sapWaveColor = Color(0xFF2F6DB3)
             drawLine(
                 color = sapWaveColor.copy(alpha = 0.85f),
                 start = Offset(startX, startY),
@@ -1357,10 +1358,10 @@ object ZoneEnvironmentRenderer {
             val sparkX = startX + dx * sparkFrac
             val sparkY = startY + dy * sparkFrac
             drawCircle(color = Color(0xFFD1FAE5), radius = 4f, center = Offset(sparkX, sparkY))
-            drawCircle(color = Color(0x6600F0FF), radius = 9f, center = Offset(sparkX, sparkY))
+            drawCircle(color = Color(0x662F6DB3), radius = 9f, center = Offset(sparkX, sparkY))
         } else if (isNextActive) {
             drawLine(
-                color = Color(0x6600F0FF),
+                color = Color(0x662F6DB3),
                 start = Offset(startX, startY),
                 end = Offset(endX, endY),
                 strokeWidth = 2f,

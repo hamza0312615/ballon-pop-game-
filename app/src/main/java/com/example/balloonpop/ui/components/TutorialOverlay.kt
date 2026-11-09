@@ -136,7 +136,7 @@ fun TutorialOverlay(
                 ) {
                     TargetPointerBadge(
                         label = "⬆ POP TARGET",
-                        color = Color(0xFF06D6A0),
+                        color = Color(0xFF2FA36B),
                         pulseScale = pulseScale
                     )
                 }
@@ -164,7 +164,7 @@ fun TutorialOverlay(
                 ) {
                     TargetPointerBadge(
                         label = "⬇ BOOSTERS DOCK",
-                        color = Color(0xFF00F0FF),
+                        color = Color(0xFF2F6DB3),
                         pulseScale = pulseScale
                     )
                 }
@@ -178,7 +178,7 @@ fun TutorialOverlay(
                 ) {
                     TargetPointerBadge(
                         label = "HERO SKILL ⬇",
-                        color = Color(0xFFFF2A75),
+                        color = Color(0xFFC93A5E),
                         pulseScale = pulseScale
                     )
                 }

@@ -17,7 +17,7 @@ enum class MusicTheme(val title: String) {
     MEADOW_JOY("Sunny Meadow Joy 🌼"),
     TROPICAL_BOP("Tropical Island Bop 🏝️"),
     COSMIC_DREAM("Cosmic Starlight Synth 🌌"),
-    CYBER_PULSE("Cyber Arcade Energy ⚡"),
+    CYBER_PULSE("Clockwork Arcade Energy ⚡"),
     BOSS_ANTHEM("Epic Boss Anthem 👑")
 }
 

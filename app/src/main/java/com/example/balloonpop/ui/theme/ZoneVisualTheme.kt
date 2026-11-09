@@ -104,16 +104,16 @@ data class ZoneVisualTheme(
  */
 object ZoneVisualThemeRegistry {
 
-    private val NEON_GLADE_THEME = ZoneVisualTheme(
+    private val TWILIGHT_GROVE_THEME = ZoneVisualTheme(
         zoneId = 0,
         envType = ZoneEnvironmentType.NEON_GLADE,
-        name = "Neon Glade",
-        subtitle = "Bioluminescent Forest",
+        name = "Twilight Grove",
+        subtitle = "Firefly Forest",
         titleOrnamentPrefix = "🌿",
         titleOrnamentSuffix = "🍃",
-        titleAccentColor = Color(0xFF7DD3FC),
-        titlePillBg = Color(0xDD0A0E24),
-        titlePillBorder = CosmosViolet,
+        titleAccentColor = Color(0xFFF6C453),
+        titlePillBg = Color(0xDD0E3B2E),
+        titlePillBorder = Color(0xFF1E6B4F),
         pathType = ZonePathType.ORGANIC_VINE_ROOTS,
         nodeShape = ZoneNodeShapeType.ORGANIC_SEED_POD,
         particleType = ZoneParticleType.CYBER_FIREFLIES,
@@ -136,40 +136,40 @@ object ZoneVisualThemeRegistry {
             )
         ),
         bgSkyGradient = listOf(
-            CosmosNavyDeep,
-            CosmosNavy,
-            CosmosIndigo,
-            CosmosViolet,
-            CosmosNavyDeep
+            Color(0xFF08231B),
+            Color(0xFF0E3B2E),
+            Color(0xFF14532D),
+            Color(0xFF0E3B2E),
+            Color(0xFF08231B)
         ),
-        primaryAccent = Color(0xFF38BDF8),
-        secondaryAccent = Color(0xFFA78BFA),
-        ambientMoteColor = Color(0xFF7DD3FC),
+        primaryAccent = Color(0xFF2FA36B),
+        secondaryAccent = Color(0xFFF6C453),
+        ambientMoteColor = Color(0xFFFFD166),
         riverGradient = listOf(
-            Color(0xFF38BDF8),
-            Color(0xFFA78BFA),
-            CosmosIndigo,
-            Color(0xFFA78BFA),
-            Color(0xFF38BDF8)
+            Color(0xFF2FA36B),
+            Color(0xFFF6C453),
+            Color(0xFF14532D),
+            Color(0xFFF6C453),
+            Color(0xFF2FA36B)
         ),
-        waterRippleColor = Color(0x99BAE6FD),
+        waterRippleColor = Color(0x99A7F3D0),
         lockedBgColors = listOf(Color(0xFF12172E), CosmosNavy, CosmosNavyDeep),
         lockedBorderColor = CosmosIndigo,
         lockedIconSymbol = "🌱", // Dormant seedling / coiled seed bud, never generic lock emoji
-        unlockedBgColors = listOf(Color(0xFF7DD3FC), Color(0xFF38BDF8), CosmosViolet),
-        unlockedBorderColor = Color(0xFFBAE6FD),
-        clearedBgColors = listOf(Color(0xFFA78BFA), Color(0xFF8B7FD4), CosmosViolet),
-        clearedBorderColor = Color(0xFFEDE9FE),
-        activeGlowColor = Color(0xFF38BDF8),
+        unlockedBgColors = listOf(Color(0xFF57C98A), Color(0xFF2FA36B), Color(0xFF14532D)),
+        unlockedBorderColor = Color(0xFFFFE9A8),
+        clearedBgColors = listOf(Color(0xFFF6C453), Color(0xFFD4A017), Color(0xFF2FA36B)),
+        clearedBorderColor = Color(0xFFFFF3C4),
+        activeGlowColor = Color(0xFFF6C453),
         playButtonBadge = "🌿",
         playButtonGradient = listOf(
-            Color(0xFF7DD3FC),
-            Color(0xFF38BDF8),
-            Color(0xFF8B7FD4),
-            CosmosViolet,
-            CosmosIndigo
+            Color(0xFFFFD166),
+            Color(0xFFF6C453),
+            Color(0xFF57C98A),
+            Color(0xFF2FA36B),
+            Color(0xFF14532D)
         ),
-        playButtonBorderColor = Color(0xFFBAE6FD),
+        playButtonBorderColor = Color(0xFFFFE9A8),
         playButtonSpotColor = CosmosViolet,
         jumpButtonGradient = listOf(CosmosIndigo, CosmosNavyDeep),
         jumpButtonBorderColor = Color(0xFFFFD700)
@@ -182,7 +182,7 @@ object ZoneVisualThemeRegistry {
         subtitle = "Crystalline Caverns",
         titleOrnamentPrefix = "💠",
         titleOrnamentSuffix = "💎",
-        titleAccentColor = Color(0xFFC084FC),
+        titleAccentColor = Color(0xFFA678D8),
         titlePillBg = Color(0xDD240E3E),
         titlePillBorder = Color(0xFF9333EA),
         pathType = ZonePathType.CRYSTAL_CHASM_SHARDS,
@@ -213,37 +213,37 @@ object ZoneVisualThemeRegistry {
             Color(0xFF2E0E4D),
             Color(0xFF0A0214)
         ),
-        primaryAccent = Color(0xFFC084FC),
-        secondaryAccent = Color(0xFFF472B6),
-        ambientMoteColor = Color(0xFFE879F9),
+        primaryAccent = Color(0xFFA678D8),
+        secondaryAccent = Color(0xFFD96C8A),
+        ambientMoteColor = Color(0xFFB07CC6),
         riverGradient = listOf(
-            Color(0xFFF0ABFC),
-            Color(0xFFC084FC),
-            Color(0xFF9333EA),
-            Color(0xFFC084FC),
-            Color(0xFFF0ABFC)
+            Color(0xFFD8B4E8),
+            Color(0xFFA678D8),
+            Color(0xFF7C4DBD),
+            Color(0xFFA678D8),
+            Color(0xFFD8B4E8)
         ),
-        waterRippleColor = Color(0x99F5D0FE),
+        waterRippleColor = Color(0x99EADCF5),
         lockedBgColors = listOf(Color(0xFF201230), Color(0xFF160B22), Color(0xFF0F0618)),
         lockedBorderColor = Color(0xFF381B54),
         lockedIconSymbol = "💠", // Faceted geode nucleus, never generic lock emoji
-        unlockedBgColors = listOf(Color(0xFFE879F9), Color(0xFFC084FC), Color(0xFF7E22CE)),
-        unlockedBorderColor = Color(0xFFF5D0FE),
-        clearedBgColors = listOf(Color(0xFFC084FC), Color(0xFF9333EA), Color(0xFF6B21A8)),
+        unlockedBgColors = listOf(Color(0xFFB07CC6), Color(0xFFA678D8), Color(0xFF6D28A8)),
+        unlockedBorderColor = Color(0xFFEADCF5),
+        clearedBgColors = listOf(Color(0xFFA678D8), Color(0xFF7C4DBD), Color(0xFF5B21A8)),
         clearedBorderColor = Color(0xFFFAF5FF),
-        activeGlowColor = Color(0xFFE879F9),
+        activeGlowColor = Color(0xFFB07CC6),
         playButtonBadge = "💎",
         playButtonGradient = listOf(
-            Color(0xFFF472B6),
-            Color(0xFFE879F9),
-            Color(0xFFC084FC),
-            Color(0xFF9333EA),
-            Color(0xFF581C87)
+            Color(0xFFD96C8A),
+            Color(0xFFB07CC6),
+            Color(0xFFA678D8),
+            Color(0xFF7C4DBD),
+            Color(0xFF4C1D95)
         ),
-        playButtonBorderColor = Color(0xFFF5D0FE),
-        playButtonSpotColor = Color(0xFF9333EA),
+        playButtonBorderColor = Color(0xFFEADCF5),
+        playButtonSpotColor = Color(0xFF7C4DBD),
         jumpButtonGradient = listOf(Color(0xFF4C1D95), Color(0xFF2E1065)),
-        jumpButtonBorderColor = Color(0xFFC084FC)
+        jumpButtonBorderColor = Color(0xFFA678D8)
     )
 
     private val SUNSET_MESA_THEME = ZoneVisualTheme(
@@ -345,7 +345,7 @@ object ZoneVisualThemeRegistry {
         unlockedBorderColor = Color(0xFFCFFAFE),
         clearedBgColors = listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF075985)),
         clearedBorderColor = Color(0xFFE0F2FE),
-        activeGlowColor = Color(0xFF00E5FF),
+        activeGlowColor = Color(0xFF4A90C4),
         playButtonBadge = "🌊",
         playButtonGradient = listOf(
             Color(0xFF7DD3FC),
@@ -360,19 +360,19 @@ object ZoneVisualThemeRegistry {
         jumpButtonBorderColor = Color(0xFF38BDF8)
     )
 
-    // Neon Abyss (WorldZone 17, index 16): dedicated theme so this zone can be
-    // recoloured into the deep-navy cosmic family without changing the generic
+    // Midnight Abyss (WorldZone 17, index 16): dedicated theme so this zone can be
+    // recoloured into the deep-indigo storybook family without changing the generic
     // synthesized fallback used by the other non-dedicated zones. Non-colour
     // fields intentionally mirror that fallback exactly (GENERIC env, timber
     // path/node, AQUA_BUBBLES particles, generic route, "🔒" / "🧬" symbols).
-    private val NEON_ABYSS_THEME = ZoneVisualTheme(
+    private val MIDNIGHT_ABYSS_THEME = ZoneVisualTheme(
         zoneId = 16,
         envType = ZoneEnvironmentType.GENERIC,
-        name = "Neon Abyss",
+        name = "Midnight Abyss",
         subtitle = "Stages 161 - 170",
-        titleOrnamentPrefix = "🧬",
-        titleOrnamentSuffix = "🧬",
-        titleAccentColor = Color(0xFF38BDF8),
+        titleOrnamentPrefix = "🌌",
+        titleOrnamentSuffix = "🌌",
+        titleAccentColor = Color(0xFFB8A9D9),
         titlePillBg = Color(0xDD0A0E24),
         titlePillBorder = CosmosViolet,
         pathType = ZonePathType.TIMBER_LADDER,
@@ -383,27 +383,27 @@ object ZoneVisualThemeRegistry {
             yOffsets = floatArrayOf(940f, 845f, 750f, 655f, 560f, 465f, 370f, 275f, 175f, 75f)
         ),
         bgSkyGradient = listOf(
-            CosmosNavyDeep,
-            CosmosNavy,
-            CosmosIndigo,
-            CosmosViolet,
-            CosmosNavyDeep
+            Color(0xFF120A2E),
+            Color(0xFF1B1040),
+            Color(0xFF2D1B69),
+            Color(0xFF241A4D),
+            Color(0xFF120A2E)
         ),
-        primaryAccent = Color(0xFF38BDF8),
-        secondaryAccent = Color(0xFFA78BFA),
-        ambientMoteColor = Color(0xFF7DD3FC),
-        riverGradient = listOf(Color(0xFF38BDF8), Color(0xFFA78BFA), Color(0xFF38BDF8)),
-        waterRippleColor = Color(0x9938BDF8),
+        primaryAccent = Color(0xFF6C5FBF),
+        secondaryAccent = Color(0xFFB8A9D9),
+        ambientMoteColor = Color(0xFFCFC6EE),
+        riverGradient = listOf(Color(0xFF6C5FBF), Color(0xFFB8A9D9), Color(0xFF6C5FBF)),
+        waterRippleColor = Color(0x99B8A9D9),
         lockedBgColors = listOf(Color(0xFF12172E), CosmosNavyDeep),
         lockedBorderColor = CosmosIndigo,
         lockedIconSymbol = "🔒",
-        unlockedBgColors = listOf(Color(0xFF38BDF8), CosmosViolet),
+        unlockedBgColors = listOf(Color(0xFF6C5FBF), Color(0xFF8E7CD6)),
         unlockedBorderColor = Color.White.copy(alpha = 0.8f),
-        clearedBgColors = listOf(Color(0xFFA78BFA), CosmosViolet),
-        clearedBorderColor = Color(0xFFC4B5FD),
-        activeGlowColor = Color(0xFF38BDF8),
-        playButtonBadge = "🧬",
-        playButtonGradient = listOf(Color(0xFF38BDF8), CosmosViolet),
+        clearedBgColors = listOf(Color(0xFFB8A9D9), Color(0xFF7C6BB8)),
+        clearedBorderColor = Color(0xFFE8E4F5),
+        activeGlowColor = Color(0xFFB8A9D9),
+        playButtonBadge = "🌌",
+        playButtonGradient = listOf(Color(0xFF6C5FBF), Color(0xFFB8A9D9)),
         playButtonBorderColor = Color.White.copy(alpha = 0.8f),
         playButtonSpotColor = CosmosViolet,
         jumpButtonGradient = listOf(CosmosIndigo, CosmosNavyDeep),
@@ -411,11 +411,11 @@ object ZoneVisualThemeRegistry {
     )
 
     private val THEME_MAP = mapOf(
-        0 to NEON_GLADE_THEME,
+        0 to TWILIGHT_GROVE_THEME,
         1 to PRISM_PEAKS_THEME,
         2 to SUNSET_MESA_THEME,
         3 to AQUA_REEF_THEME,
-        16 to NEON_ABYSS_THEME
+        16 to MIDNIGHT_ABYSS_THEME
     )
 
     /**
@@ -427,7 +427,7 @@ object ZoneVisualThemeRegistry {
         THEME_MAP[zoneIndex]?.let { return it }
 
         val pCol = worldZone?.primaryColor ?: Color(0xFFF59E0B)
-        val sCol = worldZone?.secondaryColor ?: Color(0xFF00E5FF)
+        val sCol = worldZone?.secondaryColor ?: Color(0xFF4A90C4)
         val grad = worldZone?.gradientColors?.takeIf { it.isNotEmpty() } ?: listOf(
             Color(0xFF060B14),
             Color(0xFF131927),
@@ -436,13 +436,15 @@ object ZoneVisualThemeRegistry {
         val zoneName = worldZone?.name ?: "Zone ${zoneIndex + 1}"
         val symbol = worldZone?.icon ?: "⭐"
 
-        val detectedParticleType = when {
-            zoneName.contains("Sakura", ignoreCase = true) -> ZoneParticleType.SAKURA_PETALS
-            zoneName.contains("Frozen", ignoreCase = true) || zoneName.contains("Tundra", ignoreCase = true) -> ZoneParticleType.FROZEN_SNOWFLAKES
-            zoneName.contains("Volcano", ignoreCase = true) || zoneName.contains("Molten", ignoreCase = true) -> ZoneParticleType.SUNSET_EMBERS
-            zoneName.contains("Cyber", ignoreCase = true) || zoneName.contains("Glade", ignoreCase = true) || zoneName.contains("Jungle", ignoreCase = true) -> ZoneParticleType.CYBER_FIREFLIES
-            zoneName.contains("Prism", ignoreCase = true) || zoneName.contains("Crystal", ignoreCase = true) || zoneName.contains("Cosmos", ignoreCase = true) -> ZoneParticleType.PRISM_LIGHT_SHARDS
-            zoneName.contains("Aqua", ignoreCase = true) || zoneName.contains("Reef", ignoreCase = true) || zoneName.contains("Abyss", ignoreCase = true) -> ZoneParticleType.AQUA_BUBBLES
+        // Pass 5: particles keyed on zone index (0-based), never on display
+        // names, so renaming a zone cannot change its ambient effects.
+        val detectedParticleType = when (zoneIndex) {
+            10 -> ZoneParticleType.SAKURA_PETALS          // Sakura Sanctuary
+            9 -> ZoneParticleType.FROZEN_SNOWFLAKES       // Frozen Tundra
+            6, 15 -> ZoneParticleType.SUNSET_EMBERS       // Volcano Caldera, Molten Core
+            0, 12 -> ZoneParticleType.CYBER_FIREFLIES     // Twilight Grove, Emerald Jungle (fireflies)
+            1, 7 -> ZoneParticleType.PRISM_LIGHT_SHARDS   // Prism Peaks, Starry Cosmos
+            3, 16 -> ZoneParticleType.AQUA_BUBBLES        // Aqua Reef, Midnight Abyss
             else -> ZoneParticleType.STANDARD_MOTES
         }
 

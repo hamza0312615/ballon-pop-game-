@@ -71,7 +71,7 @@ fun PreGameStageDialog(
     val currentZone = remember(level) {
         GameConstants.WORLD_ZONES.find { level in it.startLevel..it.endLevel }
     }
-    val currentZoneName = currentZone?.name ?: "Neon Glade"
+    val currentZoneName = currentZone?.name ?: "Twilight Grove"
 
     val infiniteTransition = rememberInfiniteTransition(label = "play_pulse_intro")
     val playPulse by infiniteTransition.animateFloat(

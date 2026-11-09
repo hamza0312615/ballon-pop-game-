@@ -237,7 +237,7 @@ object ZoneMapParticleSystem {
 
             // Palette tints: mint, emerald, cyan, and gold-green
             val auraColor = when (p.colorVariant) {
-                0 -> Color(0x3500F0FF) // Cyan bio-glow
+                0 -> Color(0x352F6DB3) // Cyan bio-glow
                 1 -> Color(0x3A34D399) // Mint green bio-glow
                 2 -> Color(0x3010B981) // Deep emerald
                 else -> Color(0x356EE7B7) // Warm spring glow

@@ -49,6 +49,11 @@ import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.CoralPrimary
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.NunitoFontFamily
+import com.example.balloonpop.ui.theme.CreamSurface
+import com.example.balloonpop.ui.theme.StoryGold
+import com.example.balloonpop.ui.theme.StorybookIndigo
+import com.example.balloonpop.ui.theme.StorybookPlum
+import com.example.balloonpop.ui.theme.StorybookPlumDeep
 
 /**
  * Home Screen (Quality Pass 4, Royal Match / Candy Crush benchmark):
@@ -66,7 +71,7 @@ fun HomeScreen(
     gems: Int = 320,
     lives: Int = 5,
     currentLevel: Int = 1,
-    zoneName: String = "Neon Glade",
+    zoneName: String = "Twilight Grove",
     onOpenCampaign: () -> Unit,
     onOpenSkillVault: () -> Unit,
     onOpenEndless: () -> Unit,
@@ -122,10 +127,10 @@ fun HomeScreen(
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        Color(0xFF060A14), // Deep midnight sky
-                        Color(0xFF0C1424),
-                        Color(0xFF131D33),
-                        Color(0xFF090D18)
+                        StorybookPlumDeep, // Golden Storybook night sky
+                        StorybookPlum,
+                        StorybookIndigo,
+                        StorybookPlumDeep
                     )
                 )
             )
@@ -137,12 +142,12 @@ fun HomeScreen(
 
             // Soft glowing ambient balloons in background
             drawCircle(
-                color = Color(0x1800E5FF),
+                color = Color(0x184A90C4),
                 radius = 70.dp.toPx(),
                 center = Offset(w * 0.15f, h * 0.28f + ambientBalloonY)
             )
             drawCircle(
-                color = Color(0x15FF2A75),
+                color = Color(0x15C93A5E),
                 radius = 85.dp.toPx(),
                 center = Offset(w * 0.85f, h * 0.35f - ambientBalloonY)
             )
@@ -159,8 +164,8 @@ fun HomeScreen(
 
             // Ambient festive confetti specks
             drawCircle(Color(0x33FFB703), 2.5.dp.toPx(), Offset(w * 0.3f, h * 0.18f))
-            drawCircle(Color(0x3300E5FF), 3.dp.toPx(), Offset(w * 0.7f, h * 0.22f))
-            drawCircle(Color(0x33FF2A75), 2.dp.toPx(), Offset(w * 0.12f, h * 0.45f))
+            drawCircle(Color(0x334A90C4), 3.dp.toPx(), Offset(w * 0.7f, h * 0.22f))
+            drawCircle(Color(0x33C93A5E), 2.dp.toPx(), Offset(w * 0.12f, h * 0.45f))
             drawCircle(Color(0x3310B981), 3.dp.toPx(), Offset(w * 0.88f, h * 0.52f))
             drawCircle(Color(0x33FFA000), 2.5.dp.toPx(), Offset(w * 0.45f, h * 0.82f))
         }
@@ -192,11 +197,30 @@ fun HomeScreen(
                 // The one prominent mascot, sitting directly above the title and
                 // the PLAY hero below it. The small duplicate mascots that used to
                 // flank the title are gone so this one reads as the hero character.
-                com.example.balloonpop.ui.components.MascotCharacter(
-                    mood = com.example.balloonpop.ui.components.MascotMood.JOYFUL,
-                    size = 96.dp,
-                    modifier = Modifier.offset(y = mascotBob.dp)
-                )
+                // Pass 5: Popster centre-stage on a golden stage disc.
+                Box(
+                    modifier = Modifier
+                        .size(138.dp)
+                        .shadow(DesignTokens.ElevationMedium, CircleShape, spotColor = StoryGold)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    Color(0xFFFFE9A8),
+                                    StoryGold,
+                                    Color(0xFFD99A16)
+                                )
+                            )
+                        )
+                        .border(3.dp, Color(0xFFFFF3C4), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    com.example.balloonpop.ui.components.MascotCharacter(
+                        mood = com.example.balloonpop.ui.components.MascotMood.JOYFUL,
+                        size = 96.dp,
+                        modifier = Modifier.offset(y = mascotBob.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(DesignTokens.Space8))
 
@@ -260,30 +284,19 @@ fun HomeScreen(
                     .padding(vertical = DesignTokens.Space4),
                 verticalArrangement = Arrangement.spacedBy(DesignTokens.Space12)
             ) {
-                // PRIMARY HERO CTA: PLAY STAGE X — the single dominant button.
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 72.dp)
-                        .scale(playPulse)
-                        .shadow(DesignTokens.ElevationActive, DesignTokens.ShapeLarge, spotColor = CoralPrimary)
-                        .clip(DesignTokens.ShapeLarge)
-                        .background(DesignTokens.CtaGradient)
-                        .border(2.5.dp, Color(0xFFFFD9CC), DesignTokens.ShapeLarge)
-                        .clickable { onOpenCampaign() }
-                        .testTag("home_play_campaign_button")
-                        .padding(horizontal = DesignTokens.Space16, vertical = DesignTokens.Space12)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space12)
+                // PRIMARY HERO CTA (Pass 5): the one JewelButton on this screen —
+                // sunset face, 5dp shelf, gloss, press-sink; stage + zone inside it.
+                Box(modifier = Modifier.scale(playPulse)) {
+                    com.example.balloonpop.ui.components.JewelButtonContainer(
+                        onClick = onOpenCampaign,
+                        style = com.example.balloonpop.ui.components.JewelButtonStyle.SUNSET,
+                        minHeight = 72.dp,
+                        testTag = "home_play_campaign_button",
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Play Icon Circle with Depth
                         Box(
                             modifier = Modifier
                                 .size(52.dp)
-                                .shadow(4.dp, CircleShape)
                                 .clip(CircleShape)
                                 .background(Color.White.copy(alpha = 0.22f))
                                 .border(2.dp, Color.White, CircleShape),
@@ -296,12 +309,8 @@ fun HomeScreen(
                                 modifier = Modifier.size(34.dp)
                             )
                         }
-
-                        // Call to Action Text Block
-                        Column(
-                            horizontalAlignment = Alignment.Start,
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        Spacer(modifier = Modifier.width(DesignTokens.Space12))
+                        Column(horizontalAlignment = Alignment.Start) {
                             Text(
                                 text = "PLAY STAGE $currentLevel",
                                 fontFamily = Baloo2FontFamily,
@@ -485,7 +494,7 @@ fun HomeScreen(
                             icon = "🎈",
                             title = "1. Tap Balloons to Pop",
                             description = "Tap balloons before they float off-screen. Pop consecutive balloons to build combos and earn big bonus points!",
-                            accentColor = Color(0xFFFF2A75)
+                            accentColor = Color(0xFFC93A5E)
                         )
                         HowToPlayRow(
                             icon = "💣",
@@ -577,13 +586,14 @@ private fun HomeIconActionButton(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
+            // Pass 5: cream tile (storybook sheet material) with the label below.
             Box(
                 modifier = Modifier
-                    .size(DesignTokens.IconButtonSize)
-                    .shadow(DesignTokens.ElevationAmbient, CircleShape, spotColor = accentColor)
-                    .clip(CircleShape)
-                    .background(DesignTokens.SurfaceCardNavy)
-                    .border(1.5.dp, accentColor.copy(alpha = 0.85f), CircleShape),
+                    .size(52.dp)
+                    .shadow(DesignTokens.ElevationAmbient, DesignTokens.ShapeMedium, spotColor = accentColor)
+                    .clip(DesignTokens.ShapeMedium)
+                    .background(CreamSurface)
+                    .border(1.5.dp, accentColor.copy(alpha = 0.85f), DesignTokens.ShapeMedium),
                 contentAlignment = Alignment.Center
             ) {
                 iconContent()

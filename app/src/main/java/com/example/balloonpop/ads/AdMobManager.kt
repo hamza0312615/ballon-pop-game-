@@ -2,6 +2,7 @@ package com.example.balloonpop.ads
 
 import android.app.Activity
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -22,8 +23,14 @@ import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 /**
  * AdMobManager manages Google Mobile Ads SDK lifecycle.
  * Handles App Open, Interstitial, and Rewarded Video Ads.
- * Includes automatic fallback to Google AdMob sample units if production
- * ad units are still pending approval or return ERROR_CODE_NO_FILL (code 3).
+ *
+ * Pass 5 (audit §2.1): Google test/sample units may ONLY ever load in
+ * debuggable (debug) builds — the runtime equivalent of BuildConfig.DEBUG
+ * (this project does not enable the BuildConfig build feature). A release
+ * build always loads the production units, and a production no-fill simply
+ * means "no ad this time": the show functions degrade gracefully to their
+ * onDismiss callback. This guarantees a Play release can never serve
+ * zero-revenue test creatives to players.
  */
 object AdMobManager {
     private const val TAG = "AdMobManager"
@@ -52,8 +59,15 @@ object AdMobManager {
     var lastRewardedStatus: String = "Not loaded"
         private set
 
-    // Automatic fallback when live unit returns No Fill (Error Code 3)
-    var fallbackToTestOnNoFill = true
+    /**
+     * True only for debuggable (debug) builds. Gates every use of the Google
+     * test ad units: in a release build the test-unit fallback below can
+     * never trigger, even if a caller passes isFallback = true — the loaders
+     * clamp the choice back to the production unit.
+     */
+    private fun isDebuggable(context: Context): Boolean {
+        return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+    }
 
     // Cached Ad instances
     private var appOpenAd: AppOpenAd? = null
@@ -65,7 +79,6 @@ object AdMobManager {
 
     private var rewardedAd: RewardedAd? = null
     private var isRewardedLoading = false
-    private var pendingRewardedShowCallback: ((Activity, (RewardItem?) -> Unit, () -> Unit) -> Unit)? = null
 
     private val _isShowingAdFlow = kotlinx.coroutines.flow.MutableStateFlow(false)
     val isShowingAdFlow: kotlinx.coroutines.flow.StateFlow<Boolean> = _isShowingAdFlow
@@ -126,7 +139,9 @@ object AdMobManager {
         if (appOpenAd != null || isAppOpenLoading) return
         isAppOpenLoading = true
 
-        val adUnitId = if (isFallback) TEST_APP_OPEN_ID else PROD_APP_OPEN_ID
+        // Test units are reachable ONLY in debuggable builds (see class doc).
+        val useTestUnits = isFallback && isDebuggable(context)
+        val adUnitId = if (useTestUnits) TEST_APP_OPEN_ID else PROD_APP_OPEN_ID
         lastAppOpenStatus = "Loading ($adUnitId)..."
         Log.d(TAG, "Loading App Open Ad using ID: $adUnitId")
 
@@ -140,7 +155,7 @@ object AdMobManager {
                     override fun onAdLoaded(ad: AppOpenAd) {
                         isAppOpenLoading = false
                         appOpenAd = ad
-                        lastAppOpenStatus = "Ready (${if (isFallback) "Test" else "Live"})"
+                        lastAppOpenStatus = "Ready (${if (useTestUnits) "Test" else "Live"})"
                         Log.d(TAG, "App Open Ad loaded successfully ($adUnitId)")
 
                         val waiter = appOpenWaitCallback
@@ -154,8 +169,8 @@ object AdMobManager {
                         lastAppOpenStatus = "Failed: ${error.code} (${error.message})"
                         Log.w(TAG, "App Open Ad failed ($adUnitId): code=${error.code}, message=${error.message}")
 
-                        if (!isFallback && fallbackToTestOnNoFill && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
-                            Log.i(TAG, "Falling back to Google Test App Open ad unit...")
+                        if (!isFallback && isDebuggable(context) && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
+                            Log.i(TAG, "Debug build: falling back to Google Test App Open ad unit...")
                             loadAppOpenAd(context, isFallback = true)
                         } else {
                             val waiter = appOpenWaitCallback
@@ -260,7 +275,9 @@ object AdMobManager {
         if (interstitialAd != null || isInterstitialLoading) return
         isInterstitialLoading = true
 
-        val adUnitId = if (isFallback) TEST_INTERSTITIAL_ID else PROD_INTERSTITIAL_ID
+        // Test units are reachable ONLY in debuggable builds (see class doc).
+        val useTestUnits = isFallback && isDebuggable(context)
+        val adUnitId = if (useTestUnits) TEST_INTERSTITIAL_ID else PROD_INTERSTITIAL_ID
         lastInterstitialStatus = "Loading ($adUnitId)..."
         Log.d(TAG, "Loading Interstitial Ad using ID: $adUnitId")
 
@@ -274,7 +291,7 @@ object AdMobManager {
                     override fun onAdLoaded(ad: InterstitialAd) {
                         isInterstitialLoading = false
                         interstitialAd = ad
-                        lastInterstitialStatus = "Ready (${if (isFallback) "Test" else "Live"})"
+                        lastInterstitialStatus = "Ready (${if (useTestUnits) "Test" else "Live"})"
                         Log.d(TAG, "Interstitial Ad loaded ($adUnitId)")
                     }
 
@@ -284,8 +301,8 @@ object AdMobManager {
                         lastInterstitialStatus = "Failed: ${error.code} (${error.message})"
                         Log.w(TAG, "Interstitial Ad failed ($adUnitId): code=${error.code}, message=${error.message}")
 
-                        if (!isFallback && fallbackToTestOnNoFill && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
-                            Log.i(TAG, "Falling back to Google Test Interstitial unit...")
+                        if (!isFallback && isDebuggable(context) && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
+                            Log.i(TAG, "Debug build: falling back to Google Test Interstitial unit...")
                             loadInterstitialAd(context, isFallback = true)
                         }
                     }
@@ -360,7 +377,9 @@ object AdMobManager {
         }
         isRewardedLoading = true
 
-        val adUnitId = if (isFallback) TEST_REWARDED_ID else PROD_REWARDED_ID
+        // Test units are reachable ONLY in debuggable builds (see class doc).
+        val useTestUnits = isFallback && isDebuggable(context)
+        val adUnitId = if (useTestUnits) TEST_REWARDED_ID else PROD_REWARDED_ID
         lastRewardedStatus = "Loading ($adUnitId)..."
         Log.d(TAG, "Loading Rewarded Ad using ID: $adUnitId")
 
@@ -374,7 +393,7 @@ object AdMobManager {
                     override fun onAdLoaded(ad: RewardedAd) {
                         isRewardedLoading = false
                         rewardedAd = ad
-                        lastRewardedStatus = "Ready (${if (isFallback) "Test" else "Live"})"
+                        lastRewardedStatus = "Ready (${if (useTestUnits) "Test" else "Live"})"
                         Log.d(TAG, "Rewarded Ad loaded successfully ($adUnitId)")
                         onLoaded?.invoke()
                     }
@@ -385,8 +404,8 @@ object AdMobManager {
                         lastRewardedStatus = "Failed: ${error.code} (${error.message})"
                         Log.w(TAG, "Rewarded Ad failed ($adUnitId): code=${error.code}, message=${error.message}")
 
-                        if (!isFallback && fallbackToTestOnNoFill && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
-                            Log.i(TAG, "Falling back to Google Test Rewarded Ad unit...")
+                        if (!isFallback && isDebuggable(context) && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
+                            Log.i(TAG, "Debug build: falling back to Google Test Rewarded Ad unit...")
                             loadRewardedAd(context, isFallback = true, onLoaded = onLoaded)
                         } else {
                             onLoaded?.invoke()
@@ -429,7 +448,7 @@ object AdMobManager {
             } else {
                 Toast.makeText(
                     activity,
-                    "Ad is currently preparing. Please tap again in a moment! ($lastRewardedStatus)",
+                    "Ad is currently preparing. Please tap again in a moment!",
                     Toast.LENGTH_LONG
                 ).show()
                 onDismiss()
@@ -443,8 +462,6 @@ object AdMobManager {
         onRewardEarned: (RewardItem?) -> Unit,
         onDismiss: () -> Unit
     ) {
-        var rewardGranted = false
-
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
                 Log.d(TAG, "Rewarded Ad dismissed")
@@ -470,7 +487,6 @@ object AdMobManager {
         }
 
         ad.show(activity) { rewardItem ->
-            rewardGranted = true
             Log.d(TAG, "User rewarded: ${rewardItem.amount} ${rewardItem.type}")
             onRewardEarned(rewardItem)
         }

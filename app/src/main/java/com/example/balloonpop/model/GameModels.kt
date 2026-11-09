@@ -36,6 +36,15 @@ enum class BalloonShapeStyle(val displayName: String, val emoji: String) {
     HEART_SHAPE("Love Heart", "❤️")
 }
 
+/** Surface pattern a balloon skin paints over the balloon body. */
+enum class BalloonPattern {
+    SOLID,
+    STRIPES,
+    POLKA,
+    SWIRL,
+    SPARKLE
+}
+
 data class Balloon(
     val id: Long,
     var x: Float,
@@ -51,7 +60,11 @@ data class Balloon(
     var maxHp: Int = 1,
     var alpha: Float = 1.0f,
     var isMini: Boolean = false,
-    var vx: Float = 0f
+    var vx: Float = 0f,
+    // Pass 5 balloon skins: pattern overlay + specular gloss strength,
+    // assigned at spawn from the equipped BalloonSkin (standard balloons).
+    val pattern: BalloonPattern = BalloonPattern.SOLID,
+    val glossStrength: Float = 1.0f
 )
 
 enum class ParticleType {
@@ -129,7 +142,7 @@ data class LightningBolt(
     val id: Long,
     val points: List<Pair<Float, Float>>,
     var alpha: Float = 1.0f,
-    val color: Color = Color(0xFF00F0FF),
+    val color: Color = Color(0xFF2F6DB3),
     val branchPoints: List<List<Pair<Float, Float>>> = emptyList()
 )
 
@@ -186,6 +199,29 @@ data class HammerSkin(
     val headColor: Color,
     val handleColor: Color,
     val sparkColor: Color,
+    val description: String
+)
+
+/**
+ * Pass 5: an equippable look for the balloons themselves — the screen is
+ * balloons, so this is the game's most visible cosmetic. Modelled on
+ * [HammerSkin]: repository persistence (owned set + equipped id), shop
+ * purchase with coins/gems, equip. Standard balloons spawn with the
+ * equipped skin's [palette] colours, a face from [faceStyles], its
+ * [pattern] overlay and [glossStrength] specular intensity.
+ * All palettes are jewel/storybook tones — no neon hexes.
+ */
+data class BalloonSkin(
+    val id: String,
+    val name: String,
+    val icon: String,
+    val cost: Int,
+    val currency: CurrencyType,
+    val tier: Int,
+    val palette: List<Color>,
+    val faceStyles: List<BalloonShapeStyle>,
+    val pattern: BalloonPattern,
+    val glossStrength: Float,
     val description: String
 )
 
@@ -275,11 +311,18 @@ enum class GameOverReason(val title: String, val subtitle: String, val icon: Str
         "Bomb Detonated!",
         "Accidentally tapped a hazardous bomb",
         "💣"
+    ),
+    // Pass 5: an endless run the player ended deliberately (Finish & Save,
+    // pause-menu quit, or navigating away) — its best was saved.
+    MANUAL_QUIT(
+        "Run Saved!",
+        "You ended this run — your best score was recorded",
+        "🏁"
     )
 }
 
 enum class GameMode(val displayName: String, val desc: String, val icon: String) {
-    CAMPAIGN("Story Campaign", "50 Stages • Star Rewards", "🗺️"),
+    CAMPAIGN("Story Campaign", "200 Stages • Star Rewards", "🗺️"),
     CLASSIC("Classic", "3 Lives • Increasing Speed", "🎯"),
     TIME_RUSH("Time Rush", "60 Seconds • Fast Spawns", "⏱️"),
     ARCADE("Arcade Frenzy", "Power-ups & Bomb Waves", "🔥"),
@@ -296,6 +339,11 @@ enum class GameState {
 
 enum class SkillType(val id: String, val title: String, val icon: String) {
     HAMMER_SLIDE("skill_slice", "Hammer Slide", "🔨⚡"),
+    // LEGACY (Pass 5 audit L15): CONTINUOUS_SLICE intentionally keeps the
+    // duplicate persisted id "skill_slice" — it is handled together with
+    // HAMMER_SLIDE everywhere and "skill_slice" is a stored unlock id, so
+    // removing this entry or changing its id would risk persisted-data
+    // mismatches for zero player benefit. Do not "deduplicate".
     CONTINUOUS_SLICE("skill_slice", "Hammer Slide", "🔨⚡"),
     TIME_FREEZE("skill_freeze", "Chrono Stasis", "⏱️"),
     MAGNET_PULL("skill_magnet", "Vortex Magnet", "🧲"),
@@ -314,7 +362,7 @@ data class PlayerSkill(
     val currentLevel: Int = 1,
     val energyCostPerSec: Float = 25f,
     val cooldownSeconds: Float = 12f,
-    val accentColor: Color = Color(0xFF00F0FF)
+    val accentColor: Color = Color(0xFF2F6DB3)
 )
 
 data class DailyStreakDay(
@@ -390,17 +438,203 @@ data class DiamondStorePack(
 )
 
 object GameConstants {
+    // Pass 5: jewel palette (ruby, sapphire, amethyst, topaz, emerald, coral,
+    // deep teal, rose, sky sapphire, plum) — rich and lower-saturation, zero neon.
     val BALLOON_PALETTE = listOf(
-        Color(0xFFFF2A75),
-        Color(0xFF00F0FF),
-        Color(0xFF9D4EDD),
-        Color(0xFFFFB703),
-        Color(0xFF06D6A0),
-        Color(0xFFFF5722),
-        Color(0xFFE040FB),
-        Color(0xFF00E676),
-        Color(0xFFFF007F),
-        Color(0xFF4361EE)
+        Color(0xFFD64550),
+        Color(0xFF2F6DB3),
+        Color(0xFF7C4DBD),
+        Color(0xFFF2B134),
+        Color(0xFF2FA36B),
+        Color(0xFFE86A4E),
+        Color(0xFF1F7A8C),
+        Color(0xFFC2436B),
+        Color(0xFF4A90C4),
+        Color(0xFFA03D8F)
+    )
+
+    val SHOP_BALLOON_SKINS = listOf(
+        BalloonSkin(
+            id = "balloon_classic",
+            name = "Classic Gloss",
+            icon = "🎈",
+            cost = 0,
+            currency = CurrencyType.COINS,
+            tier = 1,
+            palette = listOf(
+                Color(0xFFD64550), Color(0xFF3E7CB1), Color(0xFF2E9E6B),
+                Color(0xFFF2B134), Color(0xFF8E44AD)
+            ),
+            faceStyles = BalloonShapeStyle.values().toList(),
+            pattern = BalloonPattern.SOLID,
+            glossStrength = 1.0f,
+            description = "The beloved storybook originals, glossy and bright."
+        ),
+        BalloonSkin(
+            id = "balloon_ruby",
+            name = "Ruby Jewel",
+            icon = "🔴",
+            cost = 300,
+            currency = CurrencyType.COINS,
+            tier = 2,
+            palette = listOf(
+                Color(0xFF9B1B30), Color(0xFFC1272D), Color(0xFFB03A48), Color(0xFF7B1E26)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.SMILEY, BalloonShapeStyle.FUNNY, BalloonShapeStyle.COOL),
+            pattern = BalloonPattern.SOLID,
+            glossStrength = 1.15f,
+            description = "Deep-cut rubies with a polished jewel shine."
+        ),
+        BalloonSkin(
+            id = "balloon_sapphire",
+            name = "Sapphire Jewel",
+            icon = "🔵",
+            cost = 300,
+            currency = CurrencyType.COINS,
+            tier = 2,
+            palette = listOf(
+                Color(0xFF1B3A6B), Color(0xFF1D4E9E), Color(0xFF2E6FB7), Color(0xFF274690)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.SMILEY, BalloonShapeStyle.COOL, BalloonShapeStyle.SHOCKED),
+            pattern = BalloonPattern.SOLID,
+            glossStrength = 1.15f,
+            description = "Royal sapphire blues, calm and brilliant."
+        ),
+        BalloonSkin(
+            id = "balloon_emerald",
+            name = "Emerald Jewel",
+            icon = "🟢",
+            cost = 300,
+            currency = CurrencyType.COINS,
+            tier = 2,
+            palette = listOf(
+                Color(0xFF0B6E4F), Color(0xFF12805C), Color(0xFF0E7C61), Color(0xFF14532D)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.SMILEY, BalloonShapeStyle.CAT_FACE, BalloonShapeStyle.FUNNY),
+            pattern = BalloonPattern.SOLID,
+            glossStrength = 1.15f,
+            description = "Twilight-grove emeralds with a forest gleam."
+        ),
+        BalloonSkin(
+            id = "balloon_topaz",
+            name = "Topaz Gold",
+            icon = "🟡",
+            cost = 500,
+            currency = CurrencyType.COINS,
+            tier = 3,
+            palette = listOf(
+                Color(0xFFB7791F), Color(0xFFD4A017), Color(0xFFC99700), Color(0xFFA67C00)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.SMILEY, BalloonShapeStyle.STAR_SHAPE, BalloonShapeStyle.COOL),
+            pattern = BalloonPattern.SOLID,
+            glossStrength = 1.25f,
+            description = "Warm topaz golds that glow like lantern light."
+        ),
+        BalloonSkin(
+            id = "balloon_amethyst",
+            name = "Amethyst",
+            icon = "🟣",
+            cost = 500,
+            currency = CurrencyType.COINS,
+            tier = 3,
+            palette = listOf(
+                Color(0xFF5B2A86), Color(0xFF6C3483), Color(0xFF7D3C98), Color(0xFF4A235A)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.SMILEY, BalloonShapeStyle.SHOCKED, BalloonShapeStyle.CAT_FACE),
+            pattern = BalloonPattern.SOLID,
+            glossStrength = 1.15f,
+            description = "Moonlit amethyst purples, rich and velvety."
+        ),
+        BalloonSkin(
+            id = "balloon_coral_sunset",
+            name = "Coral Sunset",
+            icon = "🌇",
+            cost = 800,
+            currency = CurrencyType.COINS,
+            tier = 4,
+            palette = listOf(
+                Color(0xFFE76F51), Color(0xFFF4A261), Color(0xFFE9C46A), Color(0xFFEE6C4D)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.SMILEY, BalloonShapeStyle.FUNNY, BalloonShapeStyle.COOL),
+            pattern = BalloonPattern.STRIPES,
+            glossStrength = 1.1f,
+            description = "Golden-hour stripes in coral, peach and honey."
+        ),
+        BalloonSkin(
+            id = "balloon_candy_swirl",
+            name = "Candy Swirl",
+            icon = "🍭",
+            cost = 1200,
+            currency = CurrencyType.COINS,
+            tier = 4,
+            palette = listOf(
+                Color(0xFFF4ACB7), Color(0xFFF7CAD9), Color(0xFFD8BBD4), Color(0xFFFFE5B4)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.FUNNY, BalloonShapeStyle.CAT_FACE, BalloonShapeStyle.SMILEY),
+            pattern = BalloonPattern.SWIRL,
+            glossStrength = 1.0f,
+            description = "Soft candy pastels with a peppermint swirl."
+        ),
+        BalloonSkin(
+            id = "balloon_crystal_ice",
+            name = "Crystal Ice",
+            icon = "🧊",
+            cost = 1800,
+            currency = CurrencyType.COINS,
+            tier = 5,
+            palette = listOf(
+                Color(0xFFA8DADC), Color(0xFFBDE0FE), Color(0xFFCDE7F0), Color(0xFF9AD1D4)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.SMILEY, BalloonShapeStyle.SHOCKED, BalloonShapeStyle.CAT_FACE),
+            pattern = BalloonPattern.SOLID,
+            glossStrength = 1.35f,
+            description = "Frost-clear crystals with a mirror-bright gloss."
+        ),
+        BalloonSkin(
+            id = "balloon_galaxy",
+            name = "Galaxy",
+            icon = "🌌",
+            cost = 25,
+            currency = CurrencyType.GEMS,
+            tier = 5,
+            palette = listOf(
+                Color(0xFF2B2D5C), Color(0xFF3D348B), Color(0xFF6A4C93), Color(0xFF8E7CC3)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.COOL, BalloonShapeStyle.SHOCKED, BalloonShapeStyle.STAR_SHAPE),
+            pattern = BalloonPattern.SPARKLE,
+            glossStrength = 1.2f,
+            description = "Deep-space violets dusted with silver stars."
+        ),
+        BalloonSkin(
+            id = "balloon_panda",
+            name = "Panda",
+            icon = "🐼",
+            cost = 40,
+            currency = CurrencyType.GEMS,
+            tier = 6,
+            palette = listOf(
+                Color(0xFFF5F5F0), Color(0xFF2B2B2B), Color(0xFFEDEDE6), Color(0xFF3A3A3A)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.CAT_FACE, BalloonShapeStyle.SMILEY, BalloonShapeStyle.FUNNY),
+            pattern = BalloonPattern.POLKA,
+            glossStrength = 1.0f,
+            description = "Monochrome panda charm with playful polka spots."
+        ),
+        BalloonSkin(
+            id = "balloon_golden_luxe",
+            name = "Golden Luxe",
+            icon = "👑",
+            cost = 60,
+            currency = CurrencyType.GEMS,
+            tier = 7,
+            palette = listOf(
+                Color(0xFFFFD700), Color(0xFFF6C453), Color(0xFFE8B54D), Color(0xFFC99700)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.STAR_SHAPE, BalloonShapeStyle.COOL, BalloonShapeStyle.SMILEY),
+            pattern = BalloonPattern.SPARKLE,
+            glossStrength = 1.4f,
+            description = "The crown jewel — liquid gold with stardust sparkle."
+        )
     )
 
     val SHOP_HAMMERS = listOf(
@@ -442,15 +676,15 @@ object GameConstants {
         ),
         HammerSkin(
             id = "hammer_cyber",
-            name = "Cyber Neon Smasher",
+            name = "Clockwork Smasher",
             icon = "⚡",
             cost = 1000,
             currency = CurrencyType.COINS,
             tier = 4,
-            headColor = Color(0xFF00F0FF),
-            handleColor = Color(0xFF7209B7),
-            sparkColor = Color(0xFF00F0FF),
-            description = "High-tech plasma hammer with electrical arcs."
+            headColor = Color(0xFFC99700),
+            handleColor = Color(0xFF6B4226),
+            sparkColor = Color(0xFFF2B134),
+            description = "Brass clockwork smasher with ticking gear sparks."
         ),
         HammerSkin(
             id = "hammer_thunder",
@@ -461,7 +695,7 @@ object GameConstants {
             tier = 5,
             headColor = Color(0xFF4CC9F0),
             handleColor = Color(0xFF3F37C9),
-            sparkColor = Color(0xFFF72585),
+            sparkColor = Color(0xFFC2436B),
             description = "Mythic thunder hammer forged in storm clouds."
         ),
         HammerSkin(
@@ -471,7 +705,7 @@ object GameConstants {
             cost = 35,
             currency = CurrencyType.GEMS,
             tier = 6,
-            headColor = Color(0xFF00E5FF),
+            headColor = Color(0xFF4A90C4),
             handleColor = Color(0xFFE0AAFF),
             sparkColor = Color(0xFFFFFFFF),
             description = "Pristine faceted diamond hammer with prismatic flares."
@@ -483,10 +717,46 @@ object GameConstants {
             cost = 60,
             currency = CurrencyType.GEMS,
             tier = 7,
-            headColor = Color(0xFFFF007F),
+            headColor = Color(0xFFB03060),
             handleColor = Color(0xFF240046),
             sparkColor = Color(0xFFFFBE0B),
             description = "Celestial celestial hammer radiating starlight."
+        ),
+        HammerSkin(
+            id = "hammer_ruby",
+            name = "Ruby Storybook Mallet",
+            icon = "🔨",
+            cost = 750,
+            currency = CurrencyType.COINS,
+            tier = 4,
+            headColor = Color(0xFFB03A48),
+            handleColor = Color(0xFF6B4226),
+            sparkColor = Color(0xFFFFD166),
+            description = "Storybook mallet crowned with a cut ruby."
+        ),
+        HammerSkin(
+            id = "hammer_emerald",
+            name = "Emerald Grove Hammer",
+            icon = "🌿",
+            cost = 25,
+            currency = CurrencyType.GEMS,
+            tier = 6,
+            headColor = Color(0xFF0E7C61),
+            handleColor = Color(0xFF14532D),
+            sparkColor = Color(0xFFA7F3D0),
+            description = "Forged in the Twilight Grove, humming with leaf-light."
+        ),
+        HammerSkin(
+            id = "hammer_storybook",
+            name = "Golden Storybook Mallet",
+            icon = "📖",
+            cost = 45,
+            currency = CurrencyType.GEMS,
+            tier = 7,
+            headColor = Color(0xFFF6C453),
+            handleColor = Color(0xFF7B341E),
+            sparkColor = Color(0xFFFFF3C4),
+            description = "The royal mallet from the last page of the storybook."
         )
     )
 
@@ -504,14 +774,14 @@ object GameConstants {
         ),
         PlayFrame(
             id = "frame_neon",
-            name = "Aesthetic Neon",
+            name = "Storybook Glow Frame",
             icon = "✨",
             cost = 250,
             currency = CurrencyType.COINS,
             tier = 2,
-            borderColors = listOf(Color(0xFFFF2A75), Color(0xFF00F0FF)),
-            glowColor = Color(0xFF00F0FF),
-            description = "Vibrant dual neon glowing border with crystal corners."
+            borderColors = listOf(Color(0xFFF6C453), Color(0xFFC2436B)),
+            glowColor = Color(0xFFF6C453),
+            description = "Warm storybook glow border with gilded jewel corners."
         ),
         PlayFrame(
             id = "frame_royal",
@@ -526,14 +796,14 @@ object GameConstants {
         ),
         PlayFrame(
             id = "frame_cyber",
-            name = "Cyber Matrix HUD",
+            name = "Clockwork Matrix Frame",
             icon = "🌐",
             cost = 1200,
             currency = CurrencyType.COINS,
             tier = 4,
-            borderColors = listOf(Color(0xFF00F0FF), Color(0xFF06D6A0)),
-            glowColor = Color(0xFF06D6A0),
-            description = "Sci-fi tactical bracket corners and data conduits."
+            borderColors = listOf(Color(0xFF2F6DB3), Color(0xFF2FA36B)),
+            glowColor = Color(0xFF2FA36B),
+            description = "Brass gearwork bracket corners and amber conduits."
         ),
         PlayFrame(
             id = "frame_aurora",
@@ -542,7 +812,7 @@ object GameConstants {
             cost = 20,
             currency = CurrencyType.GEMS,
             tier = 5,
-            borderColors = listOf(Color(0xFF9D4EDD), Color(0xFFFF2A75), Color(0xFF00F0FF)),
+            borderColors = listOf(Color(0xFF9D4EDD), Color(0xFFC93A5E), Color(0xFF2F6DB3)),
             glowColor = Color(0xFF9D4EDD),
             description = "Holographic nebula border pulsing with celestial runes."
         ),
@@ -553,23 +823,59 @@ object GameConstants {
             cost = 45,
             currency = CurrencyType.GEMS,
             tier = 6,
-            borderColors = listOf(Color(0xFFE0AAFF), Color(0xFF00E5FF), Color(0xFFFFFFFF)),
-            glowColor = Color(0xFF00E5FF),
+            borderColors = listOf(Color(0xFFE0AAFF), Color(0xFF4A90C4), Color(0xFFFFFFFF)),
+            glowColor = Color(0xFF4A90C4),
             description = "Multi-faceted diamond cut frame with radiant shine."
+        ),
+        PlayFrame(
+            id = "frame_storybook",
+            name = "Storybook Arch",
+            icon = "📖",
+            cost = 900,
+            currency = CurrencyType.COINS,
+            tier = 4,
+            borderColors = listOf(Color(0xFFF6C453), Color(0xFFB7791F), Color(0xFFF6C453)),
+            glowColor = Color(0xFFF6C453),
+            description = "A gilded storybook arch framing every adventure."
+        ),
+        PlayFrame(
+            id = "frame_emerald",
+            name = "Emerald Grove",
+            icon = "🌿",
+            cost = 1500,
+            currency = CurrencyType.COINS,
+            tier = 5,
+            borderColors = listOf(Color(0xFF0E7C61), Color(0xFFA7F3D0), Color(0xFF0E7C61)),
+            glowColor = Color(0xFF0E7C61),
+            description = "Living emerald vines woven into a grove border."
+        ),
+        PlayFrame(
+            id = "frame_ruby",
+            name = "Ruby Royale",
+            icon = "♦️",
+            cost = 30,
+            currency = CurrencyType.GEMS,
+            tier = 6,
+            borderColors = listOf(Color(0xFFB03A48), Color(0xFFFFD166), Color(0xFFB03A48)),
+            glowColor = Color(0xFFB03A48),
+            description = "Ruby and gold — the crown-jewel frame."
         )
     )
 
     val SHOP_BLADES = listOf(
-        BladeItem("blade_classic", "Classic Pointer", "🖐️", 0, CurrencyType.COINS, Color(0xFF00F0FF), Color(0xFF80D8FF), "Standard responsive pointer touch trail."),
+        BladeItem("blade_classic", "Classic Pointer", "🖐️", 0, CurrencyType.COINS, Color(0xFF2F6DB3), Color(0xFF80D8FF), "Standard responsive pointer touch trail."),
         BladeItem("blade_katana", "Shadow Katana", "🗡️", 350, CurrencyType.COINS, Color(0xFFFF1744), Color(0xFFFF8A80), "Swift sharp edge leaving sleek crimson cuts."),
-        BladeItem("blade_laser", "Laser Sabre", "⚔️", 500, CurrencyType.COINS, Color(0xFF00F0FF), Color(0xFF00B0FF), "Blinding sci-fi laser slicing energy beam."),
+        BladeItem("blade_laser", "Laser Sabre", "⚔️", 500, CurrencyType.COINS, Color(0xFF2F6DB3), Color(0xFF00B0FF), "Blinding sci-fi laser slicing energy beam."),
         BladeItem("blade_flame", "Flame Blaster", "🔥⚔️", 800, CurrencyType.COINS, Color(0xFFFF5722), Color(0xFFFFAB40), "Searing ignited blade that burns rising balloons."),
-        BladeItem("blade_frost", "Glacial Frostbite", "❄️🗡️", 1200, CurrencyType.COINS, Color(0xFF00E5FF), Color(0xFFB388FF), "Sub-zero chilled rapier with freezing trails."),
-        BladeItem("blade_wand", "Cosmic Magic Wand", "🪄", 1800, CurrencyType.COINS, Color(0xFF9D4EDD), Color(0xFFE040FB), "Arcane sorcerer's wand radiating mystical stardust."),
-        BladeItem("blade_cyber", "Cyber Scythe", "⚡", 2500, CurrencyType.COINS, Color(0xFF06D6A0), Color(0xFF00E676), "Futuristic hyper-tech neon scythe."),
+        BladeItem("blade_frost", "Glacial Frostbite", "❄️🗡️", 1200, CurrencyType.COINS, Color(0xFF4A90C4), Color(0xFFB388FF), "Sub-zero chilled rapier with freezing trails."),
+        BladeItem("blade_wand", "Cosmic Magic Wand", "🪄", 1800, CurrencyType.COINS, Color(0xFF9D4EDD), Color(0xFF7C4DBD), "Arcane sorcerer's wand radiating mystical stardust."),
+        BladeItem("blade_cyber", "Clockwork Scythe", "⚡", 2500, CurrencyType.COINS, Color(0xFFC99700), Color(0xFFF2B134), "Clockwork scythe of polished brass and amber."),
         BladeItem("blade_dragon", "Dragon Fang Blade", "🐉🗡️", 30, CurrencyType.GEMS, Color(0xFFFF9100), Color(0xFFFF3D00), "Forged from an elder dragon's tooth with ember bursts."),
         BladeItem("blade_celestial", "Celestial God Cleaver", "👑⚔️", 65, CurrencyType.GEMS, Color(0xFFFFD700), Color(0xFFFFF176), "Divine mythical weapon bathed in blinding gold."),
-        BladeItem("blade_void", "Void Reaper Edge", "🌑🗡️", 90, CurrencyType.GEMS, Color(0xFFE040FB), Color(0xFF3D0066), "Abyssal cosmic blade slicing through dark matter.")
+        BladeItem("blade_void", "Void Reaper Edge", "🌑🗡️", 90, CurrencyType.GEMS, Color(0xFF5E2A9C), Color(0xFF3D0066), "Abyssal cosmic blade slicing through dark matter."),
+        BladeItem("blade_ruby", "Ruby Edge", "♦️🗡️", 2000, CurrencyType.COINS, Color(0xFFC1272D), Color(0xFFF4A261), "A storybook blade with a ruby-cut edge."),
+        BladeItem("blade_grove", "Grove Leaf Blade", "🌿🗡️", 45, CurrencyType.GEMS, Color(0xFF2E9E6B), Color(0xFFA7F3D0), "Leaf-forged blade from the heart of the grove."),
+        BladeItem("blade_storybook", "Storybook Quill", "🪶", 75, CurrencyType.GEMS, Color(0xFFF6C453), Color(0xFFFFF3C4), "A golden quill that writes trails of light.")
     )
 
     val SHOP_FLAMES = listOf(
@@ -599,14 +905,14 @@ object GameConstants {
         ),
         FlameItem(
             id = "flame_cyber_plasma",
-            name = "Cyber Plasma Fire",
+            name = "Moonfire Aura",
             icon = "⚡🔥",
             cost = 900,
             currency = CurrencyType.COINS,
-            primaryColor = Color(0xFF00F0FF),
-            glowColor = Color(0xFF7000FF),
-            emberColor = Color(0xFF00E5FF),
-            description = "Electric neon blue-violet high temperature plasma arc.",
+            primaryColor = Color(0xFF7C4DBD),
+            glowColor = Color(0xFF9D8BD0),
+            emberColor = Color(0xFFE8E4F5),
+            description = "Moonlit violet aura trailing silver starlight embers.",
             critPopBonusPercent = 15
         ),
         FlameItem(
@@ -615,7 +921,7 @@ object GameConstants {
             icon = "👻🔥",
             cost = 1600,
             currency = CurrencyType.COINS,
-            primaryColor = Color(0xFF00FFCC),
+            primaryColor = Color(0xFF57B8A2),
             glowColor = Color(0xFF0077B6),
             emberColor = Color(0xFF90E0EF),
             description = "Ethereal cyan phantom flame burning with mystical energy.",
@@ -627,7 +933,7 @@ object GameConstants {
             icon = "🐉🔥",
             cost = 25,
             currency = CurrencyType.GEMS,
-            primaryColor = Color(0xFFFF0055),
+            primaryColor = Color(0xFFC1272D),
             glowColor = Color(0xFFFF5400),
             emberColor = Color(0xFFFFD000),
             description = "Ancient dragon fire that scorches balloons with radiant flares.",
@@ -656,13 +962,49 @@ object GameConstants {
             emberColor = Color(0xFFE0AAFF),
             description = "Cosmic dark matter flame pulling starlight into oblivion.",
             critPopBonusPercent = 50
+        ),
+        FlameItem(
+            id = "flame_lantern",
+            name = "Lantern Glow",
+            icon = "🏮",
+            cost = 700,
+            currency = CurrencyType.COINS,
+            primaryColor = Color(0xFFF6C453),
+            glowColor = Color(0xFFE76F51),
+            emberColor = Color(0xFFFFF3C4),
+            description = "A warm storybook lantern glow on every tap.",
+            critPopBonusPercent = 12
+        ),
+        FlameItem(
+            id = "flame_emerald",
+            name = "Emerald Hearth",
+            icon = "💚🔥",
+            cost = 2000,
+            currency = CurrencyType.COINS,
+            primaryColor = Color(0xFF0E7C61),
+            glowColor = Color(0xFF2E9E6B),
+            emberColor = Color(0xFFA7F3D0),
+            description = "Grove-heart emerald fire, calm and deep.",
+            critPopBonusPercent = 22
+        ),
+        FlameItem(
+            id = "flame_ruby",
+            name = "Ruby Hearth Fire",
+            icon = "♦️🔥",
+            cost = 40,
+            currency = CurrencyType.GEMS,
+            primaryColor = Color(0xFFC1272D),
+            glowColor = Color(0xFFB03A48),
+            emberColor = Color(0xFFFFD166),
+            description = "Ruby hearth fire with golden ember sparks.",
+            critPopBonusPercent = 30
         )
     )
 
     val SHOP_THEMES = listOf(
         ThemeConfig("theme_sunset_twilight", "Sunset Twilight", "🌅", 0, CurrencyType.COINS, listOf(Color(0xFF1B0B38), Color(0xFF330D52), Color(0xFF5A1466), Color(0xFF8C1D5D), Color(0xFFC43345), Color(0xFFE65100), Color(0xFFFFA726))),
         ThemeConfig("theme_obsidian", "Midnight Obsidian", "🖤", 0, CurrencyType.COINS, listOf(Color(0xFF000000), Color(0xFF07070C), Color(0xFF0F0F1A), Color(0xFF05050A))),
-        ThemeConfig("theme_neon_cyber", "Cyberpunk Neon", "⚡", 300, CurrencyType.COINS, listOf(Color(0xFF050508), Color(0xFF0A101C), Color(0xFF16091D), Color(0xFF020205))),
+        ThemeConfig("theme_neon_cyber", "Midnight Storybook", "⚡", 300, CurrencyType.COINS, listOf(Color(0xFF171233), Color(0xFF241A4D), Color(0xFF31235E), Color(0xFF4A3418))),
         ThemeConfig("theme_crimson_black", "Crimson Eclipse", "🔴", 400, CurrencyType.COINS, listOf(Color(0xFF0C0206), Color(0xFF1F040E), Color(0xFF2D0714), Color(0xFF080104))),
         ThemeConfig("theme_dark_galaxy", "Cosmic Galaxy", "🌌", 600, CurrencyType.COINS, listOf(Color(0xFF030008), Color(0xFF0C051B), Color(0xFF140827), Color(0xFF020006))),
         ThemeConfig("theme_golden_onyx", "Royal Golden Onyx", "👑", 1500, CurrencyType.COINS, listOf(Color(0xFF050401), Color(0xFF141006), Color(0xFF1A1303), Color(0xFF060501)))
@@ -695,7 +1037,7 @@ object GameConstants {
             currentLevel = 1,
             energyCostPerSec = 0f,
             cooldownSeconds = 20f,
-            accentColor = Color(0xFF00E5FF)
+            accentColor = Color(0xFF4A90C4)
         ),
         PlayerSkill(
             id = "skill_magnet",
@@ -709,7 +1051,7 @@ object GameConstants {
             currentLevel = 1,
             energyCostPerSec = 0f,
             cooldownSeconds = 24f,
-            accentColor = Color(0xFFFF2A75)
+            accentColor = Color(0xFFC93A5E)
         ),
         PlayerSkill(
             id = "skill_shockwave",
@@ -738,26 +1080,26 @@ object GameConstants {
     )
 
     val WORLD_ZONES = listOf(
-        WorldZone(1, "Neon Glade", "Stages 1 - 10", 1, 10, Color(0xFF38BDF8), Color(0xFFA78BFA), listOf(Color(0xFF05070F), Color(0xFF0A0E24), Color(0xFF1B2350)), "🌱"),
-        WorldZone(2, "Prism Peaks", "Stages 11 - 20", 11, 20, Color(0xFF9D4EDD), Color(0xFFFF2A75), listOf(Color(0xFF261042), Color(0xFF3F196A), Color(0xFF18072E)), "🔮"),
-        WorldZone(3, "Sunset Mesa", "Stages 21 - 30", 21, 30, Color(0xFFFF7A00), Color(0xFFFF007F), listOf(Color(0xFF3A1224), Color(0xFF5E1B38), Color(0xFF240A18)), "🌅"),
-        WorldZone(4, "Aqua Reef", "Stages 31 - 40", 31, 40, Color(0xFF00D2FF), Color(0xFF00F5D4), listOf(Color(0xFF0A2239), Color(0xFF124559), Color(0xFF051622)), "🐬"),
-        WorldZone(5, "Candy Wonderland", "Stages 41 - 50", 41, 50, Color(0xFFFF70A6), Color(0xFFFF9770), listOf(Color(0xFF3D1635), Color(0xFF5C1B4A), Color(0xFF260D21)), "🍭"),
-        WorldZone(6, "Cyber Metropolis", "Stages 51 - 60", 51, 60, Color(0xFF06D6A0), Color(0xFF00F0FF), listOf(Color(0xFF112233), Color(0xFF173852), Color(0xFF0B1622)), "⚡"),
-        WorldZone(7, "Volcano Caldera", "Stages 61 - 70", 61, 70, Color(0xFFFF3366), Color(0xFFFFB703), listOf(Color(0xFF3A0D15), Color(0xFF5A1420), Color(0xFF22050B)), "🌋"),
+        WorldZone(1, "Twilight Grove", "Stages 1 - 10", 1, 10, Color(0xFF2FA36B), Color(0xFFF6C453), listOf(Color(0xFF0E3B2E), Color(0xFF14532D), Color(0xFF08231B)), "🌱"),
+        WorldZone(2, "Prism Peaks", "Stages 11 - 20", 11, 20, Color(0xFF7C4DBD), Color(0xFFC2436B), listOf(Color(0xFF261042), Color(0xFF3F196A), Color(0xFF18072E)), "🔮"),
+        WorldZone(3, "Sunset Mesa", "Stages 21 - 30", 21, 30, Color(0xFFFF7A00), Color(0xFFB03060), listOf(Color(0xFF3A1224), Color(0xFF5E1B38), Color(0xFF240A18)), "🌅"),
+        WorldZone(4, "Aqua Reef", "Stages 31 - 40", 31, 40, Color(0xFF2E86AB), Color(0xFF35B5A0), listOf(Color(0xFF0A2239), Color(0xFF124559), Color(0xFF051622)), "🐬"),
+        WorldZone(5, "Candy Wonderland", "Stages 41 - 50", 41, 50, Color(0xFFD96C8A), Color(0xFFFF9770), listOf(Color(0xFF3D1635), Color(0xFF5C1B4A), Color(0xFF260D21)), "🍭"),
+        WorldZone(6, "Clockwork City", "Stages 51 - 60", 51, 60, Color(0xFFC99700), Color(0xFFF2B134), listOf(Color(0xFF2A2118), Color(0xFF3D2C1A), Color(0xFF1A130C)), "⚙️"),
+        WorldZone(7, "Volcano Caldera", "Stages 61 - 70", 61, 70, Color(0xFFB23A48), Color(0xFFFFB703), listOf(Color(0xFF3A0D15), Color(0xFF5A1420), Color(0xFF22050B)), "🌋"),
         WorldZone(8, "Starry Cosmos", "Stages 71 - 80", 71, 80, Color(0xFF7209B7), Color(0xFF4CC9F0), listOf(Color(0xFF160A2C), Color(0xFF2B1354), Color(0xFF0E051C)), "🌌"),
         WorldZone(9, "Golden Citadel", "Stages 81 - 90", 81, 90, Color(0xFFFFD700), Color(0xFFFFA000), listOf(Color(0xFF382608), Color(0xFF593C0C), Color(0xFF241804)), "🏰"),
         WorldZone(10, "Frozen Tundra", "Stages 91 - 100", 91, 100, Color(0xFFA2D2FF), Color(0xFFBDE0FE), listOf(Color(0xFF102A43), Color(0xFF1A446C), Color(0xFF0B1D2E)), "❄️"),
         WorldZone(11, "Sakura Sanctuary", "Stages 101 - 110", 101, 110, Color(0xFFFF9EAA), Color(0xFFFFD1DC), listOf(Color(0xFF3B152B), Color(0xFF5A2041), Color(0xFF240D1B)), "🌸"),
-        WorldZone(12, "Thunder Spire", "Stages 111 - 120", 111, 120, Color(0xFFF72585), Color(0xFF4361EE), listOf(Color(0xFF1B1B3A), Color(0xFF2F2F64), Color(0xFF101026)), "🌩️"),
+        WorldZone(12, "Thunder Spire", "Stages 111 - 120", 111, 120, Color(0xFFC2436B), Color(0xFF4361EE), listOf(Color(0xFF1B1B3A), Color(0xFF2F2F64), Color(0xFF101026)), "🌩️"),
         WorldZone(13, "Emerald Jungle", "Stages 121 - 130", 121, 130, Color(0xFF38B000), Color(0xFF70E000), listOf(Color(0xFF0B2E13), Color(0xFF144D21), Color(0xFF061C0B)), "🌴"),
-        WorldZone(14, "Cosmic Void", "Stages 131 - 140", 131, 140, Color(0xFFB5179E), Color(0xFF7209B7), listOf(Color(0xFF220538), Color(0xFF3B0861), Color(0xFF130221)), "🪐"),
-        WorldZone(15, "Celestial Ascension", "Stages 141 - 150", 141, 150, Color(0xFFFFD700), Color(0xFF00FFFF), listOf(Color(0xFF29104D), Color(0xFF481A85), Color(0xFF1A0A33)), "👑"),
+        WorldZone(14, "Cosmic Void", "Stages 131 - 140", 131, 140, Color(0xFF8E3A8F), Color(0xFF7209B7), listOf(Color(0xFF220538), Color(0xFF3B0861), Color(0xFF130221)), "🪐"),
+        WorldZone(15, "Celestial Ascension", "Stages 141 - 150", 141, 150, Color(0xFFFFD700), Color(0xFFF6C453), listOf(Color(0xFF29104D), Color(0xFF481A85), Color(0xFF1A0A33)), "👑"),
         WorldZone(16, "Molten Core", "Stages 151 - 160", 151, 160, Color(0xFFFF5722), Color(0xFFFF9100), listOf(Color(0xFF350B05), Color(0xFF541208), Color(0xFF200703)), "☄️"),
-        WorldZone(17, "Neon Abyss", "Stages 161 - 170", 161, 170, Color(0xFF38BDF8), Color(0xFFA78BFA), listOf(Color(0xFF05070F), Color(0xFF0A0E24), Color(0xFF3B2E6E)), "🧬"),
+        WorldZone(17, "Midnight Abyss", "Stages 161 - 170", 161, 170, Color(0xFF6C5FBF), Color(0xFFB8A9D9), listOf(Color(0xFF1B1040), Color(0xFF2D1B69), Color(0xFF120A2E)), "🌌"),
         WorldZone(18, "Olympus Gates", "Stages 171 - 180", 171, 180, Color(0xFFFFD700), Color(0xFFFFF176), listOf(Color(0xFF2C2204), Color(0xFF473607), Color(0xFF191302)), "🏛️"),
         WorldZone(19, "Dragon's Lair", "Stages 181 - 190", 181, 190, Color(0xFFFF1744), Color(0xFFFF9100), listOf(Color(0xFF3E0812), Color(0xFF5D0D1B), Color(0xFF25050B)), "🐲"),
-        WorldZone(20, "Grand Pantheon", "Stages 191 - 200", 191, 200, Color(0xFFFF007F), Color(0xFFFFD700), listOf(Color(0xFF240438), Color(0xFF420866), Color(0xFF150221)), "🏆")
+        WorldZone(20, "Grand Pantheon", "Stages 191 - 200", 191, 200, Color(0xFFB03060), Color(0xFFFFD700), listOf(Color(0xFF240438), Color(0xFF420866), Color(0xFF150221)), "🏆")
     )
 
     val CAMPAIGN_LEVELS: List<CampaignLevel> = (1..200).map { lvl ->
@@ -828,11 +1170,11 @@ object GameConstants {
     )
 
     val WHEEL_SEGMENTS = listOf(
-        WheelSegment("250 🪙", 250, 0, Color(0xFFFF2A75)),
+        WheelSegment("250 🪙", 250, 0, Color(0xFFC93A5E)),
         WheelSegment("500 🪙", 500, 0, Color(0xFF9D4EDD)),
-        WheelSegment("10 💎", 0, 10, Color(0xFF00F0FF)),
+        WheelSegment("10 💎", 0, 10, Color(0xFF2F6DB3)),
         WheelSegment("750 🪙", 750, 0, Color(0xFFFFB703)),
-        WheelSegment("1,500 🪙", 1500, 0, Color(0xFF06D6A0)),
+        WheelSegment("1,500 🪙", 1500, 0, Color(0xFF2FA36B)),
         WheelSegment("25 💎", 0, 25, Color(0xFFFF758C))
     )
 

@@ -77,7 +77,7 @@ fun WorldMapZoneOverviewDialog(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .fillMaxSize(0.92f)
-                .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = Color(0xFF00F0FF))
+                .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = Color(0xFF2F6DB3))
                 .clip(RoundedCornerShape(24.dp))
                 .background(
                     Brush.verticalGradient(
@@ -107,7 +107,7 @@ fun WorldMapZoneOverviewDialog(
                             Icon(
                                 imageVector = Icons.Default.Place,
                                 contentDescription = "World Map",
-                                tint = Color(0xFF00F0FF),
+                                tint = Color(0xFF2F6DB3),
                                 modifier = Modifier.size(22.dp)
                             )
                             Text(

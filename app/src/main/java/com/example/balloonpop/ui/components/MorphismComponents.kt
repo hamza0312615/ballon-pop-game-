@@ -46,7 +46,7 @@ fun GlassmorphismButton(
     modifier: Modifier = Modifier,
     icon: String? = null,
     badge: String? = null,
-    glowColor: Color = Color(0xFF00E5FF),
+    glowColor: Color = Color(0xFF4A90C4),
     bgGradient: List<Color> = listOf(Color(0x33FFFFFF), Color(0x10FFFFFF)),
     borderGradient: List<Color> = listOf(Color(0x80FFFFFF), Color(0x20FFFFFF)),
     textColor: Color = Color.White,
@@ -330,7 +330,7 @@ fun MorphismPillTab(
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    activeColor: Color = Color(0xFF00E5FF),
+    activeColor: Color = Color(0xFF4A90C4),
     activeGradient: List<Color> = listOf(Color(0xFF0C2B40), Color(0xFF071926)),
     testTag: String = "tab"
 ) {
@@ -395,7 +395,7 @@ fun MorphismPillTab(
 @Composable
 fun LevelDiveOverlay(
     level: Int,
-    zoneName: String = "Neon Glade",
+    zoneName: String = "Twilight Grove",
     onDiveFinished: () -> Unit
 ) {
     var diveProgress by remember { mutableFloatStateOf(0f) }
@@ -443,7 +443,7 @@ fun LevelDiveOverlay(
                 )
 
                 drawLine(
-                    color = if (i % 2 == 0) Color(0x6600E5FF) else Color(0x66FFD700),
+                    color = if (i % 2 == 0) Color(0x664A90C4) else Color(0x66FFD700),
                     start = start,
                     end = end,
                     strokeWidth = 3f + diveProgress * 6f

@@ -57,6 +57,8 @@ data class UiState(
     val unlockedFrames: Set<String> = setOf("frame_minimal"),
     val unlockedBlades: Set<String> = setOf("blade_classic"),
     val unlockedFlames: Set<String> = setOf("flame_ember"),
+    val unlockedBalloonSkins: Set<String> = setOf("balloon_classic"),
+    val equippedBalloonSkinId: String = "balloon_classic",
     val unlockedThemes: Set<String> = setOf("theme_sunset_twilight", "theme_obsidian"),
     val claimedStarMilestones: Set<Int> = emptySet(),
     // Skills State
@@ -196,6 +198,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var hammerSlideTimeRemaining = 0f
     private var stageBoosterUsesCount = 0
     private var stageSkillUsesCount = 0
+    // Pass 5 (audit L12): playOnRevive is capped at once per stage attempt.
+    private var stageReviveUsesCount = 0
     private var uiSyncAccumulator = 0f
     private var sessionBaselineHighScore = 0
 
@@ -246,6 +250,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 unlockedFrames = repository.getUnlockedFrames(),
                 unlockedBlades = repository.getUnlockedBlades(),
                 unlockedFlames = repository.getUnlockedFlames(),
+                unlockedBalloonSkins = repository.getUnlockedBalloonSkins(),
+                equippedBalloonSkinId = repository.getEquippedBalloonSkin(),
                 unlockedThemes = repository.getUnlockedThemes(),
                 claimedStarMilestones = repository.getClaimedStarMilestones(),
                 equippedSkillId = repository.getEquippedSkill(),
@@ -404,6 +410,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 unlockedHammers = setOf("hammer_wood"),
                 unlockedFrames = setOf("frame_minimal"),
                 unlockedBlades = setOf("blade_classic"),
+                unlockedBalloonSkins = setOf("balloon_classic"),
+                equippedBalloonSkinId = "balloon_classic",
                 unlockedThemes = setOf("theme_obsidian"),
                 completedLevels = emptyMap(),
                 lifetimePops = 0,
@@ -411,6 +419,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 lifetimeMaxCombo = 1,
                 wheelSpins = 0,
                 claimedQuests = emptySet(),
+                claimedAchievements = emptySet(),
                 isSettingsOpen = false,
                 bannerMessage = "All Game Data Reset Successfully! 🔄"
             )
@@ -418,6 +427,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun navigateTo(screen: CurrentScreen) {
+        // Pass 5 (audit L4): leaving gameplay to a non-game screen must end
+        // the run cleanly. Previously the stage timer kept running
+        // off-screen and fired gameOver() behind the menus — paying fail
+        // rewards and writing an endless best entry for a run the player
+        // never finished. Endless runs now finalize (saving their best) on
+        // exit; campaign/custom runs are simply abandoned with no payout.
+        val state = _uiState.value
+        if (state.currentScreen == CurrentScreen.GAMEPLAY &&
+            screen != CurrentScreen.GAMEPLAY &&
+            (state.gameState == GameState.PLAYING || state.gameState == GameState.PAUSED) &&
+            state.gameMode != GameMode.CAMPAIGN
+        ) {
+            // PLAYING covers direct navigation away; PAUSED covers the
+            // pause-menu quit (timer already stopped, run still live).
+            finishEndlessRun(saveBest = true)
+        }
         if (screen == CurrentScreen.HOME) {
             sound.playDialogClose()
         } else {
@@ -584,6 +609,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(bannerMessage = null) }
     }
 
+    /** Pass 5: small helper for the claim-guard messages (the codebase
+     *  otherwise sets bannerMessage inline). */
+    private fun showBannerMessage(message: String) {
+        _uiState.update { it.copy(bannerMessage = message) }
+    }
+
     fun rewardAdCoinsAndGems(coins: Int = 250, gems: Int = 10) {
         val state = _uiState.value
         val newCoins = state.coins + coins
@@ -700,6 +731,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Star Road Milestones ---
     fun claimStarMilestone(milestone: StarMilestoneReward) {
+        // Pass 5 (audit L8): verify the player actually EARNED the stars —
+        // previously any claim paid out regardless of progress.
+        val totalStars = _uiState.value.completedLevels.values.sum()
+        if (totalStars < milestone.starsRequired) {
+            showBannerMessage("⭐ Earn ${milestone.starsRequired} total stars to claim ${milestone.bonusTitle}!")
+            return
+        }
         val claimed = repository.getClaimedStarMilestones()
         if (claimed.contains(milestone.starsRequired)) return
 
@@ -721,29 +759,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // --- Loss Aversion: Second Chance Revive ---
-    fun reviveSession() {
-        if (_uiState.value.gameState != GameState.GAMEOVER) return
-        val currentCoins = _uiState.value.coins
-        val reviveCost = 50
-        val newCoins = if (currentCoins >= reviveCost) currentCoins - reviveCost else currentCoins
-        if (currentCoins >= reviveCost) {
-            repository.setCoins(newCoins)
-        }
-        sound.playStageClear()
-        triggerVibration(50L)
-        _uiState.update {
-            it.copy(
-                gameState = GameState.PLAYING,
-                timeLeft = it.timeLeft + 12, // +12 seconds bonus
-                missedCount = (it.missedCount - 2).coerceAtLeast(0), // forgives 2 missed balloons
-                lives = 2,
-                coins = newCoins,
-                bannerMessage = "❤️ SECOND CHANCE REVIVE! +12s & 2 Misses Restored!"
-            )
-        }
-        startTimer()
-    }
+    // Pass 5 (audit L12): the dead free `reviveSession()` was deleted — it was
+    // never called, and its logic would have revived for free when the player
+    // could not afford the cost. The single live revive is playOnRevive()
+    // (100 coins / +15s), capped once per stage attempt.
 
     fun buyTheme(theme: ThemeConfig) {
         val state = _uiState.value
@@ -764,6 +783,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     equippedThemeId = theme.id
                 )
             }
+        } else if (theme.currency == CurrencyType.GEMS && state.gems >= theme.cost) {
+            // Pass 5 (audit §6): the GEMS branch was missing — gem-priced
+            // themes could never be bought. Mirrors the COINS branch.
+            val newGems = state.gems - theme.cost
+            repository.setGems(newGems)
+            repository.unlockTheme(theme.id)
+            repository.setEquippedTheme(theme.id)
+            sound.playCoin()
+            _uiState.update {
+                it.copy(
+                    gems = newGems,
+                    unlockedThemes = repository.getUnlockedThemes(),
+                    equippedThemeId = theme.id
+                )
+            }
         }
     }
 
@@ -771,7 +805,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun startCampaignStage(levelNum: Int) {
         val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(levelNum - 1)
             ?: GameConstants.CAMPAIGN_LEVELS.first()
-        val zoneNum = ((lvl.level - 1) / 5) + 1
+        // Pass 5 (audit L13): zones hold 10 stages, not 5 — the old /5 put
+        // stage 41+ in nonexistent zones up to 41 and mismatched the music
+        // theme and ambient particles against the map's zone art.
+        val zoneNum = ((lvl.level - 1) / 10) + 1
         val isBoss = lvl.isBossStage || lvl.level % 10 == 0
 
         musicPlayer.setThemeForZone(zoneNum, isBoss)
@@ -878,6 +915,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun playOnRevive(withCoins: Boolean = false) {
+        // Pass 5 (audit L12): one revive per stage attempt — previously the
+        // 100-coin/+15s revive could be farmed without limit on a rich save.
+        if (stageReviveUsesCount >= 1) {
+            sound.playPurchaseFail()
+            _uiState.update { it.copy(bannerMessage = "Revive already used this attempt!") }
+            return
+        }
         if (withCoins) {
             val cost = 100
             val cur = _uiState.value.coins
@@ -892,6 +936,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 return
             }
         }
+        stageReviveUsesCount++
         sound.playRainbowBlast()
         musicPlayer.resume()
         _uiState.update {
@@ -939,11 +984,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private fun initAmbientsForZone(zoneNum: Int) {
         synchronized(ambients) {
             ambients.clear()
-            val ambientType = when ((zoneNum - 1) % 5) {
+            // Pass 5 (audit L13): 10-based zone indexing to match the
+            // 10-stages-per-zone structure (was % 5, which mismatched the
+            // zone's music theme and map art).
+            val ambientType = when ((zoneNum - 1) % 10) {
                 0 -> AmbientType.CHERRY_PETAL
                 1 -> AmbientType.EMBER
                 2 -> AmbientType.BUBBLE
                 3 -> AmbientType.STAR
+                4 -> AmbientType.GOLD_SPARKLE
+                5 -> AmbientType.SNOWFLAKE
+                6 -> AmbientType.CLOUD
+                7 -> AmbientType.CHERRY_PETAL
+                8 -> AmbientType.EMBER
                 else -> AmbientType.GOLD_SPARKLE
             }
             val count = when (_uiState.value.graphicsQuality) {
@@ -966,6 +1019,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                             AmbientType.BUBBLE -> Color(0x8038BDF8)
                             AmbientType.STAR -> Color(0xCCFFFFFF)
                             AmbientType.GOLD_SPARKLE -> Color(0xFFFFD700)
+                            AmbientType.SNOWFLAKE -> Color(0xFFBDE0FE)
+                            AmbientType.CLOUD -> Color(0xCCFFFFFF)
                             else -> Color.White
                         },
                         type = ambientType
@@ -1005,6 +1060,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         hammerSlideTimeRemaining = 0f
         stageBoosterUsesCount = 0
         stageSkillUsesCount = 0
+        stageReviveUsesCount = 0
         uiSyncAccumulator = 0f
         lastPopTime = 0L
         sessionBaselineHighScore = repository.getLifetimeHighScore()
@@ -1062,7 +1118,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun checkGameEndOnTimer() {
         val state = _uiState.value
-        if (state.gameMode == GameMode.CAMPAIGN) {
+        // Pass 5 (audit L2): a custom challenge (CAMPAIGN mode, currentLevel
+        // 0) must never reach stageClear() — it ends as a plain game over.
+        if (state.gameMode == GameMode.CAMPAIGN && state.currentLevel > 0) {
             if (state.poppedCount >= state.targetPops) {
                 stageClear()
             } else {
@@ -1345,7 +1403,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 else -> 94      // 6% bombs
             }
             when {
-                roll < 22 -> BalloonType.STANDARD
+                roll < 18 -> BalloonType.STANDARD
+                // Pass 5 (audit L7): HEART and MULTIPLIER were fully wired
+                // (pop behaviour, HUD, canvas) but could never spawn in a
+                // campaign stage. They now take a rare ~2% slice each,
+                // carved from the STANDARD band so every other spawn rate
+                // (including FREEZE and BOMB) is unchanged at all levels.
+                roll < 20 -> BalloonType.HEART
+                roll < 22 -> BalloonType.MULTIPLIER
                 roll < 32 -> BalloonType.GOLDEN
                 roll < 39 -> BalloonType.RAINBOW
                 roll < 50 -> BalloonType.FAST_ROCKET
@@ -1369,22 +1434,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else -> 4.8f + (lvl * 0.05f).coerceAtMost(4.5f) + Random.nextFloat() * 2.8f
         }
 
+        // Pass 5: standard balloons are painted by the equipped balloon
+        // skin (palette + face set + pattern + gloss) instead of the old
+        // global palette — skins are the game's most visible cosmetic.
+        val skin = equippedBalloonSkin()
         val color = when (type) {
             BalloonType.GOLDEN -> Color(0xFFFFD700)
             BalloonType.BOMB -> Color(0xFF222226)
-            BalloonType.FREEZE -> Color(0xFF00E5FF)
-            BalloonType.HEART -> Color(0xFFFF2A75)
+            BalloonType.FREEZE -> Color(0xFF38BDF8)
+            BalloonType.HEART -> Color(0xFFE5484D)
             BalloonType.MULTIPLIER -> Color(0xFFFFB703)
-            BalloonType.RAINBOW -> Color(0xFFE040FB)
+            BalloonType.RAINBOW -> Color(0xFF7C4DBD)
             BalloonType.FAST_ROCKET -> Color(0xFFFF0055)
-            BalloonType.SPLITTER -> Color(0xFF00F0FF)
+            BalloonType.SPLITTER -> Color(0xFF2F6DB3)
             BalloonType.SHIELDED -> Color(0xFF94A3B8)
             BalloonType.MYSTERY_GIFT -> Color(0xFFEC4899)
             BalloonType.GHOST_PHANTOM -> Color(0xFFE2E8F0)
             BalloonType.GOLDEN_PIGGY -> Color(0xFFF59E0B)
             BalloonType.ELECTRIC_STORM -> Color(0xFF38BDF8)
             BalloonType.MEGA_BOSS -> Color(0xFF7C3AED)
-            else -> GameConstants.BALLOON_PALETTE.random()
+            else -> skin.palette.random()
         }
 
         val shapeStyle = when (type) {
@@ -1395,7 +1464,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             BalloonType.MULTIPLIER -> BalloonShapeStyle.STAR_SHAPE
             BalloonType.RAINBOW -> listOf(BalloonShapeStyle.COOL, BalloonShapeStyle.FUNNY, BalloonShapeStyle.CAT_FACE).random()
             BalloonType.MEGA_BOSS -> BalloonShapeStyle.ANGRY
-            else -> BalloonShapeStyle.values().random()
+            else -> skin.faceStyles.random()
         }
 
         val maxHp = when (type) {
@@ -1420,7 +1489,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         wobblePhase = Random.nextFloat() * 6.28f,
                         shapeStyle = shapeStyle,
                         hp = maxHp,
-                        maxHp = maxHp
+                        maxHp = maxHp,
+                        pattern = if (type == BalloonType.STANDARD) skin.pattern else BalloonPattern.SOLID,
+                        glossStrength = if (type == BalloonType.STANDARD) skin.glossStrength else 1.0f
                     )
                 )
             }
@@ -1537,8 +1608,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 createParticleBurst(b.x, b.y, Color(0xFFFFD700), count = 8)
                 _uiState.update { it.copy(poppedCount = it.poppedCount + 1, score = it.score + 50) }
             } else {
-                addFloatingText(b.x, b.y - 15f, "HIT! 🛡️", Color(0xFF00E5FF))
-                createSparks(b.x, b.y, Color(0xFF00E5FF), count = 8)
+                addFloatingText(b.x, b.y - 15f, "HIT! 🛡️", Color(0xFF4A90C4))
+                createSparks(b.x, b.y, Color(0xFF4A90C4), count = 8)
             }
             return
         }
@@ -1603,7 +1674,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         when (b.type) {
             BalloonType.BOMB -> {
                 sound.playBomb()
-                addFloatingText(b.x, b.y, "BOMB! 💥", Color(0xFFFF2A75))
+                addFloatingText(b.x, b.y, "BOMB! 💥", Color(0xFFC93A5E))
                 internalSkillEnergy = (internalSkillEnergy - 20f).coerceAtLeast(0f)
                 if (_uiState.value.gameMode != GameMode.ZEN) {
                     val remainingLives = _uiState.value.lives - 1
@@ -1618,7 +1689,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 sound.playFreeze()
                 freezeTimeRemaining = 4.0f
                 _uiState.update { it.copy(isFreezeActive = true) }
-                addFloatingText(b.x, b.y, "FREEZE! ❄️", Color(0xFF00E5FF))
+                addFloatingText(b.x, b.y, "FREEZE! ❄️", Color(0xFF4A90C4))
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.MULTIPLIER -> {
@@ -1633,9 +1704,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val currentLives = _uiState.value.lives
                 if (currentLives < 3) {
                     _uiState.update { it.copy(lives = currentLives + 1) }
-                    addFloatingText(b.x, b.y, "+1 LIFE ❤️", Color(0xFFFF2A75))
+                    addFloatingText(b.x, b.y, "+1 LIFE ❤️", Color(0xFFC93A5E))
                 } else {
-                    addFloatingText(b.x, b.y, "+10 ❤️", Color(0xFFFF2A75))
+                    addFloatingText(b.x, b.y, "+10 ❤️", Color(0xFFC93A5E))
                 }
                 applyScoreAndPop(b, comboMult)
             }
@@ -1651,7 +1722,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 sound.playRainbowPop()
                 val newCoins = _uiState.value.coins + 2
                 repository.setCoins(newCoins)
-                addFloatingText(b.x, b.y, "+30 🌈 +2🪙", Color(0xFFE040FB))
+                addFloatingText(b.x, b.y, "+30 🌈 +2🪙", Color(0xFF7C4DBD))
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.FAST_ROCKET -> {
@@ -1663,7 +1734,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             BalloonType.SPLITTER -> {
                 sound.playPop(b.radius)
-                addFloatingText(b.x, b.y, "SPLIT! 🫧", Color(0xFF00F0FF))
+                addFloatingText(b.x, b.y, "SPLIT! 🫧", Color(0xFF2F6DB3))
                 // Spawn 2 mini-balloons
                 synchronized(balloons) {
                     if (balloons.size < 26) {
@@ -1721,7 +1792,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     else -> {
                         freezeTimeRemaining = 3.5f
                         _uiState.update { it.copy(isFreezeActive = true) }
-                        addFloatingText(b.x, b.y, "GIFT: BLIZZARD! ❄️", Color(0xFF00E5FF))
+                        addFloatingText(b.x, b.y, "GIFT: BLIZZARD! ❄️", Color(0xFF4A90C4))
                     }
                 }
                 applyScoreAndPop(b, comboMult)
@@ -1807,7 +1878,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val updatedScore = maxOf(0, current.score + earnedScore)
             val updatedPopped = maxOf(current.poppedCount + 1, current.poppedCount)
             repository.updateLifetimeHighScore(updatedScore)
-            if (current.gameMode == GameMode.CAMPAIGN && updatedPopped >= current.targetPops) {
+            // Pass 5 (audit L2): currentLevel > 0 keeps custom challenges
+            // (CAMPAIGN mode, level 0) out of the campaign clear path.
+            if (current.gameMode == GameMode.CAMPAIGN && current.currentLevel > 0 && updatedPopped >= current.targetPops) {
                 shouldClearStage = true
             }
             current.copy(
@@ -1947,7 +2020,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         id = ++lightningIdCounter,
                         points = points,
                         alpha = 1.0f,
-                        color = Color(0xFF00F0FF),
+                        color = Color(0xFF2F6DB3),
                         branchPoints = branches
                     )
                 )
@@ -1979,6 +2052,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
+        // 1b. Pass 5 (audit L14): boosters that act on on-screen balloons
+        //     must not consume a charge when there is nothing to act on
+        //     (e.g. Thunder with an empty screen burned the charge, played
+        //     the bolt and silently did nothing).
+        val needsTargets = booster.id == BoosterId.THUNDER ||
+            booster.id == BoosterId.HAMMER ||
+            booster.id == BoosterId.VORTEX
+        if (needsTargets) {
+            val hasTargets = synchronized(balloons) { balloons.any { !it.popped } }
+            if (!hasTargets) {
+                sound.playPurchaseFail()
+                _uiState.update { it.copy(bannerMessage = "No balloons on screen for ${booster.name.replace('_', ' ')}!") }
+                return
+            }
+        }
+
         // 2. Persistent inventory: consume exactly ONE persisted charge.
         //    Counts live in the repository (SharedPreferences), so a charge
         //    used here is gone everywhere — and remaining charges stay fully
@@ -1989,8 +2078,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val currentCharges = counts[booster.id] ?: 3
 
         if (currentCharges > 0) {
+            // Pass 5 (audit L14): if the repository refuses the consume
+            // (count race), the booster must NOT fire — previously its
+            // effects ran anyway, granting a free use.
             if (repository.consumeBooster(booster.id)) {
                 counts[booster.id] = repository.getBoosterCount(booster.id)
+            } else {
+                sound.playPurchaseFail()
+                return
             }
         } else {
             // Charges depleted: requires BoosterPrices.DEPLETED_USE_COIN_COST coins to activate!
@@ -2045,7 +2140,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 for (b in bombTargets) {
                     createLightningBolt(startX = b.x + (Random.nextFloat() * 80f - 40f), startY = 0f, endX = b.x, endY = b.y)
                     b.popped = true
-                    createParticleBurst(b.x, b.y, Color(0xFF00F0FF), count = 16)
+                    createParticleBurst(b.x, b.y, Color(0xFF2F6DB3), count = 16)
                     createShockwave(b.x, b.y, Color(0xFF38BDF8), maxRadius = 180f)
                     addFloatingText(b.x, b.y, "⚡ DEFUSED! +50🪙", Color(0xFFFFD700))
                     val newCoins = _uiState.value.coins + 50
@@ -2059,8 +2154,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     b.popped = true
                     applyScoreAndPop(b, comboMultiplier = 3)
                     createParticleBurst(b.x, b.y, Color(0xFF38BDF8), count = 14)
-                    createShockwave(b.x, b.y, Color(0xFF00E5FF), maxRadius = 120f)
-                    addFloatingText(b.x, b.y, "+120 ⚡ THUNDER!", Color(0xFF00F0FF))
+                    createShockwave(b.x, b.y, Color(0xFF4A90C4), maxRadius = 120f)
+                    addFloatingText(b.x, b.y, "+120 ⚡ THUNDER!", Color(0xFF2F6DB3))
                 }
 
                 if (bombTargets.isEmpty() && chosenOthers.isEmpty()) {
@@ -2095,7 +2190,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     triggerCandyPraise("COLOR CRUSH! 🌈")
                 } else {
-                    addFloatingText(canvasWidth / 2f, canvasHeight / 2f, "🌈 RAINBOW BURST!", Color(0xFFFF007F))
+                    addFloatingText(canvasWidth / 2f, canvasHeight / 2f, "🌈 RAINBOW BURST!", Color(0xFFB03060))
                 }
             }
 
@@ -2134,7 +2229,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 val cx = canvasWidth / 2f
                 val cy = canvasHeight / 2f
-                createShockwave(cx, cy, Color(0xFF00E5FF), maxRadius = 280f)
+                createShockwave(cx, cy, Color(0xFF4A90C4), maxRadius = 280f)
                 addFloatingText(cx, cy, "❄️ TIME FROZEN!", Color(0xFF38BDF8))
                 triggerCandyPraise("ICE COLD! ❄️")
             }
@@ -2150,18 +2245,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         bannerMessage = "🌀 TORNADO VORTEX ACTIVE!"
                     )
                 }
-                createShockwave(cx, cy, Color(0xFF06D6A0), maxRadius = 300f)
+                createShockwave(cx, cy, Color(0xFF2FA36B), maxRadius = 300f)
 
                 synchronized(balloons) {
                     for (b in balloons) {
                         if (!b.popped && b.type != BalloonType.BOMB) {
                             b.popped = true
                             applyScoreAndPop(b, comboMultiplier = 5)
-                            createParticleBurst(b.x, b.y, Color(0xFF06D6A0), count = 10)
+                            createParticleBurst(b.x, b.y, Color(0xFF2FA36B), count = 10)
                         }
                     }
                 }
-                addFloatingText(cx, cy, "🌀 VORTEX! +400", Color(0xFF06D6A0))
+                addFloatingText(cx, cy, "🌀 VORTEX! +400", Color(0xFF2FA36B))
                 triggerCandyPraise("VORTEX! 🌀")
             }
         }
@@ -2202,14 +2297,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun stageClear() {
+        // Pass 5 (audit L2): hard guard — custom challenges run in CAMPAIGN
+        // mode with currentLevel 0 and must never touch campaign progress
+        // or rewards. (The fallback level lookup previously paid stage-1
+        // rewards for a custom run and even wrote stage-1 stars.)
+        if (_uiState.value.currentLevel <= 0) return
+
         timerJob?.cancel()
 
         val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(_uiState.value.currentLevel - 1)
             ?: GameConstants.CAMPAIGN_LEVELS.first()
 
         val currentScore = _uiState.value.score
-        // Ensure final score is non-zero, monotonic, and reflects actual pops
-        val finalScore = maxOf(currentScore, (_uiState.value.poppedCount * 35) + (lvl.level * 25))
+        // Pass 5 (audit L10): the old score floor
+        // (maxOf(score, poppedCount * 35 + level * 25)) is removed — score
+        // and stars now reflect actual play, not a guaranteed minimum.
+        val finalScore = currentScore
         repository.updateLifetimeHighScore(finalScore)
 
         val isHighScore = _uiState.value.isNewHighScoreAchieved || (finalScore > sessionBaselineHighScore && sessionBaselineHighScore > 0)
@@ -2227,8 +2330,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         repository.setLevelStars(lvl.level, stars)
 
-        val newCoins = _uiState.value.coins + lvl.rewardCoins
-        val newGems = _uiState.value.gems + lvl.rewardGems
+        // Pass 5 (audit L10): replay taper — the FIRST clear pays the full
+        // stage reward; replays of an already-cleared stage pay 25%, so
+        // re-running stage 1 is no longer the game's best economy.
+        val isReplay = _uiState.value.completedLevels.containsKey(lvl.level)
+        val paidCoins = if (isReplay) (lvl.rewardCoins * 0.25f).toInt() else lvl.rewardCoins
+        val paidGems = if (isReplay) (lvl.rewardGems * 0.25f).toInt() else lvl.rewardGems
+
+        val newCoins = _uiState.value.coins + paidCoins
+        val newGems = _uiState.value.gems + paidGems
         repository.setCoins(newCoins)
         repository.setGems(newGems)
 
@@ -2242,8 +2352,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 coins = newCoins,
                 gems = newGems,
                 completedLevels = updatedCompletedLevels,
-                earnedCoinsThisSession = lvl.rewardCoins,
-                earnedGemsThisSession = lvl.rewardGems,
+                earnedCoinsThisSession = paidCoins,
+                earnedGemsThisSession = paidGems,
                 earnedStarsThisLevel = stars,
                 lifetimeHighScore = repository.getLifetimeHighScore(),
                 isNewHighScoreAchieved = isHighScore,
@@ -2263,19 +2373,45 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val currentScore = _uiState.value.score
         repository.updateLifetimeHighScore(currentScore)
-        repository.updateEndlessHighScore(_uiState.value.gameMode.name, currentScore)
-
-        val earnedCoins = maxOf(5, currentScore / 20)
-        val newCoins = _uiState.value.coins + earnedCoins
-        repository.setCoins(newCoins)
+        // Pass 5 (audit L4): only genuine endless modes record an endless
+        // best — the old code also wrote a junk "CAMPAIGN" entry on every
+        // campaign fail. And the fail consolation coins (max(5, score/20))
+        // are gone: failing a stage pays nothing; coins come from clears.
+        if (_uiState.value.gameMode != GameMode.CAMPAIGN) {
+            repository.updateEndlessHighScore(_uiState.value.gameMode.name, currentScore)
+        }
         repository.updateLifetimeMaxCombo(_uiState.value.maxCombo)
 
         _uiState.update {
             it.copy(
                 gameState = GameState.GAMEOVER,
                 gameOverReason = reason,
-                coins = newCoins,
-                earnedCoinsThisSession = earnedCoins,
+                earnedCoinsThisSession = 0,
+                lifetimeHighScore = repository.getLifetimeHighScore(),
+                lifetimeMaxCombo = repository.getLifetimeMaxCombo()
+            )
+        }
+    }
+
+    /**
+     * Pass 5 (audit L3): finalize an endless run WITHOUT a game over — used
+     * by the pause-menu quit, by navigation away from gameplay, and by the
+     * in-game "Finish & Save" button (the only way a Zen run, which has no
+     * timer and no lives, can ever end and record its BEST). The run's best
+     * is persisted; campaign/custom runs are simply abandoned.
+     */
+    fun finishEndlessRun(saveBest: Boolean = true) {
+        val state = _uiState.value
+        if (state.gameMode == GameMode.CAMPAIGN) return
+        timerJob?.cancel()
+        if (saveBest && state.score > 0) {
+            repository.updateEndlessHighScore(state.gameMode.name, state.score)
+        }
+        repository.updateLifetimeMaxCombo(state.maxCombo)
+        _uiState.update {
+            it.copy(
+                gameState = GameState.GAMEOVER,
+                gameOverReason = GameOverReason.MANUAL_QUIT,
                 lifetimeHighScore = repository.getLifetimeHighScore(),
                 lifetimeMaxCombo = repository.getLifetimeMaxCombo()
             )
@@ -2434,7 +2570,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                                 vx = kotlin.math.cos(angle) * speed,
                                 vy = kotlin.math.sin(angle) * speed,
                                 radius = 3f + Random.nextFloat() * 3f,
-                                color = Color(0xFF00E5FF),
+                                color = Color(0xFF4A90C4),
                                 alpha = 1.0f,
                                 particleType = ParticleType.LIGHTNING_EMBER
                             )
@@ -2546,7 +2682,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 freezeTimeRemaining = 6.0f
                 sound.playFreeze()
                 currentScreenShake = 12f
-                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "⏱️ CHRONO STASIS!", Color(0xFF00E5FF))
+                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "⏱️ CHRONO STASIS!", Color(0xFF4A90C4))
                 _uiState.update {
                     it.copy(
                         isFreezeActive = true,
@@ -2562,7 +2698,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             SkillType.MAGNET_PULL -> {
                 sound.playPop()
                 currentScreenShake = 14f
-                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "🧲 VORTEX MAGNET!", Color(0xFFFF2A75))
+                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "🧲 VORTEX MAGNET!", Color(0xFFC93A5E))
                 _uiState.update {
                     it.copy(
                         isSkillActive = true,
@@ -2805,6 +2941,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Campaign Milestone Chests ---
     fun claimMilestoneChest(milestoneLevel: Int) {
+        // Pass 5 (audit L8): verify the zone is actually complete (all 10
+        // stages of the zone behind the milestone cleared) — previously any
+        // chest paid out on tap regardless of progress.
+        val zoneComplete = (1..10).all { stage ->
+            _uiState.value.completedLevels.containsKey(milestoneLevel - 10 + stage)
+        }
+        if (!zoneComplete) {
+            showBannerMessage("🗺️ Finish all 10 stages of this zone to open its chest!")
+            return
+        }
         val claimed = repository.getClaimedMilestoneChests()
         if (claimed.contains(milestoneLevel)) return
 
@@ -2829,7 +2975,29 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- Quests ---
+    /** Pass 5: quest progress for the claim check. Mirrors the progress
+     *  mapping the QuestsScreen itself displays (same quest ids, same
+     *  sources) so a claim is accepted exactly when the UI shows the
+     *  quest as complete — never stricter, never looser. */
+    fun questProgress(quest: QuestItem): Int {
+        val state = _uiState.value
+        return when (quest.id) {
+            "quest_pop_50", "quest_pop_200", "quest_special_pop_10" -> state.lifetimePops
+            "quest_combo_5", "quest_combo_10" -> state.lifetimeMaxCombo
+            "quest_spin_wheel" -> state.wheelSpins
+            "quest_stage_5", "quest_stage_10", "quest_stage_clear_3star" -> state.completedLevels.size
+            "quest_stars_15" -> state.completedLevels.size * 3
+            else -> state.lifetimePops
+        }
+    }
+
     fun claimQuest(quest: QuestItem) {
+        // Pass 5 (audit L9): verify progress before paying — previously a
+        // quest could be claimed without meeting its target.
+        if (questProgress(quest) < quest.targetValue) {
+            showBannerMessage("🎯 Keep going — ${quest.title} isn't complete yet!")
+            return
+        }
         val claimed = repository.getClaimedQuests()
         if (claimed.contains(quest.id)) return
 
@@ -2847,6 +3015,96 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 gems = newGems,
                 bannerMessage = "Claimed ${quest.title} Reward! 🎁"
             )
+        }
+    }
+
+    // --- Achievements (Pass 5: data existed with no claim path at all) ---
+    /** Progress toward an achievement. AchievementItem carries no type
+     *  field, so progress is derived from the achievement id, matching
+     *  each entry's description in GameConstants.ACHIEVEMENTS. */
+    fun achievementProgress(achievement: AchievementItem): Int {
+        val state = _uiState.value
+        return when {
+            achievement.id.startsWith("ach_combo") -> state.lifetimeMaxCombo
+            achievement.id.startsWith("ach_stars") -> state.completedLevels.values.sum()
+            achievement.id.startsWith("ach_stage") -> state.completedLevels.size
+            achievement.id.startsWith("ach_wheel") -> state.wheelSpins
+            else -> state.lifetimePops
+        }
+    }
+
+    fun claimAchievement(achievement: AchievementItem) {
+        if (achievementProgress(achievement) < achievement.target) {
+            showBannerMessage("🏆 Keep going — ${achievement.title} isn't unlocked yet!")
+            return
+        }
+        val claimed = repository.getClaimedAchievements()
+        if (claimed.contains(achievement.id)) return
+
+        repository.claimAchievement(achievement.id)
+        val newCoins = _uiState.value.coins + achievement.rewardCoins
+        val newGems = _uiState.value.gems + achievement.rewardGems
+        repository.setCoins(newCoins)
+        repository.setGems(newGems)
+
+        sound.playClaimReward()
+        _uiState.update {
+            it.copy(
+                claimedAchievements = repository.getClaimedAchievements(),
+                coins = newCoins,
+                gems = newGems,
+                bannerMessage = "Claimed ${achievement.title}! +${achievement.rewardCoins}🪙 +${achievement.rewardGems}💎 🏆"
+            )
+        }
+    }
+
+    // --- Balloon Skins (Pass 5: mirrors the HammerSkin plumbing) ---
+    fun equippedBalloonSkin(): BalloonSkin {
+        val id = _uiState.value.equippedBalloonSkinId
+        return GameConstants.SHOP_BALLOON_SKINS.find { it.id == id } ?: GameConstants.SHOP_BALLOON_SKINS.first()
+    }
+
+    fun setEquippedBalloonSkin(skinId: String) {
+        sound.playEquipSound()
+        repository.setEquippedBalloonSkin(skinId)
+        _uiState.update { it.copy(equippedBalloonSkinId = skinId) }
+    }
+
+    fun buyBalloonSkin(skin: BalloonSkin) {
+        val state = _uiState.value
+        if (state.unlockedBalloonSkins.contains(skin.id)) {
+            setEquippedBalloonSkin(skin.id)
+            return
+        }
+        if (skin.currency == CurrencyType.COINS && state.coins >= skin.cost) {
+            val newCoins = state.coins - skin.cost
+            repository.setCoins(newCoins)
+            repository.unlockBalloonSkin(skin.id)
+            repository.setEquippedBalloonSkin(skin.id)
+            sound.playCoin()
+            _uiState.update {
+                it.copy(
+                    coins = newCoins,
+                    unlockedBalloonSkins = repository.getUnlockedBalloonSkins(),
+                    equippedBalloonSkinId = skin.id
+                )
+            }
+        } else if (skin.currency == CurrencyType.GEMS && state.gems >= skin.cost) {
+            val newGems = state.gems - skin.cost
+            repository.setGems(newGems)
+            repository.unlockBalloonSkin(skin.id)
+            repository.setEquippedBalloonSkin(skin.id)
+            sound.playCoin()
+            _uiState.update {
+                it.copy(
+                    gems = newGems,
+                    unlockedBalloonSkins = repository.getUnlockedBalloonSkins(),
+                    equippedBalloonSkinId = skin.id
+                )
+            }
+        } else {
+            sound.playPurchaseFail()
+            _uiState.update { it.copy(bannerMessage = "Not enough currency for ${skin.name}!") }
         }
     }
 

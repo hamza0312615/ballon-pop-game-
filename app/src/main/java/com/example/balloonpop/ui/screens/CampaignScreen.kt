@@ -55,6 +55,8 @@ import com.example.balloonpop.ui.components.*
 import com.example.balloonpop.ui.dialogs.PreGameStageDialog
 import com.example.balloonpop.ui.dialogs.WorldMapZoneOverviewDialog
 import com.example.balloonpop.ui.theme.CosmosNavy
+import com.example.balloonpop.ui.theme.PlumPill
+import com.example.balloonpop.ui.theme.StoryGold
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.ZoneVisualTheme
 import com.example.balloonpop.ui.theme.ZoneVisualThemeRegistry
@@ -144,6 +146,11 @@ fun CampaignScreen(
 
     // World Map Realm Selector dialog state
     var showZoneOverviewDialog by remember { mutableStateOf(false) }
+
+    // Pass 5 (audit L8): Star Road dialog state + lifetime star total.
+    // The milestone data and claim callbacks existed but had NO UI at all.
+    var showStarRoadDialog by remember { mutableStateOf(false) }
+    val totalStars = completedLevels.values.sum()
 
     // Pre-game dialog and level dive state
     var selectedLevelForDialog by remember { mutableStateOf<Int?>(null) }
@@ -360,6 +367,31 @@ fun CampaignScreen(
                     }
                 )
 
+                // Pass 5 (audit L8): Star Road entry pill — the milestone
+                // ladder was fully wired in the ViewModel but unreachable.
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 10.dp)
+                        .shadow(8.dp, RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(Color(0xE6171233))
+                        .border(1.5.dp, Color(0xFFFFC93C), RoundedCornerShape(22.dp))
+                        .clickable {
+                            soundManager.playMenuClick()
+                            showStarRoadDialog = true
+                        }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .testTag("star_road_open_button")
+                ) {
+                    Text(
+                        text = "⭐ STAR ROAD • $totalStars",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFFFC93C)
+                    )
+                }
+
                 // Atmospheric Zone-Specific Floating Particle Overlay (Fireflies in Neon Glade, Crystal Shards in Prism Peaks)
                 ZoneMapParticleOverlay(
                     theme = zoneTheme,
@@ -375,7 +407,7 @@ fun CampaignScreen(
                             .align(Alignment.CenterEnd)
                             .padding(end = 6.dp)
                             .size(38.dp)
-                            .shadow(6.dp, CircleShape, spotColor = Color(0xFF00E5FF))
+                            .shadow(6.dp, CircleShape, spotColor = Color(0xFF4A90C4))
                             .clip(CircleShape)
                             .background(Color(0xEE1E1510))
                             .border(1.5.dp, Color(0xFFD4A373), CircleShape)
@@ -402,7 +434,7 @@ fun CampaignScreen(
                             .align(Alignment.CenterStart)
                             .padding(start = 6.dp)
                             .size(38.dp)
-                            .shadow(6.dp, CircleShape, spotColor = Color(0xFF00E5FF))
+                            .shadow(6.dp, CircleShape, spotColor = Color(0xFF4A90C4))
                             .clip(CircleShape)
                             .background(Color(0xEE1E1510))
                             .border(1.5.dp, Color(0xFFD4A373), CircleShape)
@@ -548,6 +580,128 @@ fun CampaignScreen(
                 }
             )
         }
+
+        // 8. Pass 5 (audit L8): Star Road milestone ladder — every milestone
+        //    shows its star goal, the player's progress, and a Claim button
+        //    only when earned and unclaimed (the ViewModel re-verifies).
+        if (showStarRoadDialog) {
+            androidx.compose.ui.window.Dialog(onDismissRequest = { showStarRoadDialog = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF171233))
+                        .border(1.5.dp, Color(0xFFFFC93C), RoundedCornerShape(24.dp))
+                        .padding(18.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "⭐ STAR ROAD",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFFFFC93C)
+                        )
+                        Text(
+                            text = "$totalStars ⭐ total",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Earn stars by clearing campaign stages. Claim each milestone once!",
+                        fontSize = 12.sp,
+                        color = Color(0xFFCBD5E1)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 380.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(GameConstants.STAR_MILESTONES) { milestone ->
+                            val isClaimed = claimedStarMilestones.contains(milestone.starsRequired)
+                            val isEarned = totalStars >= milestone.starsRequired
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFF241A4D))
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = milestone.bonusTitle,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                    Text(
+                                        text = "${minOf(totalStars, milestone.starsRequired)}/${milestone.starsRequired} ⭐  •  +${milestone.rewardCoins}🪙 +${milestone.rewardGems}💎",
+                                        fontSize = 11.sp,
+                                        color = Color(0xFFCBD5E1)
+                                    )
+                                }
+                                when {
+                                    isClaimed -> Text(
+                                        text = "✅ CLAIMED",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = Color(0xFF94A3B8)
+                                    )
+                                    isEarned -> Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(14.dp))
+                                            .background(
+                                                Brush.verticalGradient(
+                                                    listOf(Color(0xFFFFB347), Color(0xFFFF6B4A))
+                                                )
+                                            )
+                                            .clickable { onClaimStarMilestone(milestone) }
+                                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                                            .testTag("star_road_claim_${milestone.starsRequired}")
+                                    ) {
+                                        Text(
+                                            text = "CLAIM",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = Color.White
+                                        )
+                                    }
+                                    else -> Text(
+                                        text = "🔒",
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color(0xFF241A4D))
+                            .clickable { showStarRoadDialog = false }
+                            .padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Close",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -589,14 +743,14 @@ private fun ModernCampaignTopStatusBar(
             modifier = Modifier
                 .size(44.dp)
                 .scale(backScale)
-                .shadow(6.dp, CircleShape, spotColor = Color(0xFF16A34A))
+                .shadow(6.dp, CircleShape, spotColor = Color(0xFF241A4D))
                 .clip(CircleShape)
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color(0xFF4ADE80), Color(0xFF22C55E), Color(0xFF16A34A))
+                        listOf(Color(0xFF4A3A85), Color(0xFF2C2160), Color(0xFF241A4D))
                     )
                 )
-                .border(1.5.dp, Color(0xFF86EFAC), CircleShape)
+                .border(1.5.dp, Color(0xFFB8A9D9), CircleShape)
                 .clickable(
                     interactionSource = backInteraction,
                     indication = null
@@ -710,19 +864,11 @@ private fun GlassmorphicResourceCapsule(
         modifier = Modifier
             .shadow(4.dp, RoundedCornerShape(20.dp), spotColor = Color(0x66000000))
             .clip(RoundedCornerShape(20.dp))
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xE6131D2E),
-                        Color(0xF00D1420),
-                        Color(0xE6080D16)
-                    )
-                )
-            )
+            .background(PlumPill)
             .border(
                 1.dp,
                 Brush.verticalGradient(
-                    listOf(Color(0x66FFFFFF), Color(0x18FFFFFF), Color(0x2238BDF8))
+                    listOf(Color(0x66FFFFFF), Color(0x18FFFFFF), Color(0x22FFFFFF))
                 ),
                 RoundedCornerShape(20.dp)
             )
@@ -753,20 +899,19 @@ private fun GlassmorphicResourceCapsule(
                     modifier = Modifier
                         .size(19.dp)
                         .scale(addGlowPulse)
-                        .shadow(4.dp, CircleShape, spotColor = Color(0xFF22C55E))
                         .clip(CircleShape)
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color(0xFF4ADE80), Color(0xFF22C55E), Color(0xFF16A34A))
+                                listOf(Color(0xFFFFD166), StoryGold)
                             )
                         )
-                        .border(1.dp, Color(0xFFA7F3D0), CircleShape),
+                        .border(1.dp, Color(0xFFFFE9A8), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Add",
-                        tint = Color.White,
+                        tint = Color(0xFF2A1B4E),
                         modifier = Modifier.size(11.dp)
                     )
                 }
@@ -1044,8 +1189,8 @@ private fun ModernSecondaryNavRow(
         ModernNavSegment(
             icon = "🗺️",
             label = "Map",
-            tintColor = Color(0x2800E5FF),
-            borderColor = Color(0x8800E5FF),
+            tintColor = Color(0x284A90C4),
+            borderColor = Color(0x884A90C4),
             textColor = Color(0xFF38BDF8),
             onClick = {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -1381,49 +1526,45 @@ private fun DrawScope.drawUnifiedMapPath(
     fun drawHalf(targetRatio: Float, toTop: Boolean, traversed: Boolean) {
         val edgeX = (cx + centerXOf(targetRatio)) / 2f
         val edgeY = if (toTop) 0f else h
+        // Pass 5 differentiator: the path is a literal balloon STRING — a thin
+        // curved line with a natural mid-span sag, gold where traversed and
+        // pale cream ahead, with a small knot bead where segments join.
+        val sag = 7.dp.toPx()
         val curve = Path().apply {
             moveTo(cx, cy)
-            quadraticBezierTo(cx, edgeY, edgeX, edgeY)
-        }
-        val mainColor = if (traversed) {
-            DesignTokens.StarGoldFilled
-        } else {
-            accentColor.copy(alpha = 0.38f)
-        }
-        // Dark underlay ribbon (keeps the path readable over busy zone art).
-        drawPath(
-            path = curve,
-            color = CosmosNavy.copy(alpha = 0.55f),
-            style = Stroke(width = 16.dp.toPx(), cap = StrokeCap.Round)
-        )
-        // Main ribbon.
-        drawPath(
-            path = curve,
-            color = mainColor,
-            style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-        )
-        // Dotted centre line (round-cap dashes read as beads).
-        drawPath(
-            path = curve,
-            color = Color.White.copy(alpha = if (traversed) 0.85f else 0.40f),
-            style = Stroke(
-                width = 3.5.dp.toPx(),
-                cap = StrokeCap.Round,
-                pathEffect = PathEffect.dashPathEffect(
-                    floatArrayOf(0.1f, 13.dp.toPx()),
-                    0f
-                )
+            quadraticBezierTo(
+                (cx + edgeX) / 2f,
+                (cy + edgeY) / 2f + sag,
+                edgeX,
+                edgeY
             )
+        }
+        val stringColor = if (traversed) {
+            StoryGold
+        } else {
+            Color(0xFFFFF6E9).copy(alpha = 0.45f)
+        }
+        // Soft shadow line under the string (readability over busy zone art).
+        drawPath(
+            path = curve,
+            color = Color(0xFF171233).copy(alpha = 0.45f),
+            style = Stroke(width = 5.5.dp.toPx(), cap = StrokeCap.Round)
         )
-        // Stepping bead at the join with the neighbouring row.
+        // The string itself.
+        drawPath(
+            path = curve,
+            color = stringColor,
+            style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
+        )
+        // Knot bead at the join with the neighbouring row.
         drawCircle(
-            color = mainColor,
-            radius = 5.dp.toPx(),
+            color = stringColor,
+            radius = 4.dp.toPx(),
             center = Offset(edgeX, edgeY)
         )
         drawCircle(
-            color = Color.White.copy(alpha = 0.75f),
-            radius = 1.8.dp.toPx(),
+            color = Color.White.copy(alpha = 0.8f),
+            radius = 1.5.dp.toPx(),
             center = Offset(edgeX, edgeY)
         )
     }
@@ -1532,7 +1673,7 @@ private fun ModernBottomFloatingDock(
                 icon = Icons.Default.AllInclusive,
                 label = "Endless",
                 isActive = false,
-                activeAccentColor = Color(0xFF00E5FF),
+                activeAccentColor = Color(0xFF4A90C4),
                 onClick = {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     onEndlessClick()

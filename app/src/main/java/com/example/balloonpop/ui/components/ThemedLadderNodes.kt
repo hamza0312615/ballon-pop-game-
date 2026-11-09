@@ -28,6 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.balloonpop.ui.theme.CoralPrimary
 import com.example.balloonpop.ui.theme.DesignTokens
+import androidx.compose.ui.draw.rotate
+import com.example.balloonpop.ui.theme.SunsetBottom
+import com.example.balloonpop.ui.theme.StoryGold
 import com.example.balloonpop.ui.theme.ZoneVisualTheme
 
 /**
@@ -109,9 +112,9 @@ fun ThemedLadderTileNode(
                 .background(
                     when {
                         isCleared -> DesignTokens.GoldGradient
-                        isUnlocked -> DesignTokens.CtaGradient
+                        isUnlocked -> DesignTokens.SunsetGradient
                         else -> Brush.verticalGradient(
-                            listOf(Color(0xFF3A4356), Color(0xFF232A3A), Color(0xFF161C29))
+                            listOf(Color(0xFF4A4460), Color(0xFF322C47), Color(0xFF241F38))
                         )
                     }
                 )
@@ -120,7 +123,7 @@ fun ThemedLadderTileNode(
                     brush = Brush.verticalGradient(
                         when {
                             isCleared -> listOf(Color.White, DesignTokens.StarGoldFilled, DesignTokens.PrimaryBrandDark)
-                            isUnlocked -> listOf(Color.White, CoralPrimary)
+                            isUnlocked -> listOf(Color.White, SunsetBottom)
                             else -> listOf(Color(0x66FFFFFF), Color(0xFF475569))
                         }
                     ),
@@ -269,21 +272,21 @@ fun ThemedLadderActiveHeroNode(
             .testTag("active_hero_level_tile"),
         contentAlignment = Alignment.Center
     ) {
-        // Expanding pulse halos behind the orb.
+        // Pass 5 (amendment 5): expanding pulse RINGS behind the orb — a scale
+        // pulse in storybook gold, never a neon-style glow.
         Box(
             modifier = Modifier
                 .size(88.dp)
                 .scale(beaconPulse)
                 .clip(CircleShape)
-                .background(CoralPrimary.copy(alpha = 0.14f))
-                .border(2.dp, CoralPrimary.copy(alpha = 0.35f), CircleShape)
+                .border(2.5.dp, StoryGold.copy(alpha = 0.55f), CircleShape)
         )
         Box(
             modifier = Modifier
                 .size(76.dp)
                 .scale(beaconPulse * 0.88f)
                 .clip(CircleShape)
-                .background(DesignTokens.StarGoldFilled.copy(alpha = 0.16f))
+                .border(2.dp, StoryGold.copy(alpha = 0.35f), CircleShape)
         )
 
         // --- Enlarged current-stage orb ---
@@ -297,7 +300,7 @@ fun ThemedLadderActiveHeroNode(
                     spotColor = CoralPrimary
                 )
                 .clip(CircleShape)
-                .background(DesignTokens.CtaGradient)
+                .background(DesignTokens.SunsetGradient)
                 .border(
                     width = if (isBoss) 3.dp else 2.5.dp,
                     brush = Brush.verticalGradient(
@@ -329,6 +332,19 @@ fun ThemedLadderActiveHeroNode(
             )
         }
 
+        // Balloon knot: a small tied diamond at the orb's base, so the current
+        // node reads as a balloon pin tied to the map's string path.
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .offset(y = 40.dp)
+                .size(13.dp)
+                .rotate(45f)
+                .clip(RoundedCornerShape(3.dp))
+                .background(SunsetBottom)
+                .border(1.dp, Color.White.copy(alpha = 0.7f), RoundedCornerShape(3.dp))
+        )
+
         // Boss crown badge.
         if (isBoss) {
             Text(
@@ -355,9 +371,9 @@ fun ThemedLadderActiveHeroNode(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 8.dp)
-                .shadow(6.dp, RoundedCornerShape(14.dp), spotColor = CoralPrimary)
+                .shadow(6.dp, RoundedCornerShape(14.dp), spotColor = SunsetBottom)
                 .clip(RoundedCornerShape(14.dp))
-                .background(DesignTokens.CtaGradient)
+                .background(DesignTokens.SunsetGradient)
                 .border(1.5.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(14.dp))
                 .padding(horizontal = 12.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center

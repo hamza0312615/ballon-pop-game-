@@ -1,6 +1,7 @@
 package com.example.balloonpop.ui.components
 
 import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -91,7 +92,7 @@ fun JellyButton(
             Color.White
         )
         JellyColorVariant.PINK -> listOf(
-            Color(0xFFFF2A75),
+            Color(0xFFC93A5E),
             Color(0xFFDB2777),
             Color(0xFFFBCFE8),
             Color(0xFF831843),
@@ -300,6 +301,19 @@ fun StarsDisplay3D(
         for (index in 1..maxStars) {
             val isEarned = index <= starsCount
 
+            // Pass 5 (research rule 14): earned stars POP IN sequentially with a
+            // spring overshoot, staggered left-to-right, instead of just pulsing.
+            val popAnim = remember { Animatable(0f) }
+            LaunchedEffect(isEarned, animated) {
+                if (isEarned && animated) {
+                    popAnim.snapTo(0f)
+                    kotlinx.coroutines.delay(160L * index)
+                    popAnim.animateTo(1f, DesignTokens.StarPopSpring)
+                } else {
+                    popAnim.snapTo(1f)
+                }
+            }
+
             val scaleAnim = if (animated && isEarned) {
                 val infiniteTransition = rememberInfiniteTransition(label = "star_bounce_$index")
                 val scale by infiniteTransition.animateFloat(
@@ -318,7 +332,7 @@ fun StarsDisplay3D(
 
             Box(
                 modifier = Modifier
-                    .scale(scaleAnim)
+                    .scale(scaleAnim * popAnim.value)
                     .size(size)
                     .shadow(
                         elevation = if (isEarned) 6.dp else 1.dp,
@@ -403,7 +417,7 @@ fun MascotCharacter(
     val balloonColor = when (mood) {
         MascotMood.JOYFUL -> Color(0xFFFF2A6D)  // Radiant ruby rose
         MascotMood.HAPPY -> Color(0xFFFFB703)   // Golden sunny amber
-        MascotMood.NEUTRAL -> Color(0xFF00E5FF) // Electric sky cyan
+        MascotMood.NEUTRAL -> Color(0xFF4A90C4) // Electric sky cyan
         MascotMood.SAD -> Color(0xFF818CF8)     // Gentle pastel indigo
     }
     val highlightColor = Color.White.copy(alpha = 0.85f)
@@ -577,7 +591,7 @@ fun MascotCharacter(
             drawPath(
                 path = hatPath,
                 brush = Brush.linearGradient(
-                    colors = listOf(Color(0xFFFFEA00), Color(0xFFFF5722), Color(0xFF9C27B0), Color(0xFF00E5FF)),
+                    colors = listOf(Color(0xFFFFEA00), Color(0xFFFF5722), Color(0xFF9C27B0), Color(0xFF4A90C4)),
                     start = Offset(hatBaseLeft, hatBaseY),
                     end = Offset(hatApexX, hatApexY)
                 )
@@ -591,7 +605,7 @@ fun MascotCharacter(
                 cap = StrokeCap.Round
             )
             drawLine(
-                color = Color(0xFF00E5FF),
+                color = Color(0xFF4A90C4),
                 start = Offset(hatBaseLeft + (hatApexX - hatBaseLeft) * 0.65f, hatBaseY - bodyR * 0.48f),
                 end = Offset(hatBaseRight - bodyR * 0.25f, hatBaseY - bodyR * 0.52f),
                 strokeWidth = bodyR * 0.08f,
@@ -722,9 +736,9 @@ fun ResumeCountdownOverlay(
     }
 
     val (colors, text) = when (count) {
-        3 -> listOf(Color(0xFF00E5FF), Color(0xFF0284C7)) to "3"
+        3 -> listOf(Color(0xFF4A90C4), Color(0xFF0284C7)) to "3"
         2 -> listOf(Color(0xFFFFB703), Color(0xFFFB8500)) to "2"
-        1 -> listOf(Color(0xFFFF2A75), Color(0xFFE11D48)) to "1"
+        1 -> listOf(Color(0xFFC93A5E), Color(0xFFE11D48)) to "1"
         else -> listOf(Color(0xFF22C55E), Color(0xFF15803D)) to "GO! 🎈"
     }
 
@@ -753,7 +767,7 @@ fun ResumeCountdownOverlay(
                     text = "RESUMING GAME...",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFF00F0FF),
+                    color = Color(0xFF2F6DB3),
                     letterSpacing = 2.sp
                 )
             }

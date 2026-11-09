@@ -52,7 +52,7 @@ fun RanksScreen(
         LeaderboardPlayer(8, "Ava", "⭐", Color(0xFFFBBF24), 24100, 56),
         LeaderboardPlayer(9, "Leo", "🎈", Color(0xFF10B981), 21300, 50),
         LeaderboardPlayer(10, "Zoe", "✨", Color(0xFF6366F1), 18900, 46),
-        LeaderboardPlayer(42, "You", "😎", Color(0xFFFF2A75), currentScore.coerceAtLeast(12450), currentLevel, isCurrentUser = true)
+        LeaderboardPlayer(42, "You", "😎", Color(0xFFC93A5E), currentScore.coerceAtLeast(12450), currentLevel, isCurrentUser = true)
     )
 
     Column(

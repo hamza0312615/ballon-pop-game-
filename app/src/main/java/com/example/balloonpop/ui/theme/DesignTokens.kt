@@ -22,7 +22,7 @@ object DesignTokens {
     val PrimaryBrandDark = Color(0xFFD97706)
 
     // 1 secondary accent (electric teal/cyan for secondary actions & navigation)
-    val SecondaryAccent = Color(0xFF00E5FF)
+    val SecondaryAccent = Color(0xFF4A90C4)
     val SecondaryAccentDeep = Color(0xFF0284C7)
 
     // 2 background neutrals (dark navy base + card surface)
@@ -96,6 +96,37 @@ object DesignTokens {
     )
     val GoldGradient = Brush.verticalGradient(
         listOf(PrimaryBrandBright, PrimaryBrand, PrimaryBrandDark)
+    )
+
+    // --- 4d. Golden Storybook (Pass 5, binding) ---
+    // Physical-button system: every CTA is a vertical gradient face sitting on a
+    // darker "shelf"; pressing sinks the face into the shelf by ShelfDepth.
+    val ShelfDepth = 5.dp
+    const val ShelfDarken = 0.18f       // shelf = face bottom darkened by this fraction
+    const val GlossAlpha = 0.35f        // top-left gloss highlight strength
+    val RadiusCardStory = 28.dp         // storybook cards & dialogs
+    val RadiusButtonStory = 24.dp       // storybook buttons
+    val ShapeCardStory = RoundedCornerShape(RadiusCardStory)
+    val ShapeButtonStory = RoundedCornerShape(RadiusButtonStory)
+
+    // The one CTA gradient in the game (PLAY / Next / Retry / gem prices)
+    val SunsetGradient = Brush.verticalGradient(
+        listOf(SunsetTop, SunsetBottom)
+    )
+    val GoldFaceGradient = Brush.verticalGradient(
+        listOf(Color(0xFFFFD166), StoryGold)
+    )
+    // Currency & HUD tray fill: plum at 55% alpha over the world art
+    val PillPlum = PlumPill
+
+    // Motion specs (research rule: motion is the polish)
+    val DialogPopSpring = spring<Float>(
+        dampingRatio = 0.62f,
+        stiffness = Spring.StiffnessMediumLow
+    )
+    val StarPopSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessLow
     )
 
     // --- 5. Elevation & Shadows (3-Level Elevation System) ---

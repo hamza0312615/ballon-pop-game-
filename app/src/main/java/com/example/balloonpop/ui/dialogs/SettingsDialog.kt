@@ -28,10 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
-import android.app.Activity
 import com.example.balloonpop.audio.SoundManager
 import com.example.balloonpop.audio.MusicTheme
-import com.example.balloonpop.ads.AdMobManager
 import com.example.balloonpop.notification.DailyNotificationHelper
 import com.example.balloonpop.model.BalloonType
 import com.example.balloonpop.ui.theme.*
@@ -87,7 +85,7 @@ fun SettingsDialog(
                 .widthIn(max = 420.dp)
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.86f)
-                .shadow(24.dp, RoundedCornerShape(26.dp), spotColor = Color(0x6600E5FF))
+                .shadow(24.dp, RoundedCornerShape(26.dp), spotColor = Color(0x664A90C4))
                 .clip(RoundedCornerShape(26.dp))
                 .background(Color(0xFF0C0C16))
                 .border(
@@ -380,7 +378,7 @@ private fun AudioHapticsSection(
                             checked = !isSoundMuted,
                             onCheckedChange = { onToggleMute() },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFF00E5FF),
+                                checkedThumbColor = Color(0xFF4A90C4),
                                 checkedTrackColor = Color(0xFF0C2B40)
                             ),
                             modifier = Modifier.testTag("mute_toggle_switch")
@@ -456,7 +454,7 @@ private fun AudioHapticsSection(
                                 }
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFF00E5FF),
+                                checkedThumbColor = Color(0xFF4A90C4),
                                 checkedTrackColor = Color(0xFF0C2B40)
                             ),
                             modifier = Modifier.testTag("sfx_mute_toggle_switch")
@@ -474,7 +472,7 @@ private fun AudioHapticsSection(
                                     text = "${(sfxVolume * 100).toInt()}%",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF00E5FF)
+                                    color = Color(0xFF4A90C4)
                                 )
                             }
                             Slider(
@@ -484,7 +482,7 @@ private fun AudioHapticsSection(
                                 },
                                 valueRange = 0f..1f,
                                 colors = SliderDefaults.colors(
-                                    thumbColor = Color(0xFF00E5FF),
+                                    thumbColor = Color(0xFF4A90C4),
                                     activeTrackColor = Color(0xFF00B4D8),
                                     inactiveTrackColor = Color(0xFF1E1E2E)
                                 ),
@@ -510,9 +508,9 @@ private fun AudioHapticsSection(
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
                                     containerColor = Color(0xFF141E28),
-                                    contentColor = Color(0xFF00E5FF)
+                                    contentColor = Color(0xFF4A90C4)
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.4f)),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4A90C4).copy(alpha = 0.4f)),
                                 contentPadding = PaddingValues(horizontal = 6.dp)
                             ) {
                                 Text("🎈 Pop", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -636,7 +634,7 @@ private fun AudioHapticsSection(
                             Triple(MusicTheme.MEADOW_JOY, "🌸 Meadow Joy", Color(0xFF10B981)),
                             Triple(MusicTheme.COSMIC_DREAM, "🌌 Cosmic Dream", Color(0xFF8B5CF6)),
                             Triple(MusicTheme.TROPICAL_BOP, "🌴 Tropical Bop", Color(0xFFF59E0B)),
-                            Triple(MusicTheme.CYBER_PULSE, "⚡ Cyber Pulse", Color(0xFF00E5FF)),
+                            Triple(MusicTheme.CYBER_PULSE, "⚡ Clockwork Pulse", Color(0xFF4A90C4)),
                             Triple(MusicTheme.BOSS_ANTHEM, "👑 Boss Anthem", Color(0xFFEF4444))
                         )
 
@@ -727,7 +725,7 @@ private fun AudioHapticsSection(
                         checked = isVibrationEnabled,
                         onCheckedChange = { onToggleVibration(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFF00E5FF),
+                            checkedThumbColor = Color(0xFF4A90C4),
                             checkedTrackColor = Color(0xFF0C2B40)
                         ),
                         modifier = Modifier.testTag("vibration_toggle_switch")
@@ -910,7 +908,7 @@ private fun GraphicsPerfSection(
                         checked = isScreenShakeEnabled,
                         onCheckedChange = { onToggleScreenShake(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFF00E5FF),
+                            checkedThumbColor = Color(0xFF4A90C4),
                             checkedTrackColor = Color(0xFF0C2B40)
                         ),
                         modifier = Modifier.testTag("shake_toggle_switch")
@@ -950,7 +948,7 @@ private fun GraphicsPerfSection(
                         checked = isWideAssistEnabled,
                         onCheckedChange = { onToggleWideAssist(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFF00E5FF),
+                            checkedThumbColor = Color(0xFF4A90C4),
                             checkedTrackColor = Color(0xFF0C2B40)
                         ),
                         modifier = Modifier.testTag("assist_toggle_switch")
@@ -1175,8 +1173,6 @@ private fun PrivacyAndGooglePlaySection() {
 private fun DataManagementSection(
     onRequestReset: () -> Unit
 ) {
-    val context = LocalContext.current
-    val activity = context as? Activity
     val scrollState = rememberScrollState()
 
     Column(
@@ -1186,110 +1182,9 @@ private fun DataManagementSection(
             .padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        SettingCard(title = "ADMOB ADS LIVE STATUS & DIAGNOSTICS") {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "App ID: ca-app-pub-5098386592651454~7436641428",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF38BDF8)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "App Open Ad:", fontSize = 11.sp, color = Color(0xFFCBD5E1))
-                    Text(
-                        text = AdMobManager.lastAppOpenStatus,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF34D399)
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Interstitial Ad:", fontSize = 11.sp, color = Color(0xFFCBD5E1))
-                    Text(
-                        text = AdMobManager.lastInterstitialStatus,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF34D399)
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(text = "Rewarded Ad:", fontSize = 11.sp, color = Color(0xFFCBD5E1))
-                    Text(
-                        text = AdMobManager.lastRewardedStatus,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF34D399)
-                    )
-                }
-
-                Text(
-                    text = "Note: New AdMob units take up to 24-48h for Google to approve inventory. While pending, automatic fallback to Google test ads is active so ads always play!",
-                    fontSize = 10.sp,
-                    color = Color(0xFFFBBF24),
-                    lineHeight = 14.sp
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            activity?.let { act ->
-                                AdMobManager.showAppOpenAd(act, timeoutMillis = 1000L)
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f).testTag("test_app_open_ad_button"),
-                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
-                    ) {
-                        Text("🎬 Open Ad", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-
-                    Button(
-                        onClick = {
-                            activity?.let { act ->
-                                AdMobManager.showInterstitialAd(act)
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7C3AED)),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f).testTag("test_interstitial_ad_button"),
-                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
-                    ) {
-                        Text("🎬 Interstitial", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-
-                    Button(
-                        onClick = {
-                            activity?.let { act ->
-                                AdMobManager.showRewardedAd(act, onRewardEarned = {})
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.weight(1f).testTag("test_rewarded_ad_button"),
-                        contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
-                    ) {
-                        Text("🎬 Rewarded", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                }
-            }
-        }
-
+        // Pass 5 (audit §2.4): the developer AdMob diagnostics panel (live
+        // status strings, test-ad buttons, test-fallback note) was removed —
+        // it must never ship to players.
         SettingCard(title = "SAVE DATA STATUS") {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(

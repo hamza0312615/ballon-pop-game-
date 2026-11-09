@@ -132,6 +132,18 @@ class GameRepository(context: Context) {
     fun getEquippedFlame(): String = prefs.getString("bp_eq_flame", "flame_ember") ?: "flame_ember"
     fun setEquippedFlame(flameId: String) = prefs.edit().putString("bp_eq_flame", flameId).apply()
 
+    // Balloon Skins (Pass 5: mirrors the HammerSkin plumbing)
+    fun getUnlockedBalloonSkins(): Set<String> {
+        return prefs.getStringSet("bp_balloon_skins", setOf("balloon_classic")) ?: setOf("balloon_classic")
+    }
+    fun unlockBalloonSkin(skinId: String) {
+        val current = getUnlockedBalloonSkins().toMutableSet()
+        current.add(skinId)
+        prefs.edit().putStringSet("bp_balloon_skins", current).apply()
+    }
+    fun getEquippedBalloonSkin(): String = prefs.getString("bp_eq_balloon_skin", "balloon_classic") ?: "balloon_classic"
+    fun setEquippedBalloonSkin(skinId: String) = prefs.edit().putString("bp_eq_balloon_skin", skinId).apply()
+
     // Themes
     fun getUnlockedThemes(): Set<String> {
         val set = prefs.getStringSet("bp_themes", setOf("theme_sunset_twilight", "theme_obsidian")) ?: setOf("theme_sunset_twilight", "theme_obsidian")
@@ -275,7 +287,18 @@ class GameRepository(context: Context) {
 
     // In-game Boosters (Candy Crush style)
     fun getBoosterCount(boosterId: String): Int = prefs.getInt("bp_booster_$boosterId", 3)
-    fun setBoosterCount(boosterId: String, count: Int) = prefs.edit().putInt("bp_booster_$boosterId", count.coerceAtLeast(0)).apply()
+
+    /**
+     * Pass 5 (L1): the integrity signature COVERS the booster total, so every
+     * booster write must re-save the signature here — the single choke point.
+     * Previously buy/use left the signature stale and the next launch's
+     * verifyAndRepairIntegrity() treated the honest save as tampered,
+     * clamping the player's coins to 1,500 and gems to 50.
+     */
+    fun setBoosterCount(boosterId: String, count: Int) {
+        prefs.edit().putInt("bp_booster_$boosterId", count.coerceAtLeast(0)).apply()
+        saveIntegritySignature()
+    }
     fun consumeBooster(boosterId: String): Boolean {
         val count = getBoosterCount(boosterId)
         if (count > 0) {

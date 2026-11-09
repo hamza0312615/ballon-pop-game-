@@ -41,8 +41,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Initialize Google AdMob SDK and preload ad units
-        AdMobManager.initialize(this)
+        // Initialize Google AdMob SDK and preload ad units.
+        // Pass 5 (audit §2.2): the preload callback actually loads the
+        // interstitial and rewarded units — before, nothing ever loaded
+        // them, so gameplay had no ad ready to show.
+        AdMobManager.initialize(this) {
+            AdMobManager.loadInterstitialAd(this)
+            AdMobManager.loadRewardedAd(this)
+        }
 
         // Schedule once-per-day mobile notification reminder
         DailyNotificationHelper.scheduleDailyNotification(this)
@@ -136,7 +142,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                     CurrentScreen.HOME -> {
                                         val nextUnlockedLevel = ((uiState.completedLevels.keys.maxOrNull() ?: 0) + 1).coerceIn(1, 200)
-                                        val currentZoneName = GameConstants.WORLD_ZONES.find { nextUnlockedLevel in it.startLevel..it.endLevel }?.name ?: "Neon Glade"
+                                        val currentZoneName = GameConstants.WORLD_ZONES.find { nextUnlockedLevel in it.startLevel..it.endLevel }?.name ?: "Twilight Grove"
                                         HomeScreen(
                                             coins = uiState.coins,
                                             gems = uiState.gems,
@@ -220,7 +226,9 @@ class MainActivity : ComponentActivity() {
                                             equippedFrameId = uiState.equippedFrameId,
                                             equippedBladeId = uiState.equippedBladeId,
                                             equippedFlameId = uiState.equippedFlameId,
+                                            equippedBalloonSkinId = uiState.equippedBalloonSkinId,
                                             equippedThemeId = uiState.equippedThemeId,
+                                            unlockedBalloonSkins = uiState.unlockedBalloonSkins,
                                             unlockedHammers = uiState.unlockedHammers,
                                             unlockedFrames = uiState.unlockedFrames,
                                             unlockedBlades = uiState.unlockedBlades,
@@ -232,6 +240,7 @@ class MainActivity : ComponentActivity() {
                                             onBuyFrame = { frame -> viewModel.buyFrame(frame) },
                                             onBuyBlade = { blade -> viewModel.buyBlade(blade) },
                                             onBuyFlame = { flame -> viewModel.buyFlame(flame) },
+                                            onBuyBalloonSkin = { skin -> viewModel.buyBalloonSkin(skin) },
                                             onBuyTheme = { theme -> viewModel.buyTheme(theme) },
                                             onClaimDiamondPack = { pack ->
                                                 if (pack.isAdReward) {
@@ -268,15 +277,15 @@ class MainActivity : ComponentActivity() {
                                             dailyStreakDay = uiState.dailyStreakDay,
                                             remainingMillis = viewModel.getDailySpinRemainingMillis(),
                                             onSpinFree = {
+                                                // Pass 5 (audit L5): the free spin is granted ONLY
+                                                // when the rewarded ad was actually watched and the
+                                                // reward earned. Previously onDismiss also granted
+                                                // it, so closing the ad instantly (or the ad failing
+                                                // to load) paid out a free jackpot spin.
                                                 AdMobManager.showRewardedAd(
                                                     this@MainActivity,
                                                     onRewardEarned = {
                                                         viewModel.spinFortuneWheel(isFreeSpin = true)
-                                                    },
-                                                    onDismiss = {
-                                                        if (!uiState.isWheelSpinning && uiState.wheelWonSegment == null) {
-                                                            viewModel.spinFortuneWheel(isFreeSpin = true)
-                                                        }
                                                     }
                                                 )
                                             },
@@ -300,6 +309,10 @@ class MainActivity : ComponentActivity() {
                                             wheelSpins = uiState.wheelSpins,
                                             claimedQuests = uiState.claimedQuests,
                                             onClaimQuest = { quest -> viewModel.claimQuest(quest) },
+                                            achievements = GameConstants.ACHIEVEMENTS,
+                                            claimedAchievements = uiState.claimedAchievements,
+                                            onAchievementProgress = { achievement -> viewModel.achievementProgress(achievement) },
+                                            onClaimAchievement = { achievement -> viewModel.claimAchievement(achievement) },
                                             onClose = { viewModel.navigateTo(CurrentScreen.HOME) }
                                         )
                                     }
@@ -355,6 +368,7 @@ class MainActivity : ComponentActivity() {
                                             isHammerSlideActive = uiState.isHammerSlideActive,
                                             hammerSlideTimeRemaining = uiState.hammerSlideTimeRemaining,
                                             stageBoosterUsesCount = uiState.stageBoosterUsesCount,
+                                            onFinishRun = { viewModel.finishEndlessRun() },
                                             onActivateSkill = { viewModel.activateSkill() },
                                             onStepFrame = { dt -> viewModel.stepFrame(dt) },
                                             onPointerInput = { x, y, isTap -> viewModel.handlePointerInput(x, y, isTap) },

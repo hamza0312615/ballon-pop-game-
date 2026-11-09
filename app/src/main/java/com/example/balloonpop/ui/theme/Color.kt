@@ -3,8 +3,8 @@ package com.example.balloonpop.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Vivid Jewel & Neon Accents (Stunning contrast on Pitch Black)
-val NeonPink = Color(0xFFFF2A75)
-val NeonCyan = Color(0xFF00F0FF)
+val NeonPink = Color(0xFFC93A5E)
+val NeonCyan = Color(0xFF2F6DB3)
 val NeonPurple = Color(0xFFA855F7)
 val NeonYellow = Color(0xFFFFD700)
 val NeonMint = Color(0xFF10B981)
@@ -32,14 +32,14 @@ val DarkBg3 = Color(0xFF151520)
 val SurfaceCard = Color(0xFF12121A)
 val SurfaceCardElevated = Color(0xFF181824)
 val SurfaceCardBorder = Color(0xFF272738)
-val SurfaceGlowCyan = Color(0x3300F0FF)
+val SurfaceGlowCyan = Color(0x332F6DB3)
 val SurfaceGlowGold = Color(0x33FFD700)
-val SurfaceGlowPink = Color(0x33FF2A75)
+val SurfaceGlowPink = Color(0x33C93A5E)
 
 // Currency & Reward Accents
 val GoldCoin = Color(0xFFFFD700)
 val GoldCoinDark = Color(0xFFD97706)
-val GemBlue = Color(0xFF00F0FF)
+val GemBlue = Color(0xFF2F6DB3)
 val DiamondBlue = Color(0xFF38BDF8)
 
 // High-Contrast Accessible Text
@@ -64,5 +64,25 @@ val StarEmptyDark = Color(0xFF2D2D3A)
 
 val IslandDarkObsidian = Color(0xFF12121E)
 val IslandCosmicBlue = Color(0xFF0284C7)
-val IslandNeonGlow = Color(0xFF00F0FF)
+val IslandNeonGlow = Color(0xFF2F6DB3)
 
+
+// Pass 5 — Golden Storybook identity (binding palette; zero neon)
+val StorybookPlumDeep = Color(0xFF171233)   // world base (night sky at golden hour)
+val StorybookPlum = Color(0xFF241A4D)       // world gradient light end
+val StorybookIndigo = Color(0xFF2C2160)     // deep indigo surface on dark
+val CreamSurface = Color(0xFFFFF6E9)        // warm ivory — dialogs / shop / skins sheets only
+val CreamText = Color(0xFFFFF9F0)           // primary text on dark
+val PlumText = Color(0xFF2A1B4E)            // primary text on cream
+val PlumPill = Color(0x8C171233)            // dark translucent pill (55% plum) — currency & HUD trays
+val SunsetTop = Color(0xFFFFB347)           // CTA gradient top
+val SunsetBottom = Color(0xFFFF6B4A)        // CTA gradient bottom
+val SunsetShelf = Color(0xFFD64A26)         // CTA shelf (bottom darkened ~18%)
+val StoryGold = Color(0xFFFFC93C)           // coins, stars, current-node ring
+val StoryGoldShelf = Color(0xFFD99A16)
+val StoryMint = Color(0xFF3ED6A5)           // success / owned only
+val StoryMintShelf = Color(0xFF23A87B)
+val StoryBerry = Color(0xFFEF476F)          // danger / discount only
+val StoryBerryShelf = Color(0xFFC2264B)
+val PlumButton = Color(0xFF3A2A6E)          // neutral jewel button top
+val PlumButtonShelf = Color(0xFF241A4D)

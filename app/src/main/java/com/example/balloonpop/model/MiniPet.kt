@@ -27,8 +27,8 @@ object MiniPetRegistry {
             name = "Pip",
             title = "Glow-Pup Balloon",
             emoji = "🐶🎈",
-            primaryColor = Color(0xFF00F0FF),
-            glowColor = Color(0xFF06D6A0),
+            primaryColor = Color(0xFF2F6DB3),
+            glowColor = Color(0xFF2FA36B),
             trait = "Spawns lucky gold balloons",
             voiceQuote = "Woof! Let's pop 'em all!",
             bossCheerQuote = "Grrr! Smash that Boss Balloon!"
@@ -39,7 +39,7 @@ object MiniPetRegistry {
             title = "Crystal Fox Balloon",
             emoji = "🦊🎈",
             primaryColor = Color(0xFF9D4EDD),
-            glowColor = Color(0xFFFF2A75),
+            glowColor = Color(0xFFC93A5E),
             trait = "Senses hidden combos",
             voiceQuote = "Yip! The crystals shine bright!",
             bossCheerQuote = "Aim for the weak spot!"
@@ -80,10 +80,10 @@ object MiniPetRegistry {
         ZonePet(
             id = "pet_sparky",
             name = "Sparky",
-            title = "Cyber Kitten Balloon",
+            title = "Clockwork Kitten Balloon",
             emoji = "🐱⚡",
-            primaryColor = Color(0xFF06D6A0),
-            glowColor = Color(0xFF00F0FF),
+            primaryColor = Color(0xFF2FA36B),
+            glowColor = Color(0xFF2F6DB3),
             trait = "Overcharges lightning strikes",
             voiceQuote = "Purr! Voltage at 100%!",
             bossCheerQuote = "Zap the boss shield with all your might!"
