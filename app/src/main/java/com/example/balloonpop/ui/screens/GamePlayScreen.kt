@@ -809,51 +809,61 @@ fun GamePlayScreen(
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            // 1. RESUME PILL BUTTON (Lush Emerald Green)
-                            PausePillButton(
+                            // Pass 6: pause actions are storybook JewelButtons
+                            // on the plum card (was: generic candy pill buttons).
+                            // 1. RESUME — SUNSET
+                            JewelButton(
                                 text = "RESUME",
-                                icon = "▶",
-                                gradient = listOf(Color(0xFF4ADE80), Color(0xFF22C55E), Color(0xFF15803D)),
-                                shadowSpotColor = Color(0xFF22C55E),
                                 onClick = onResume,
-                                testTag = "resume_game_button"
+                                style = JewelButtonStyle.SUNSET,
+                                modifier = Modifier.fillMaxWidth(),
+                                testTag = "resume_game_button",
+                                leading = {
+                                    Text(text = "▶", fontSize = 18.sp, color = Color.White, modifier = Modifier.padding(end = 10.dp))
+                                }
                             )
 
-                            // 2. SETTINGS PILL BUTTON (Royal Cerulean Blue)
-                            PausePillButton(
+                            // 2. SETTINGS — SKY
+                            JewelButton(
                                 text = "SETTINGS",
-                                icon = "⚙️",
-                                gradient = listOf(Color(0xFF38BDF8), Color(0xFF2563EB), Color(0xFF1D4ED8)),
-                                shadowSpotColor = Color(0xFF38BDF8),
                                 onClick = onOpenSettings,
-                                testTag = "pause_settings_button"
+                                style = JewelButtonStyle.SKY,
+                                modifier = Modifier.fillMaxWidth(),
+                                testTag = "pause_settings_button",
+                                leading = {
+                                    Text(text = "⚙️", fontSize = 18.sp, color = Color.White, modifier = Modifier.padding(end = 10.dp))
+                                }
                             )
 
-                            // 3. RESTART PILL BUTTON (Warm Tangerine Orange)
-                            PausePillButton(
+                            // 3. RESTART — PLUM
+                            JewelButton(
                                 text = "RESTART",
-                                icon = "🔄",
-                                gradient = listOf(Color(0xFFFDBA74), Color(0xFFFB923C), Color(0xFFEA580C)),
-                                shadowSpotColor = Color(0xFFFB923C),
                                 onClick = onRestart,
-                                testTag = "restart_game_button"
+                                style = JewelButtonStyle.PLUM,
+                                modifier = Modifier.fillMaxWidth(),
+                                testTag = "restart_game_button",
+                                leading = {
+                                    Text(text = "🔄", fontSize = 18.sp, color = Color.White, modifier = Modifier.padding(end = 10.dp))
+                                }
                             )
 
-                            // 4. MAIN MENU PILL BUTTON (Deep Candy Purple)
-                            PausePillButton(
+                            // 4. MAIN MENU — PLUM
+                            JewelButton(
                                 text = "MAIN MENU",
-                                icon = "🏠",
-                                gradient = listOf(Color(0xFFC084FC), Color(0xFFA855F7), Color(0xFF7C3AED)),
-                                shadowSpotColor = Color(0xFFA855F7),
                                 onClick = onQuitToMenu,
-                                testTag = "quit_game_button"
+                                style = JewelButtonStyle.PLUM,
+                                modifier = Modifier.fillMaxWidth(),
+                                testTag = "quit_game_button",
+                                leading = {
+                                    Text(text = "🏠", fontSize = 18.sp, color = Color.White, modifier = Modifier.padding(end = 10.dp))
+                                }
                             )
 
                             Spacer(modifier = Modifier.height(6.dp))
 
                             // Subtle Footer Caption
                             Text(
-                                text = "Version 1.4.2 • Tap outside to resume",
+                                text = "Version 1.4 • Tap outside to resume",
                                 fontFamily = NunitoFontFamily,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
@@ -1408,13 +1418,10 @@ private fun GameOrbButton(
         else -> "+" // Pass 4: 0 charges -> clear "+" buy affordance (opens buy dialog)
     }
 
-    // Pass 5 (research rule 6): count badges are plum with a white bold number;
-    // at 0 charges the badge becomes gold "+" (the buy affordance).
-    val finalBadgeBgColor = when {
-        isOnCooldown -> Color(0xFF475569)
-        count == 0 -> StoryGold
-        else -> Color(0xFF241A4D)
-    }
+    // Pass 6: the dock badge is ALWAYS a filled dark-plum circle with a
+    // 1.5dp gold border and a bold white number (Pass 5's per-state badge
+    // colours were unreadable over the orb art in the user's recording).
+    // The badge text still shows the cooldown seconds / "+" buy affordance.
 
     Column(
         modifier = modifier
@@ -1430,9 +1437,13 @@ private fun GameOrbButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        // Pass 6: outer wrapper Box — the count badge is a child of THIS box
+        // (not of the clipped orb circle below), so the orb's CircleShape
+        // clip can no longer crop the badge where it overhangs the corner.
+        Box(modifier = Modifier.size(56.dp)) {
         Box(
             modifier = Modifier
-                .size(56.dp)
+                .fillMaxSize()
                 .shadow(12.dp, CircleShape, spotColor = if (isEnabled) glowColor else Color.Transparent)
                 .clip(CircleShape)
                 .background(Brush.radialGradient(orbGradient))
@@ -1475,22 +1486,27 @@ private fun GameOrbButton(
 
             Text(text = icon, fontSize = 26.sp)
 
-            // Top-right Charges / Coin Cost / Cooldown Pill Badge
+        }
+
+            // Pass 6: top-right count badge — filled dark-plum circle (22dp)
+            // with a 1.5dp gold border and a bold white number, sitting proud
+            // of the orb's corner so it reads at a glance mid-game.
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = 6.dp, y = (-3).dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(finalBadgeBgColor)
-                    .border(1.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                    .offset(x = 5.dp, y = (-5).dp)
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF241A4D))
+                    .border(1.5.dp, StoryGold, CircleShape),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = badgeText,
                     fontFamily = NunitoFontFamily,
-                    fontSize = 9.sp,
+                    fontSize = if (isOnCooldown) 8.sp else 11.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (count == 0 && !isOnCooldown) PlumText else Color.White
+                    color = Color.White
                 )
             }
         }
@@ -1503,76 +1519,5 @@ private fun GameOrbButton(
             color = if (isEnabled) Color.White else Color(0x99FFFFFF),
             letterSpacing = 0.5.sp
         )
-    }
-}
-
-@Composable
-private fun PausePillButton(
-    text: String,
-    icon: String,
-    gradient: List<Color>,
-    shadowSpotColor: Color,
-    onClick: () -> Unit,
-    testTag: String
-) {
-    val interaction = remember { MutableInteractionSource() }
-    val isPressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(targetValue = if (isPressed) 0.95f else 1.0f, label = "pill_press")
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .scale(scale)
-            .shadow(12.dp, RoundedCornerShape(28.dp), spotColor = shadowSpotColor)
-            .clip(RoundedCornerShape(28.dp))
-            .background(Brush.verticalGradient(gradient))
-            .border(
-                width = 1.5.dp,
-                brush = Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.8f), Color.White.copy(alpha = 0.15f))),
-                shape = RoundedCornerShape(28.dp)
-            )
-            .clickable(interactionSource = interaction, indication = null) { onClick() }
-            .testTag(testTag)
-            .padding(horizontal = 20.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        // Specular highlight crescent
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth(0.85f)
-                .height(16.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Brush.verticalGradient(listOf(Color.White.copy(alpha = 0.45f), Color.Transparent)))
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
-            // Icon in translucent circular badge
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.25f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = icon, fontSize = 18.sp, color = Color.White)
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Text(
-                text = text,
-                fontFamily = Baloo2FontFamily,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White,
-                letterSpacing = 1.sp
-            )
-        }
     }
 }

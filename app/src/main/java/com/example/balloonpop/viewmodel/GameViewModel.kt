@@ -1218,9 +1218,27 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // 5. Spawning Balloons based on precise delta time
+        // Pass 6 (user's screen recording): Stage 1 repeatedly sat EMPTY —
+        // escaped balloons outpaced the plain interval timer (19/35 pops at
+        // timeout). Density floor: while PLAYING (stepFrame's gate), if the
+        // unpopped balloons on screen drop below the floor for this part of
+        // the game, spawn immediately instead of waiting for the interval.
         spawnAccumulator += dtSeconds
         val effectiveInterval = if (freezeTimeRemaining > 0f) spawnIntervalSeconds * 2f else spawnIntervalSeconds
-        if (spawnAccumulator >= effectiveInterval) {
+        val activeBalloons = synchronized(balloons) { balloons.count { !it.popped } }
+        val densityFloor = if (state.gameMode == GameMode.CAMPAIGN) {
+            when {
+                state.currentLevel <= 20 -> 7  // zones 1-2 (stages 1-20)
+                state.currentLevel <= 80 -> 8  // zones 3-8
+                else -> 9                       // zones 9-20
+            }
+        } else {
+            8 // endless modes
+        }
+        if (activeBalloons < densityFloor) {
+            spawnAccumulator = 0f
+            spawnBalloon()
+        } else if (spawnAccumulator >= effectiveInterval) {
             spawnAccumulator = 0f
             spawnBalloon()
         }
@@ -1374,7 +1392,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun spawnBalloon() {
-        val radius = 42f + Random.nextFloat() * 24f
+        // Pass 6: balloons were too small to tap comfortably (user recording).
+        val radius = 56f + Random.nextFloat() * 26f
         val x = radius + Random.nextFloat() * (canvasWidth - radius * 2).coerceAtLeast(100f)
         val y = canvasHeight + radius + 15f
 
@@ -1425,7 +1444,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        val baseSpeed = when {
+        val rawSpeed = when {
             type == BalloonType.MEGA_BOSS -> 2.4f
             type == BalloonType.FAST_ROCKET -> 7.8f + Random.nextFloat() * 3.5f
             mode == GameMode.TIME_RUSH -> 6.2f + Random.nextFloat() * 3.0f
@@ -1433,6 +1452,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             mode == GameMode.ZEN -> 2.6f + Random.nextFloat() * 1.5f
             else -> 4.8f + (lvl * 0.05f).coerceAtMost(4.5f) + Random.nextFloat() * 2.8f
         }
+
+        // Pass 6: zone 1-2 stages (1-20) rise ~15% slower so balloons live
+        // longer on screen — in the recording they escaped before they
+        // could be popped.
+        val baseSpeed = if (mode == GameMode.CAMPAIGN && lvl <= 20) rawSpeed * 0.85f else rawSpeed
 
         // Pass 5: standard balloons are painted by the equipped balloon
         // skin (palette + face set + pattern + gloss) instead of the old
@@ -1608,7 +1632,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 createParticleBurst(b.x, b.y, Color(0xFFFFD700), count = 8)
                 _uiState.update { it.copy(poppedCount = it.poppedCount + 1, score = it.score + 50) }
             } else {
-                addFloatingText(b.x, b.y - 15f, "HIT! 🛡️", Color(0xFF4A90C4))
+                addFloatingText(b.x, b.y - 15f, "HIT! 🛡️", Color(0xFF38BDF8))
                 createSparks(b.x, b.y, Color(0xFF4A90C4), count = 8)
             }
             return
@@ -1674,7 +1698,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         when (b.type) {
             BalloonType.BOMB -> {
                 sound.playBomb()
-                addFloatingText(b.x, b.y, "BOMB! 💥", Color(0xFFC93A5E))
+                addFloatingText(b.x, b.y, "BOMB! 💥", Color(0xFFFF5C8A))
                 internalSkillEnergy = (internalSkillEnergy - 20f).coerceAtLeast(0f)
                 if (_uiState.value.gameMode != GameMode.ZEN) {
                     val remainingLives = _uiState.value.lives - 1
@@ -1689,7 +1713,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 sound.playFreeze()
                 freezeTimeRemaining = 4.0f
                 _uiState.update { it.copy(isFreezeActive = true) }
-                addFloatingText(b.x, b.y, "FREEZE! ❄️", Color(0xFF4A90C4))
+                addFloatingText(b.x, b.y, "FREEZE! ❄️", Color(0xFF38BDF8))
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.MULTIPLIER -> {
@@ -1704,9 +1728,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val currentLives = _uiState.value.lives
                 if (currentLives < 3) {
                     _uiState.update { it.copy(lives = currentLives + 1) }
-                    addFloatingText(b.x, b.y, "+1 LIFE ❤️", Color(0xFFC93A5E))
+                    addFloatingText(b.x, b.y, "+1 LIFE ❤️", Color(0xFFFF5C8A))
                 } else {
-                    addFloatingText(b.x, b.y, "+10 ❤️", Color(0xFFC93A5E))
+                    addFloatingText(b.x, b.y, "+10 ❤️", Color(0xFFFF5C8A))
                 }
                 applyScoreAndPop(b, comboMult)
             }
@@ -1722,7 +1746,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 sound.playRainbowPop()
                 val newCoins = _uiState.value.coins + 2
                 repository.setCoins(newCoins)
-                addFloatingText(b.x, b.y, "+30 🌈 +2🪙", Color(0xFF7C4DBD))
+                addFloatingText(b.x, b.y, "+30 🌈 +2🪙", Color(0xFFB388FF))
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.FAST_ROCKET -> {
@@ -1734,7 +1758,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             BalloonType.SPLITTER -> {
                 sound.playPop(b.radius)
-                addFloatingText(b.x, b.y, "SPLIT! 🫧", Color(0xFF2F6DB3))
+                addFloatingText(b.x, b.y, "SPLIT! 🫧", Color(0xFF38BDF8))
                 // Spawn 2 mini-balloons
                 synchronized(balloons) {
                     if (balloons.size < 26) {
@@ -1770,7 +1794,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 sound.playShieldCrack()
                 val newCoins = _uiState.value.coins + 3
                 repository.setCoins(newCoins)
-                addFloatingText(b.x, b.y, "ARMOR BROKEN! 🛡️ +35", Color(0xFF94A3B8))
+                addFloatingText(b.x, b.y, "ARMOR BROKEN! 🛡️ +35", Color(0xFFE2E8F0))
                 applyScoreAndPop(b, comboMult)
             }
             BalloonType.MYSTERY_GIFT -> {
@@ -1792,7 +1816,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     else -> {
                         freezeTimeRemaining = 3.5f
                         _uiState.update { it.copy(isFreezeActive = true) }
-                        addFloatingText(b.x, b.y, "GIFT: BLIZZARD! ❄️", Color(0xFF4A90C4))
+                        addFloatingText(b.x, b.y, "GIFT: BLIZZARD! ❄️", Color(0xFF38BDF8))
                     }
                 }
                 applyScoreAndPop(b, comboMult)
@@ -1841,7 +1865,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else -> {
                 sound.playBalloonPop(b.type, b.radius)
                 val pts = b.type.points * comboMult
-                addFloatingText(b.x, b.y, "+$pts", b.color)
+                // Pass 6: score pops are white — balloon colours include dark
+                // navy/purple skin palettes that rendered near-black.
+                addFloatingText(b.x, b.y, "+$pts", Color.White)
                 applyScoreAndPop(b, comboMult, newCombo, newMaxCombo)
             }
         }
@@ -1911,12 +1937,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (currentMode == GameMode.CAMPAIGN) {
             sound.playMiss()
             triggerVibration(35L)
-            currentScreenShake = if (newMissed > maxAllowed) 26f else 16f
+            currentScreenShake = if (newMissed >= maxAllowed) 26f else 16f
 
-            if (newMissed > maxAllowed) {
-                // If the person missed more balloon than limit, it automatically game over!
+            if (newMissed >= maxAllowed) {
+                // Pass 6: the miss that REACHES the displayed limit ends the
+                // stage (was `>`, so the HUD could sit at 6/6 for ~30s with
+                // the stage still alive — user's recording).
                 sound.playMissWarning()
-                addFloatingText(clampedX, 70f, "❌ LIMIT EXCEEDED! ($newMissed/$maxAllowed)", Color(0xFFEF4444))
+                addFloatingText(clampedX, 70f, "❌ MISS LIMIT REACHED! ($newMissed/$maxAllowed)", Color(0xFFEF4444))
                 _uiState.update {
                     it.copy(
                         missedCount = newMissed,
@@ -1926,7 +1954,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 gameOver(GameOverReason.MISSED_LIMIT)
             } else {
-                val warningColor = if (newMissed == maxAllowed) Color(0xFFF97316) else Color(0xFFFFD166)
+                // Pass 6: orange warning now fires on the LAST safe miss
+                // (one before the limit), since the limit miss ends the stage.
+                val warningColor = if (newMissed == maxAllowed - 1) Color(0xFFF97316) else Color(0xFFFFD166)
                 val text = "💨 MISSED ($newMissed/$maxAllowed)"
                 addFloatingText(clampedX, 70f, text, warningColor)
                 _uiState.update {
@@ -2155,7 +2185,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     applyScoreAndPop(b, comboMultiplier = 3)
                     createParticleBurst(b.x, b.y, Color(0xFF38BDF8), count = 14)
                     createShockwave(b.x, b.y, Color(0xFF4A90C4), maxRadius = 120f)
-                    addFloatingText(b.x, b.y, "+120 ⚡ THUNDER!", Color(0xFF2F6DB3))
+                    addFloatingText(b.x, b.y, "+120 ⚡ THUNDER!", Color(0xFF38BDF8))
                 }
 
                 if (bombTargets.isEmpty() && chosenOthers.isEmpty()) {
@@ -2190,7 +2220,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     triggerCandyPraise("COLOR CRUSH! 🌈")
                 } else {
-                    addFloatingText(canvasWidth / 2f, canvasHeight / 2f, "🌈 RAINBOW BURST!", Color(0xFFB03060))
+                    addFloatingText(canvasWidth / 2f, canvasHeight / 2f, "🌈 RAINBOW BURST!", Color(0xFFFF5C8A))
                 }
             }
 
@@ -2256,7 +2286,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                         }
                     }
                 }
-                addFloatingText(cx, cy, "🌀 VORTEX! +400", Color(0xFF2FA36B))
+                addFloatingText(cx, cy, "🌀 VORTEX! +400", Color(0xFF3ED6A5))
                 triggerCandyPraise("VORTEX! 🌀")
             }
         }
@@ -2682,7 +2712,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 freezeTimeRemaining = 6.0f
                 sound.playFreeze()
                 currentScreenShake = 12f
-                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "⏱️ CHRONO STASIS!", Color(0xFF4A90C4))
+                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "⏱️ CHRONO STASIS!", Color(0xFF38BDF8))
                 _uiState.update {
                     it.copy(
                         isFreezeActive = true,
@@ -2698,7 +2728,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             SkillType.MAGNET_PULL -> {
                 sound.playPop()
                 currentScreenShake = 14f
-                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "🧲 VORTEX MAGNET!", Color(0xFFC93A5E))
+                addFloatingText(canvasWidth / 2f, canvasHeight * 0.42f, "🧲 VORTEX MAGNET!", Color(0xFFFF5C8A))
                 _uiState.update {
                     it.copy(
                         isSkillActive = true,

@@ -289,14 +289,17 @@ private fun StagePrimaryButton(
     text: String,
     onClick: () -> Unit,
     testTag: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Pass 6: optional dark text for callers on the bright sunset face.
+    textColor: Color? = null
 ) {
     JewelButton(
         text = text,
         onClick = onClick,
         style = JewelButtonStyle.SUNSET,
         testTag = testTag,
-        modifier = modifier
+        modifier = modifier,
+        textColorOverride = textColor
     )
 }
 
@@ -366,10 +369,13 @@ private fun RevivePill(
     ) {
         Text(
             text = text,
-            fontSize = DesignTokens.SizeBody,
+            // Pass 6: slightly smaller + single line so the longer labelled
+            // revive offers ("▶ +15s · Free (Ad)") never wrap inside the pill.
+            fontSize = 13.sp,
             fontWeight = FontWeight.Black,
             color = PlumText,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 1
         )
     }
 }
@@ -463,8 +469,16 @@ fun FailedStageDialog(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(DesignTokens.Space16)
         ) {
-            // Ribbon headline names the near-miss, not the failure (research §5).
-            DialogRibbon(text = "So Close!", berry = true)
+            // Pass 6: the card now OPENS with an unmistakable headline —
+            // the recording's fail dialog never actually said it was one.
+            Text(
+                text = "Level Failed!",
+                fontFamily = Baloo2FontFamily,
+                fontSize = DesignTokens.SizeH1,
+                fontWeight = FontWeight.Black,
+                color = PlumText,
+                textAlign = TextAlign.Center
+            )
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -488,14 +502,14 @@ fun FailedStageDialog(
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
             ) {
                 RevivePill(
-                    text = "+15s \u00B7 100 coins",
+                    text = "⏱ +15s \u00B7 100 coins",
                     onClick = onPlayOn,
                     testTag = "failed_play_on_button",
                     modifier = Modifier.weight(1f)
                 )
                 if (onWatchAdToRevive != null) {
                     RevivePill(
-                        text = "+15s \u00B7 Free",
+                        text = "▶ +15s \u00B7 Free (Ad)",
                         onClick = onWatchAdToRevive,
                         testTag = "failed_watch_ad_revive_button",
                         modifier = Modifier.weight(1f)
@@ -507,7 +521,10 @@ fun FailedStageDialog(
                 text = "Retry",
                 onClick = onRetry,
                 testTag = "failed_retry_button",
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                // Pass 6: dark plum text — white on the sunset gradient was
+                // low-contrast in the user's recording.
+                textColor = PlumText
             )
 
             Row(

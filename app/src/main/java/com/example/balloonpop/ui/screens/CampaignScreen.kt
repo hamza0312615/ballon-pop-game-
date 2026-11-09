@@ -318,15 +318,12 @@ fun CampaignScreen(
                     )
             )
 
-            // 4. Modern Unified Segmented Toolbar (Build, Map, Stars, Spin with tiny pulsing notification dot, Settings)
+            // 4. Modern Unified Segmented Toolbar (Map, Stars, Spin with tiny pulsing notification dot, Settings)
+            // Pass 6: the "🔨 Build 24" segment is GONE — it was a hardcoded
+            // fake counter that read as a dev chip on the player map.
             ModernSecondaryNavRow(
                 starsEarned = zoneStars,
                 totalStars = 30,
-                buildPoints = 24,
-                onOpenBuild = {
-                    soundManager.playMenuClick()
-                    onOpenSkillVault()
-                },
                 onOpenWorldMap = {
                     soundManager.playDialogOpen()
                     showZoneOverviewDialog = true
@@ -1143,8 +1140,6 @@ private fun ModernZoneHeaderCard(
 private fun ModernSecondaryNavRow(
     starsEarned: Int,
     totalStars: Int,
-    buildPoints: Int,
-    onOpenBuild: () -> Unit,
     onOpenWorldMap: () -> Unit,
     onOpenSpin: () -> Unit,
     onOpenSettings: () -> Unit
@@ -1170,22 +1165,7 @@ private fun ModernSecondaryNavRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 1. Build Segment Pill (Amber tint)
-        ModernNavSegment(
-            icon = "🔨",
-            label = "Build $buildPoints",
-            tintColor = Color(0x28F59E0B),
-            borderColor = Color(0x88F59E0B),
-            textColor = Color.White,
-            onClick = {
-                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                onOpenBuild()
-            },
-            testTag = "campaign_status_build_btn",
-            modifier = Modifier.weight(1f)
-        )
-
-        // 2. World Map Segment Pill (Cyan tint)
+        // 1. World Map Segment Pill (Cyan tint)
         ModernNavSegment(
             icon = "🗺️",
             label = "Map",
@@ -1200,7 +1180,7 @@ private fun ModernSecondaryNavRow(
             modifier = Modifier.weight(0.85f)
         )
 
-        // 3. Stars Earned Segment Pill (Gold tint)
+        // 2. Stars Earned Segment Pill (Gold tint)
         ModernNavSegment(
             icon = "⭐",
             label = "$starsEarned / $totalStars",
@@ -1212,7 +1192,7 @@ private fun ModernSecondaryNavRow(
             modifier = Modifier.weight(1.05f)
         )
 
-        // 4. Daily Spin Segment Pill (Sky Blue tint with pulsing notification dot)
+        // 3. Daily Spin Segment Pill (Sky Blue tint with pulsing notification dot)
         ModernNavSegment(
             icon = "🎡",
             label = "Spin",
@@ -1229,7 +1209,7 @@ private fun ModernSecondaryNavRow(
             modifier = Modifier.weight(0.85f)
         )
 
-        // 5. Settings Gear (Purple tint)
+        // 4. Settings Gear (Purple tint)
         val settingsInteraction = remember { MutableInteractionSource() }
         val settingsPressed by settingsInteraction.collectIsPressedAsState()
         val settingsScale by animateFloatAsState(

@@ -548,9 +548,20 @@ fun GameCanvas(
         }
 
         // 6. Draw Floating Score/Combo Texts
+        // Pass 6: explicit dark-plum outline pass (offset copy under the
+        // bright face) — the paint's soft shadow alone left dark texts
+        // unreadable on the gradient in the user's recording.
         synchronized(floatingTexts) {
             for (ft in floatingTexts) {
                 val alphaInt = (ft.alpha.coerceIn(0f, 1f) * 255).toInt()
+                textPaint.color = android.graphics.Color.rgb(23, 18, 51)
+                textPaint.alpha = (alphaInt * 0.6f).toInt()
+                drawContext.canvas.nativeCanvas.drawText(
+                    ft.text,
+                    ft.x + 2.5f,
+                    ft.y + 2.5f,
+                    textPaint
+                )
                 textPaint.color = ft.color.toArgb()
                 textPaint.alpha = alphaInt
                 drawContext.canvas.nativeCanvas.drawText(

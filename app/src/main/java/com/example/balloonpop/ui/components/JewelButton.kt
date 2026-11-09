@@ -52,6 +52,8 @@ enum class JewelButtonStyle(
     val textColor: Color
 ) {
     SUNSET(SunsetTop, SunsetBottom, SunsetShelf, Color.White),
+    // Pass 6: sky family for the pause menu's Settings action.
+    SKY(Color(0xFF7ED3FC), Color(0xFF2F7FD0), Color(0xFF1E40AF), Color.White),
     GOLD(Color(0xFFFFD166), StoryGold, StoryGoldShelf, Color(0xFF2A1B4E)),
     MINT(Color(0xFF6FEBC0), StoryMint, StoryMintShelf, Color(0xFF0B2E23)),
     BERRY(Color(0xFFFF7A97), StoryBerry, StoryBerryShelf, Color.White),
@@ -74,6 +76,8 @@ fun JewelButton(
     minHeight: Dp = DesignTokens.ButtonMinHeight,
     shape: Shape = DesignTokens.ShapeButtonStory,
     testTag: String? = null,
+    // Pass 6: lets a caller put dark text on a bright face (fail-dialog Retry).
+    textColorOverride: Color? = null,
     leading: (@Composable RowScope.() -> Unit)? = null
 ) {
     JewelButtonContainer(
@@ -88,7 +92,7 @@ fun JewelButton(
         if (leading != null) leading()
         Text(
             text = text,
-            color = if (enabled) style.textColor else style.textColor.copy(alpha = 0.55f),
+            color = if (enabled) (textColorOverride ?: style.textColor) else (textColorOverride ?: style.textColor).copy(alpha = 0.55f),
             fontFamily = Baloo2FontFamily,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 18.sp,
