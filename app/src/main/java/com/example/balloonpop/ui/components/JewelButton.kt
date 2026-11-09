@@ -120,7 +120,7 @@ fun JewelButtonContainer(
     val pressed by interaction.collectIsPressedAsState()
     val sink by animateDpAsState(
         targetValue = if (pressed && enabled) DesignTokens.ShelfDepth else 0.dp,
-        animationSpec = DesignTokens.ButtonPressSpring,
+        animationSpec = DesignTokens.ButtonPressSpringDp,
         label = "jewelSink"
     )
     val faceAlpha = if (enabled) 1f else 0.55f

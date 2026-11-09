@@ -441,6 +441,7 @@ fun FailedStageDialog(
         GameOverReason.TIME_EXPIRED -> "Needed $missingPops more pops"
         GameOverReason.BOMB_DETONATION -> "A bomb popped!"
         GameOverReason.LIVES_DEPLETED -> "Out of lives"
+        GameOverReason.MANUAL_QUIT -> "Run saved — nice popping!"
     }
 
     Box(

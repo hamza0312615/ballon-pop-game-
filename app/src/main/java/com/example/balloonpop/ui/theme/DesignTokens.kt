@@ -152,4 +152,10 @@ object DesignTokens {
         dampingRatio = Spring.DampingRatioMediumBouncy,
         stiffness = Spring.StiffnessMedium
     )
+    // Dp twin of ButtonPressSpring (animateDpAsState needs AnimationSpec<Dp>;
+    // added after the Pass 5 compile gate flagged JewelButton's sink animation).
+    val ButtonPressSpringDp = spring<androidx.compose.ui.unit.Dp>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
 }

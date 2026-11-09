@@ -2056,9 +2056,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         //     must not consume a charge when there is nothing to act on
         //     (e.g. Thunder with an empty screen burned the charge, played
         //     the bolt and silently did nothing).
-        val needsTargets = booster.id == BoosterId.THUNDER ||
-            booster.id == BoosterId.HAMMER ||
-            booster.id == BoosterId.VORTEX
+        val needsTargets = booster == InGameBooster.THUNDER_STRIKE ||
+            booster == InGameBooster.HAMMER_SMASH ||
+            booster == InGameBooster.TORNADO_VORTEX
         if (needsTargets) {
             val hasTargets = synchronized(balloons) { balloons.any { !it.popped } }
             if (!hasTargets) {
@@ -2994,7 +2994,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     fun claimQuest(quest: QuestItem) {
         // Pass 5 (audit L9): verify progress before paying — previously a
         // quest could be claimed without meeting its target.
-        if (questProgress(quest) < quest.targetValue) {
+        if (questProgress(quest) < quest.target) {
             showBannerMessage("🎯 Keep going — ${quest.title} isn't complete yet!")
             return
         }

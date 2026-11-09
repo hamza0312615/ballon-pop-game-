@@ -976,6 +976,18 @@ fun DefeatHazardArt(
                 drawLine(Color(0xFFE2E8F0), Offset(cx - w * 0.35f, cy + h * 0.24f), Offset(cx - w * 0.10f, cy + h * 0.24f), strokeWidth = 2.5f, cap = StrokeCap.Round)
                 drawLine(Color(0xFFE2E8F0), Offset(cx - w * 0.20f, cy + h * 0.34f), Offset(cx + w * 0.15f, cy + h * 0.34f), strokeWidth = 2.5f, cap = StrokeCap.Round)
             }
+            com.example.balloonpop.model.GameOverReason.MANUAL_QUIT -> {
+                // Finish Flag — the player chose to bank this run (Pass 5 endless Finish & Save)
+                drawLine(Color(0xFFD8CDBB), Offset(cx - w * 0.10f, cy - h * 0.34f), Offset(cx - w * 0.10f, cy + h * 0.34f), strokeWidth = 3.5f, cap = StrokeCap.Round)
+                val flag = Path().apply {
+                    moveTo(cx - w * 0.10f, cy - h * 0.34f)
+                    lineTo(cx + w * 0.30f, cy - h * 0.26f)
+                    lineTo(cx - w * 0.10f, cy - h * 0.16f)
+                    close()
+                }
+                drawPath(flag, brush = Brush.verticalGradient(listOf(Color(0xFFFFC93C), Color(0xFFF2B134))))
+                drawCircle(Color(0xFFFFC93C), radius = w * 0.05f, center = Offset(cx - w * 0.10f, cy + h * 0.34f))
+            }
         }
     }
 }
