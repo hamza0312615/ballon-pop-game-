@@ -15,23 +15,23 @@ import androidx.compose.ui.unit.sp
  */
 object DesignTokens {
 
-    // --- 1. Colors ---
-    // 1 primary brand color (vibrant warm gold/amber for main CTAs)
-    val PrimaryBrand = Color(0xFFF59E0B)
-    val PrimaryBrandBright = Color(0xFFFFB703)
-    val PrimaryBrandDark = Color(0xFFD97706)
+    // --- 1. Colors (Toybox Stage System) ---
+    // 1 primary brand color (vibrant toy gold for medals/coins)
+    val PrimaryBrand = ToyGold
+    val PrimaryBrandBright = ToyGoldGlow
+    val PrimaryBrandDark = ToyGoldShelf
 
-    // 1 secondary accent (electric teal/cyan for secondary actions & navigation)
-    val SecondaryAccent = Color(0xFF4A90C4)
-    val SecondaryAccentDeep = Color(0xFF0284C7)
+    // 1 secondary accent (toy orange for secondary actions & navigation)
+    val SecondaryAccent = ToyOrangeBottom
+    val SecondaryAccentDeep = ToyOrangeShelf
 
-    // 2 background neutrals (dark navy base + card surface)
-    val BgBaseNavy = Color(0xFF080C16)
-    val BgBaseNavyDeep = Color(0xFF05070D)
-    val SurfaceCardNavy = Color(0xFF131927)
-    val SurfaceCardElevated = Color(0xFF1B2337)
-    val SurfaceBorder = Color(0xFF26334D)
-    val SurfaceBorderSubtle = Color(0x3338BDF8)
+    // 2 background neutrals (theatrical stage base + violet panel surface)
+    val BgBaseNavy = StageMagentaDeep
+    val BgBaseNavyDeep = StageCurtainEdge
+    val SurfaceCardNavy = ToyVioletPanel
+    val SurfaceCardElevated = Color(0xFF642E94)
+    val SurfaceBorder = ToyVioletPanelLight
+    val SurfaceBorderSubtle = Color(0x337A3EAE)
 
     // Semantic status colors
     val SuccessGreen = Color(0xFF10B981)
@@ -98,25 +98,41 @@ object DesignTokens {
         listOf(PrimaryBrandBright, PrimaryBrand, PrimaryBrandDark)
     )
 
-    // --- 4d. Golden Storybook (Pass 5, binding) ---
-    // Physical-button system: every CTA is a vertical gradient face sitting on a
-    // darker "shelf"; pressing sinks the face into the shelf by ShelfDepth.
-    val ShelfDepth = 5.dp
-    const val ShelfDarken = 0.18f       // shelf = face bottom darkened by this fraction
-    const val GlossAlpha = 0.35f        // top-left gloss highlight strength
-    val RadiusCardStory = 28.dp         // storybook cards & dialogs
-    val RadiusButtonStory = 24.dp       // storybook buttons
+    // --- 4d. Toybox Stage Tokens (Pass 10) ---
+    // Chunky beveled plastic button system: vertical gradient face on a darker squish shelf.
+    val ShelfDepth = 6.dp
+    const val ShelfDarken = 0.22f       // shelf = face bottom darkened by this fraction
+    const val GlossAlpha = 0.40f        // top-edge gloss highlight strength
+    val RadiusCardStory = 24.dp         // toy panels & dialogs
+    val RadiusButtonStory = 20.dp       // chunky toy buttons
     val ShapeCardStory = RoundedCornerShape(RadiusCardStory)
     val ShapeButtonStory = RoundedCornerShape(RadiusButtonStory)
 
-    // The one CTA gradient in the game (PLAY / Next / Retry / gem prices)
-    val SunsetGradient = Brush.verticalGradient(
-        listOf(SunsetTop, SunsetBottom)
+    // Hero Lime Gradient (PLAY / Next / Claim)
+    val HeroLimeGradient = Brush.verticalGradient(
+        listOf(HeroLimeTop, HeroLimeBottom)
     )
+    val SunsetGradient = HeroLimeGradient
+
+    // Secondary Toy Orange Gradient
+    val ToyOrangeGradient = Brush.verticalGradient(
+        listOf(ToyOrangeTop, ToyOrangeBottom)
+    )
+
+    // Theatrical Stage World Gradient (#7A1E46 -> #33103D)
+    val StageWorldGradient = Brush.verticalGradient(
+        listOf(StageMagentaTop, StageMagentaDeep)
+    )
+
+    // Wooden Toy Shelf Gradient (#C07F3A with dark wood edge #7A4A16)
+    val WoodShelfGradient = Brush.verticalGradient(
+        listOf(ToyWoodHighlight, ToyWoodFloor, ToyWoodFloorDark)
+    )
+
     val GoldFaceGradient = Brush.verticalGradient(
-        listOf(Color(0xFFFFD166), StoryGold)
+        listOf(ToyGoldGlow, ToyGold)
     )
-    // Currency & HUD tray fill: plum at 55% alpha over the world art
+    // Currency & HUD tray fill: violet pill at 80% alpha
     val PillPlum = PlumPill
 
     // Motion specs (research rule: motion is the polish)

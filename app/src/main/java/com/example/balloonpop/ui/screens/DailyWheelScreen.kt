@@ -86,10 +86,9 @@ fun DailyWheelScreen(
 
     val bgGradient = Brush.verticalGradient(
         listOf(
-            Color(0xFF070B1F),
-            Color(0xFF0F1738),
-            Color(0xFF131742),
-            Color(0xFF0A0D24)
+            com.example.balloonpop.ui.theme.StageMagentaTop,
+            com.example.balloonpop.ui.theme.StageMagentaDeep,
+            com.example.balloonpop.ui.theme.StageCurtainEdge
         )
     )
 

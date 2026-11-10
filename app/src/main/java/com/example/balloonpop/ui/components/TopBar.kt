@@ -146,9 +146,20 @@ private fun ResourceSegment(
     Row(
         modifier = modifier
             .scale(pressScale)
+            .shadow(4.dp, DesignTokens.ShapePill, spotColor = Color(0x66000000))
             .clip(DesignTokens.ShapePill)
-            .background(PlumPill)
-            .border(1.dp, Color.White.copy(alpha = 0.14f), DesignTokens.ShapePill)
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF5A2585), Color(0xFF381454))
+                )
+            )
+            .border(
+                width = 1.5.dp,
+                brush = Brush.verticalGradient(
+                    listOf(Color.White.copy(alpha = 0.45f), Color(0xFF7A3EAE))
+                ),
+                shape = DesignTokens.ShapePill
+            )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

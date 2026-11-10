@@ -102,10 +102,14 @@ fun DailyGiftsDialog(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
                 .widthIn(max = 420.dp)
-                .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeCardStory)
-                .clip(DesignTokens.ShapeCardStory)
-                .background(CreamSurface)
-                .border(2.5.dp, StoryGold, DesignTokens.ShapeCardStory)
+                .shadow(16.dp, RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(24.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF55277D), Color(0xFF381454))
+                    )
+                )
+                .border(2.5.dp, Color(0xFFFFC93C), RoundedCornerShape(24.dp))
                 .padding(horizontal = 16.dp, vertical = 20.dp),
             contentAlignment = Alignment.TopCenter
         ) {
@@ -128,15 +132,15 @@ fun DailyGiftsDialog(
                             fontFamily = Baloo2FontFamily,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Black,
-                            color = PlumText,
+                            color = Color.White,
                             letterSpacing = 0.5.sp
                         )
                         Text(
-                            text = "Log in every day for royal rewards!",
+                            text = "Log in every day for toybox rewards!",
                             fontFamily = NunitoFontFamily,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF7C6F93)
+                            color = Color(0xFFE2D4F0)
                         )
                     }
 
@@ -145,12 +149,12 @@ fun DailyGiftsDialog(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0x18171233))
+                            .background(Color(0x33000000))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close",
-                            tint = PlumText,
+                            tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -275,14 +279,14 @@ private fun DayGiftCard(
 
     val bgBrush = when {
         isToday -> DesignTokens.SunsetGradient
-        isClaimed -> Brush.verticalGradient(listOf(Color(0xFFEDE9FE), Color(0xFFDDD6FE)))
-        else -> Brush.verticalGradient(listOf(Color(0xFFFAF7EE), Color(0xFFF3EEDC)))
+        isClaimed -> Brush.verticalGradient(listOf(Color(0xFF381454), Color(0xFF260D3B)))
+        else -> Brush.verticalGradient(listOf(Color(0xFF6B339B), Color(0xFF4A1F70)))
     }
 
     val borderColor = when {
-        isToday -> StoryGold
-        isClaimed -> Color(0xFF8B5CF6)
-        else -> Color(0xFFE2D9BC)
+        isToday -> Color(0xFFFFC93C)
+        isClaimed -> Color(0xFF7A3EAE)
+        else -> Color(0xFF8F4BC9)
     }
 
     Box(
@@ -306,7 +310,7 @@ private fun DayGiftCard(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(if (isToday) Color(0x33FFFFFF) else Color(0x22171233))
+                    .background(if (isToday) Color(0x33FFFFFF) else Color(0x33000000))
                     .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
@@ -314,7 +318,7 @@ private fun DayGiftCard(
                     fontFamily = Baloo2FontFamily,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (isToday) Color.White else PlumText
+                    color = Color.White
                 )
             }
 
@@ -356,7 +360,7 @@ private fun DayGiftCard(
                 fontFamily = Baloo2FontFamily,
                 fontSize = if (isClaimed) 10.sp else 12.sp,
                 fontWeight = FontWeight.Black,
-                color = if (isToday) Color(0xFFFFD166) else if (isClaimed) Color(0xFF6D28D9) else PlumText,
+                color = if (isToday) Color(0xFFFFD166) else if (isClaimed) Color(0xFFC4B5FD) else Color.White,
                 maxLines = 1
             )
         }
@@ -377,19 +381,19 @@ private fun Day7FeaturedCard(
     val bgBrush = when {
         isToday -> Brush.horizontalGradient(
             listOf(
-                Color(0xFF3B184F),
-                Color(0xFF5B2266),
-                Color(0xFF3B184F)
+                Color(0xFF6B21A8),
+                Color(0xFF8B5CF6),
+                Color(0xFF6B21A8)
             )
         )
         isClaimed -> Brush.horizontalGradient(
-            listOf(Color(0xFFEDE9FE), Color(0xFFDDD6FE), Color(0xFFEDE9FE))
+            listOf(Color(0xFF381454), Color(0xFF260D3B), Color(0xFF381454))
         )
         else -> Brush.horizontalGradient(
             listOf(
-                Color(0xFF261938),
-                Color(0xFF381F4A),
-                Color(0xFF261938)
+                Color(0xFF4A1F70),
+                Color(0xFF5B2788),
+                Color(0xFF4A1F70)
             )
         )
     }
@@ -398,10 +402,10 @@ private fun Day7FeaturedCard(
         modifier = modifier
             .fillMaxWidth()
             .scale(pulseScale)
-            .shadow(if (isToday) 10.dp else 4.dp, RoundedCornerShape(16.dp), spotColor = StoryGold)
+            .shadow(if (isToday) 10.dp else 4.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFFFC93C))
             .clip(RoundedCornerShape(16.dp))
             .background(bgBrush)
-            .border(2.5.dp, StoryGold, RoundedCornerShape(16.dp))
+            .border(2.5.dp, Color(0xFFFFC93C), RoundedCornerShape(16.dp))
             .clickable(interactionSource = interaction, indication = null) { onClick() }
             .padding(horizontal = 14.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center
@@ -437,11 +441,11 @@ private fun Day7FeaturedCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "DAY 7 \u2022 ROYAL CHEST",
+                            text = "DAY 7 \u2022 TOY CHEST",
                             fontFamily = Baloo2FontFamily,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Black,
-                            color = if (isClaimed) Color(0xFF5B21B6) else Color(0xFFFFD166)
+                            color = if (isClaimed) Color(0xFFC4B5FD) else Color(0xFFFFD166)
                         )
                         if (isToday) {
                             Box(
@@ -464,7 +468,7 @@ private fun Day7FeaturedCard(
                         fontFamily = NunitoFontFamily,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isClaimed) Color(0xFF4C1D95) else Color.White
+                        color = if (isClaimed) Color(0xFFA78BFA) else Color.White
                     )
                 }
             }
@@ -475,7 +479,7 @@ private fun Day7FeaturedCard(
                     fontFamily = Baloo2FontFamily,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFF5B21B6)
+                    color = Color(0xFFC4B5FD)
                 )
             } else {
                 Text(

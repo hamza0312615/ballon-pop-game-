@@ -46,15 +46,33 @@ import com.example.balloonpop.ui.components.JellyColorVariant
 import com.example.balloonpop.ui.dialogs.DailyGiftsDialog
 import com.example.balloonpop.ui.components.TopBar
 import com.example.balloonpop.ui.dialogs.CustomChallengeDialog
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.CoralPrimary
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.NunitoFontFamily
 import com.example.balloonpop.ui.theme.CreamSurface
+import com.example.balloonpop.ui.theme.HeroLimeBottom
+import com.example.balloonpop.ui.theme.HeroLimeShelf
+import com.example.balloonpop.ui.theme.HeroLimeTop
+import com.example.balloonpop.ui.theme.StageCurtainEdge
+import com.example.balloonpop.ui.theme.StageMagentaDeep
+import com.example.balloonpop.ui.theme.StageMagentaTop
+import com.example.balloonpop.ui.theme.StageSpotlightWarm
 import com.example.balloonpop.ui.theme.StoryGold
 import com.example.balloonpop.ui.theme.StorybookIndigo
 import com.example.balloonpop.ui.theme.StorybookPlum
 import com.example.balloonpop.ui.theme.StorybookPlumDeep
+import com.example.balloonpop.ui.theme.ToyGold
+import com.example.balloonpop.ui.theme.ToyGoldShelf
+import com.example.balloonpop.ui.theme.ToyOrangeBottom
+import com.example.balloonpop.ui.theme.ToyOrangeShelf
+import com.example.balloonpop.ui.theme.ToyOrangeTop
+import com.example.balloonpop.ui.theme.ToyVioletPanel
+import com.example.balloonpop.ui.theme.ToyVioletPanelDark
+import com.example.balloonpop.ui.theme.ToyWoodFloor
+import com.example.balloonpop.ui.theme.ToyWoodFloorDark
+import com.example.balloonpop.ui.theme.ToyWoodHighlight
 
 /**
  * Home Screen (Quality Pass 4, Royal Match / Candy Crush benchmark):
@@ -131,50 +149,93 @@ fun HomeScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        StorybookPlumDeep, // Golden Storybook night sky
-                        StorybookPlum,
-                        StorybookIndigo,
-                        StorybookPlumDeep
-                    )
-                )
-            )
+            .background(DesignTokens.StageWorldGradient)
     ) {
-        // Decorative background: Soft blurred floating balloons & confetti particles
+        // Theatrical stage diorama background: warm spotlight cone, curtain vignette, wooden floorboards
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
 
-            // Soft glowing ambient balloons in background
-            drawCircle(
-                color = Color(0x184A90C4),
-                radius = 70.dp.toPx(),
-                center = Offset(w * 0.15f, h * 0.28f + ambientBalloonY)
-            )
-            drawCircle(
-                color = Color(0x15C93A5E),
-                radius = 85.dp.toPx(),
-                center = Offset(w * 0.85f, h * 0.35f - ambientBalloonY)
-            )
-            drawCircle(
-                color = Color(0x12FFD700),
-                radius = 65.dp.toPx(),
-                center = Offset(w * 0.22f, h * 0.65f + ambientBalloonY * 0.7f)
-            )
-            drawCircle(
-                color = Color(0x1510B981),
-                radius = 80.dp.toPx(),
-                center = Offset(w * 0.82f, h * 0.72f - ambientBalloonY * 0.6f)
+            // 1. Warm spotlight cone glowing down from top center
+            drawOval(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        Color(0x55FFD166),
+                        Color(0x22FFD166),
+                        Color.Transparent
+                    ),
+                    center = Offset(w * 0.5f, 0f),
+                    radius = h * 0.52f
+                ),
+                topLeft = Offset(w * 0.05f, -h * 0.08f),
+                size = androidx.compose.ui.geometry.Size(w * 0.9f, h * 0.65f)
             )
 
-            // Ambient festive confetti specks
-            drawCircle(Color(0x33FFB703), 2.5.dp.toPx(), Offset(w * 0.3f, h * 0.18f))
-            drawCircle(Color(0x334A90C4), 3.dp.toPx(), Offset(w * 0.7f, h * 0.22f))
-            drawCircle(Color(0x33C93A5E), 2.dp.toPx(), Offset(w * 0.12f, h * 0.45f))
-            drawCircle(Color(0x3310B981), 3.dp.toPx(), Offset(w * 0.88f, h * 0.52f))
-            drawCircle(Color(0x33FFA000), 2.5.dp.toPx(), Offset(w * 0.45f, h * 0.82f))
+            // 2. Theatrical curtain-dark vignette on left and right edges
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    listOf(
+                        StageCurtainEdge.copy(alpha = 0.55f),
+                        Color.Transparent,
+                        StageCurtainEdge.copy(alpha = 0.55f)
+                    )
+                )
+            )
+
+            // 3. Wooden floorboards at the bottom stage (#C07F3A with dark edge planking #7A4A16)
+            val floorTop = h * 0.54f
+            drawRect(
+                brush = Brush.verticalGradient(
+                    colors = listOf(ToyWoodHighlight, ToyWoodFloor, ToyWoodFloorDark),
+                    startY = floorTop,
+                    endY = h
+                ),
+                topLeft = Offset(0f, floorTop),
+                size = androidx.compose.ui.geometry.Size(w, h - floorTop)
+            )
+
+            // Wooden plank horizontal lines
+            val plankCount = 5
+            for (i in 0..plankCount) {
+                val py = floorTop + (h - floorTop) * (i.toFloat() / plankCount)
+                drawLine(
+                    color = ToyWoodFloorDark.copy(alpha = 0.85f),
+                    start = Offset(0f, py),
+                    end = Offset(w, py),
+                    strokeWidth = 2.5f
+                )
+                if (i < plankCount) {
+                    // Wood highlight rim under line
+                    drawLine(
+                        color = Color.White.copy(alpha = 0.15f),
+                        start = Offset(0f, py + 2.5f),
+                        end = Offset(w, py + 2.5f),
+                        strokeWidth = 1f
+                    )
+                }
+            }
+
+            // Ambient floating balloons
+            drawCircle(
+                color = Color(0x334A90C4),
+                radius = 60.dp.toPx(),
+                center = Offset(w * 0.12f, h * 0.22f + ambientBalloonY)
+            )
+            drawCircle(
+                color = Color(0x33E11D48),
+                radius = 75.dp.toPx(),
+                center = Offset(w * 0.88f, h * 0.26f - ambientBalloonY)
+            )
+            drawCircle(
+                color = Color(0x33F59E0B),
+                radius = 55.dp.toPx(),
+                center = Offset(w * 0.18f, h * 0.45f + ambientBalloonY * 0.7f)
+            )
+
+            // Sparkle dust specks
+            drawCircle(Color(0x66FFEA00), 3.dp.toPx(), Offset(w * 0.32f, h * 0.15f))
+            drawCircle(Color(0x66A6F750), 3.dp.toPx(), Offset(w * 0.68f, h * 0.18f))
+            drawCircle(Color(0x66FFD166), 2.5.dp.toPx(), Offset(w * 0.84f, h * 0.40f))
         }
 
         // Main Layout Container
@@ -194,68 +255,87 @@ fun HomeScreen(
                 onOpenSettings = onOpenSettings
             )
 
-            // 2. Hero Centerpiece: Mascot + Layered 3D Logo Lockup
+            // 2. Hero Centerpiece: Mascot + Stage Diorama + Balloon Buddies
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = DesignTokens.Space4),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // The one prominent mascot, sitting directly above the title and
-                // the PLAY hero below it. The small duplicate mascots that used to
-                // flank the title are gone so this one reads as the hero character.
-                // Pass 5: Popster centre-stage on a golden stage disc.
+                // Popster centre-stage diorama on wooden stage floor with balloon buddies
                 Box(
-                    modifier = Modifier
-                        .size(138.dp)
-                        .shadow(DesignTokens.ElevationMedium, CircleShape, spotColor = StoryGold)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                listOf(
-                                    Color(0xFFFFE9A8),
-                                    StoryGold,
-                                    Color(0xFFD99A16)
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.padding(vertical = DesignTokens.Space4)
+                ) {
+                    // Balloon buddies flanking Popster
+                    Row(
+                        modifier = Modifier.width(220.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Left buddy: glossy cyan balloon
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .offset(y = (-10).dp)
+                                .shadow(6.dp, CircleShape, spotColor = Color(0xFF0284C7))
+                                .clip(CircleShape)
+                                .background(Brush.radialGradient(listOf(Color(0xFF7DD3FC), Color(0xFF0284C7))))
+                                .border(1.5.dp, Color.White.copy(alpha = 0.8f), CircleShape)
+                        )
+                        // Right buddy: glossy ruby balloon
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .offset(y = (-10).dp)
+                                .shadow(6.dp, CircleShape, spotColor = Color(0xFFE11D48))
+                                .clip(CircleShape)
+                                .background(Brush.radialGradient(listOf(Color(0xFFFDA4AF), Color(0xFFE11D48))))
+                                .border(1.5.dp, Color.White.copy(alpha = 0.8f), CircleShape)
+                        )
+                    }
+
+                    // Wooden stage disc
+                    Box(
+                        modifier = Modifier
+                            .size(138.dp)
+                            .shadow(DesignTokens.ElevationStrong, CircleShape, spotColor = Color(0x66000000))
+                            .clip(CircleShape)
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(ToyWoodHighlight, ToyWoodFloor, ToyWoodFloorDark)
                                 )
                             )
+                            .border(3.dp, ToyGold, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        com.example.balloonpop.ui.components.MascotCharacter(
+                            mood = com.example.balloonpop.ui.components.MascotMood.JOYFUL,
+                            size = 96.dp,
+                            modifier = Modifier.offset(y = mascotBob.dp)
                         )
-                        .border(3.dp, Color(0xFFFFF3C4), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    com.example.balloonpop.ui.components.MascotCharacter(
-                        mood = com.example.balloonpop.ui.components.MascotMood.JOYFUL,
-                        size = 96.dp,
-                        modifier = Modifier.offset(y = mascotBob.dp)
-                    )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(DesignTokens.Space8))
 
-                // Layered 3D Title Banner: BALLOON POP
+                // Layered 3D Title Banner: BALLOON POP (Toybox Stage plank)
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.94f)
-                        .shadow(DesignTokens.ElevationActive, DesignTokens.ShapeCard, spotColor = DesignTokens.PrimaryBrand)
-                        .clip(DesignTokens.ShapeCard)
+                        .fillMaxWidth(0.92f)
+                        .shadow(12.dp, RoundedCornerShape(18.dp), spotColor = Color(0x66000000))
+                        .clip(RoundedCornerShape(18.dp))
                         .background(
                             Brush.verticalGradient(
-                                listOf(
-                                    Color(0xFF1E1710),
-                                    Color(0xFF140F0A),
-                                    Color(0xFF0C0905)
-                                )
+                                listOf(Color(0xFF6B2D9E), Color(0xFF45196E))
                             )
                         )
                         .border(
-                            2.dp,
-                            Brush.linearGradient(
-                                listOf(
-                                    Color(0xFFFFEA00),
-                                    DesignTokens.PrimaryBrandBright,
-                                    DesignTokens.PrimaryBrandDark
-                                )
+                            2.5.dp,
+                            Brush.verticalGradient(
+                                listOf(Color(0xFFFFEA00), ToyGold, ToyGoldShelf)
                             ),
-                            DesignTokens.ShapeCard
+                            RoundedCornerShape(18.dp)
                         )
                         .padding(vertical = DesignTokens.Space8, horizontal = DesignTokens.Space16),
                     contentAlignment = Alignment.Center
@@ -263,18 +343,27 @@ fun HomeScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "BALLOON POP",
-                            fontSize = DesignTokens.TypeTierTitle,
+                            fontFamily = Baloo2FontFamily,
+                            fontSize = 28.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFFFFEA00),
+                            color = Color.White,
                             letterSpacing = 2.sp,
+                            style = androidx.compose.ui.text.TextStyle(
+                                shadow = androidx.compose.ui.graphics.Shadow(
+                                    color = Color(0xFF2E084D),
+                                    offset = Offset(0f, 3f),
+                                    blurRadius = 4f
+                                )
+                            ),
                             maxLines = 1
                         )
                         Text(
-                            text = "CASUAL DELUXE ADVENTURE",
-                            fontSize = DesignTokens.SizeMicro,
+                            text = "TOYBOX STAGE DELUXE",
+                            fontFamily = Baloo2FontFamily,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFFEF3C7),
-                            letterSpacing = 1.sp,
+                            color = ToyGold,
+                            letterSpacing = 1.2.sp,
                             maxLines = 1
                         )
                     }
@@ -339,147 +428,170 @@ fun HomeScreen(
                     }
                 }
 
-                // Secondary row 1: game modes and storefront actions.
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    HomeIconActionButton(
-                        iconContent = {
-                            EndlessModeArt(GameMode.ARCADE, modifier = Modifier.size(26.dp))
-                        },
-                        label = "Endless",
-                        accentColor = DesignTokens.SecondaryAccent,
-                        onClick = onOpenEndless,
-                        testTag = "home_endless_rush_button",
-                        modifier = Modifier.weight(1f)
-                    )
-                    HomeIconActionButton(
-                        iconContent = {
-                            SkillVaultArt("skill_hammer_slide", modifier = Modifier.size(26.dp))
-                        },
-                        label = "Vault",
-                        accentColor = Color(0xFFA855F7),
-                        onClick = onOpenSkillVault,
-                        testTag = "home_skill_vault_button",
-                        modifier = Modifier.weight(1f)
-                    )
-                    HomeIconActionButton(
-                        iconContent = {
-                            HomeNavIcon(type = "SPIN", modifier = Modifier.size(26.dp))
-                        },
-                        label = "Spin",
-                        accentColor = Color(0xFFC084FC),
-                        badge = "FREE",
-                        onClick = onOpenDailySpin,
-                        testTag = "home_quick_daily_spin",
-                        modifier = Modifier.weight(1f)
-                    )
-                    HomeIconActionButton(
-                        iconContent = {
-                            HomeNavIcon(type = "SHOP", modifier = Modifier.size(26.dp))
-                        },
-                        label = "Shop",
-                        accentColor = DesignTokens.PrimaryBrandBright,
-                        badge = "SALE",
-                        onClick = onOpenShop,
-                        testTag = "home_quick_shop",
-                        modifier = Modifier.weight(1f)
-                    )
-                    HomeIconActionButton(
-                        iconContent = {
-                            HomeNavIcon(type = "QUESTS", modifier = Modifier.size(26.dp))
-                        },
-                        label = "Quests",
-                        accentColor = DesignTokens.SuccessGreenBright,
-                        badge = "NEW",
-                        onClick = onOpenQuests,
-                        testTag = "home_quick_quests",
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                // Secondary row 2: ranks, settings and the two helper actions that
-                // used to be pills under the title (same callbacks, same test tags).
-                Row(
+                // Chunky toy bottom navigation on a violet bar (#55277D with beveled rim)
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = DesignTokens.Space4),
-                    horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
-                    verticalAlignment = Alignment.Top
+                        .shadow(12.dp, RoundedCornerShape(24.dp), spotColor = Color(0x66000000))
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF55277D), Color(0xFF381454))
+                            )
+                        )
+                        .border(
+                            2.dp,
+                            Brush.verticalGradient(
+                                listOf(Color(0xFF7E38B3), Color(0xFF30104A))
+                            ),
+                            RoundedCornerShape(24.dp)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
                 ) {
-                    HomeIconActionButton(
-                        iconContent = {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = "Ranks",
-                                tint = Color(0xFFFFD700),
-                                modifier = Modifier.size(24.dp)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        // Secondary row 1: game modes and storefront actions.
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            HomeIconActionButton(
+                                iconContent = {
+                                    EndlessModeArt(GameMode.ARCADE, modifier = Modifier.size(26.dp))
+                                },
+                                label = "Endless",
+                                accentColor = DesignTokens.SecondaryAccent,
+                                onClick = onOpenEndless,
+                                testTag = "home_endless_rush_button",
+                                modifier = Modifier.weight(1f)
                             )
-                        },
-                        label = "Ranks",
-                        accentColor = Color(0xFFFFD700),
-                        onClick = onOpenRanks,
-                        testTag = "home_ranks_button",
-                        modifier = Modifier.weight(1f)
-                    )
-                    HomeIconActionButton(
-                        iconContent = {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Settings",
-                                tint = Color(0xFFC4B5FD),
-                                modifier = Modifier.size(24.dp)
+                            HomeIconActionButton(
+                                iconContent = {
+                                    SkillVaultArt("skill_hammer_slide", modifier = Modifier.size(26.dp))
+                                },
+                                label = "Vault",
+                                accentColor = Color(0xFFA855F7),
+                                onClick = onOpenSkillVault,
+                                testTag = "home_skill_vault_button",
+                                modifier = Modifier.weight(1f)
                             )
-                        },
-                        label = "Settings",
-                        accentColor = Color(0xFFA78BFA),
-                        onClick = onOpenSettings,
-                        testTag = "home_settings_button",
-                        modifier = Modifier.weight(1f)
-                    )
-                    HomeIconActionButton(
-                        iconContent = {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "How to play",
-                                tint = Color(0xFF7DD3FC),
-                                modifier = Modifier.size(24.dp)
+                            HomeIconActionButton(
+                                iconContent = {
+                                    HomeNavIcon(type = "SPIN", modifier = Modifier.size(26.dp))
+                                },
+                                label = "Spin",
+                                accentColor = Color(0xFFC084FC),
+                                badge = "FREE",
+                                onClick = onOpenDailySpin,
+                                testTag = "home_quick_daily_spin",
+                                modifier = Modifier.weight(1f)
                             )
-                        },
-                        label = "Help",
-                        accentColor = DesignTokens.SecondaryAccentDeep,
-                        onClick = { showHowToPlay = true },
-                        testTag = "how_to_play_button",
-                        modifier = Modifier.weight(1f)
-                    )
-                    HomeIconActionButton(
-                        iconContent = {
-                            Icon(
-                                imageVector = Icons.Default.Build,
-                                contentDescription = "Custom Lab",
-                                tint = Color(0xFFE9D5FF),
-                                modifier = Modifier.size(24.dp)
+                            HomeIconActionButton(
+                                iconContent = {
+                                    HomeNavIcon(type = "SHOP", modifier = Modifier.size(26.dp))
+                                },
+                                label = "Shop",
+                                accentColor = DesignTokens.PrimaryBrandBright,
+                                badge = "SALE",
+                                onClick = onOpenShop,
+                                testTag = "home_quick_shop",
+                                modifier = Modifier.weight(1f)
                             )
-                        },
-                        label = "Custom",
-                        accentColor = Color(0xFFA855F7),
-                        onClick = { showCustomChallenge = true },
-                        testTag = "custom_challenge_button",
-                        modifier = Modifier.weight(1f)
-                    )
-                    HomeIconActionButton(
-                        iconContent = {
-                            Text(text = "🎁", fontSize = 22.sp)
-                        },
-                        label = "Gifts",
-                        accentColor = StoryGold,
-                        badge = if (dailyTrackCanClaimToday) "CLAIM" else null,
-                        onClick = { showDailyGifts = true },
-                        testTag = "home_daily_gifts_button",
-                        modifier = Modifier.weight(1f)
-                    )
+                            HomeIconActionButton(
+                                iconContent = {
+                                    HomeNavIcon(type = "QUESTS", modifier = Modifier.size(26.dp))
+                                },
+                                label = "Quests",
+                                accentColor = DesignTokens.SuccessGreenBright,
+                                badge = "NEW",
+                                onClick = onOpenQuests,
+                                testTag = "home_quick_quests",
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        // Secondary row 2: ranks, settings and helper actions
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            HomeIconActionButton(
+                                iconContent = {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = "Ranks",
+                                        tint = ToyGold,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                label = "Ranks",
+                                accentColor = ToyGold,
+                                onClick = onOpenRanks,
+                                testTag = "home_ranks_button",
+                                modifier = Modifier.weight(1f)
+                            )
+                            HomeIconActionButton(
+                                iconContent = {
+                                    Icon(
+                                        imageVector = Icons.Default.Settings,
+                                        contentDescription = "Settings",
+                                        tint = Color(0xFFC4B5FD),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                label = "Settings",
+                                accentColor = Color(0xFFA78BFA),
+                                onClick = onOpenSettings,
+                                testTag = "home_settings_button",
+                                modifier = Modifier.weight(1f)
+                            )
+                            HomeIconActionButton(
+                                iconContent = {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "How to play",
+                                        tint = Color(0xFF7DD3FC),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                label = "Help",
+                                accentColor = DesignTokens.SecondaryAccentDeep,
+                                onClick = { showHowToPlay = true },
+                                testTag = "how_to_play_button",
+                                modifier = Modifier.weight(1f)
+                            )
+                            HomeIconActionButton(
+                                iconContent = {
+                                    Icon(
+                                        imageVector = Icons.Default.Build,
+                                        contentDescription = "Custom Lab",
+                                        tint = Color(0xFFE9D5FF),
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                },
+                                label = "Custom",
+                                accentColor = Color(0xFFA855F7),
+                                onClick = { showCustomChallenge = true },
+                                testTag = "custom_challenge_button",
+                                modifier = Modifier.weight(1f)
+                            )
+                            HomeIconActionButton(
+                                iconContent = {
+                                    Text(text = "🎁", fontSize = 22.sp)
+                                },
+                                label = "Gifts",
+                                accentColor = ToyGold,
+                                badge = if (dailyTrackCanClaimToday) "CLAIM" else null,
+                                onClick = { showDailyGifts = true },
+                                testTag = "home_daily_gifts_button",
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -617,14 +729,24 @@ private fun HomeIconActionButton(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
-            // Pass 5: cream tile (storybook sheet material) with the label below.
+            // Chunky violet toy tile with beveled highlight
             Box(
                 modifier = Modifier
-                    .size(52.dp)
-                    .shadow(DesignTokens.ElevationAmbient, DesignTokens.ShapeMedium, spotColor = accentColor)
-                    .clip(DesignTokens.ShapeMedium)
-                    .background(CreamSurface)
-                    .border(1.5.dp, accentColor.copy(alpha = 0.85f), DesignTokens.ShapeMedium),
+                    .size(50.dp)
+                    .shadow(4.dp, RoundedCornerShape(14.dp), spotColor = Color(0x66000000))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFF6B2D9E), Color(0xFF43186B))
+                        )
+                    )
+                    .border(
+                        1.5.dp,
+                        Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = 0.50f), accentColor.copy(alpha = 0.85f))
+                        ),
+                        RoundedCornerShape(14.dp)
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 iconContent()
@@ -656,13 +778,22 @@ private fun HomeIconActionButton(
         Spacer(modifier = Modifier.height(DesignTokens.Space4))
 
         Text(
-            text = label,
-            fontSize = DesignTokens.TypeTierCaption,
+            text = label.uppercase(),
+            fontFamily = Baloo2FontFamily,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Black,
             color = Color.White,
+            letterSpacing = 0.5.sp,
             maxLines = 1,
             softWrap = false,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            style = androidx.compose.ui.text.TextStyle(
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = Color.Black.copy(alpha = 0.5f),
+                    offset = Offset(0f, 1.5f),
+                    blurRadius = 2f
+                )
+            )
         )
     }
 }

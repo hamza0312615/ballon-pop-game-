@@ -57,6 +57,7 @@ import com.example.balloonpop.ui.dialogs.WorldMapZoneOverviewDialog
 import com.example.balloonpop.ui.theme.CosmosNavy
 import com.example.balloonpop.ui.theme.PlumPill
 import com.example.balloonpop.ui.theme.StoryGold
+import com.example.balloonpop.ui.theme.StageCurtainEdge
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.ZoneVisualTheme
 import com.example.balloonpop.ui.theme.ZoneVisualThemeRegistry
@@ -1539,12 +1540,12 @@ private fun DrawScope.drawUnifiedMapPath(
         val stringColor = if (traversed) {
             StoryGold
         } else {
-            Color(0xFFFFF6E9).copy(alpha = 0.45f)
+            Color(0xFF8B5CF6).copy(alpha = 0.65f)
         }
         // Soft shadow line under the string (readability over busy zone art).
         drawPath(
             path = curve,
-            color = Color(0xFF171233).copy(alpha = 0.45f),
+            color = StageCurtainEdge.copy(alpha = 0.65f),
             style = Stroke(width = 5.5.dp.toPx(), cap = StrokeCap.Round)
         )
         // The string itself.

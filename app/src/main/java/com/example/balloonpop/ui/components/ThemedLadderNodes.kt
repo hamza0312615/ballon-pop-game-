@@ -31,6 +31,12 @@ import com.example.balloonpop.ui.theme.DesignTokens
 import androidx.compose.ui.draw.rotate
 import com.example.balloonpop.ui.theme.SunsetBottom
 import com.example.balloonpop.ui.theme.StoryGold
+import com.example.balloonpop.ui.theme.ToyGold
+import com.example.balloonpop.ui.theme.ToyGoldGlow
+import com.example.balloonpop.ui.theme.ToyGoldShelf
+import com.example.balloonpop.ui.theme.HeroLimeBottom
+import com.example.balloonpop.ui.theme.HeroLimeShelf
+import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.ZoneVisualTheme
 
 /**
@@ -84,6 +90,8 @@ fun ThemedLadderTileNode(
         label = "star_bob"
     )
 
+    val isHardSpike = (stageNumber % 10 == 9)
+
     Box(
         modifier = Modifier
             .size(width = MapNodeSlotWidth, height = MapNodeSlotHeight)
@@ -94,7 +102,7 @@ fun ThemedLadderTileNode(
             ) { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        // --- Orb ---
+        // --- Orb (Toybox Stage Star Medallion) ---
         Box(
             modifier = Modifier
                 .size(MapOrbSize)
@@ -103,28 +111,31 @@ fun ThemedLadderTileNode(
                     elevation = DesignTokens.ElevationMedium,
                     shape = CircleShape,
                     spotColor = when {
-                        isCleared -> DesignTokens.StarGoldGlow
-                        isUnlocked -> CoralPrimary
+                        isHardSpike -> Color(0xFFEF4444)
+                        isCleared -> ToyGoldGlow
+                        isUnlocked -> HeroLimeBottom
                         else -> Color(0x66000000)
                     }
                 )
                 .clip(CircleShape)
                 .background(
                     when {
-                        isCleared -> DesignTokens.GoldGradient
-                        isUnlocked -> DesignTokens.SunsetGradient
+                        isCleared -> DesignTokens.GoldFaceGradient
+                        isUnlocked -> DesignTokens.HeroLimeGradient
                         else -> Brush.verticalGradient(
-                            listOf(Color(0xFF4A4460), Color(0xFF322C47), Color(0xFF241F38))
+                            listOf(Color(0xFF45196E), Color(0xFF2E0F4D), Color(0xFF1E0836))
                         )
                     }
                 )
                 .border(
-                    width = if (isBoss) 3.dp else 2.dp,
+                    width = if (isHardSpike || isBoss) 3.5.dp else 2.2.dp,
                     brush = Brush.verticalGradient(
                         when {
-                            isCleared -> listOf(Color.White, DesignTokens.StarGoldFilled, DesignTokens.PrimaryBrandDark)
-                            isUnlocked -> listOf(Color.White, SunsetBottom)
-                            else -> listOf(Color(0x66FFFFFF), Color(0xFF475569))
+                            isHardSpike -> listOf(Color(0xFFFF8A8A), Color(0xFFEF4444), Color(0xFF991B1B))
+                            isBoss -> listOf(Color(0xFFFFEA00), ToyGold, ToyGoldShelf)
+                            isCleared -> listOf(Color.White, ToyGold, ToyGoldShelf)
+                            isUnlocked -> listOf(Color.White, HeroLimeBottom)
+                            else -> listOf(Color(0x887E38B3), Color(0xFF381454))
                         }
                     ),
                     shape = CircleShape
@@ -148,19 +159,31 @@ fun ThemedLadderTileNode(
             if (isUnlocked) {
                 Text(
                     text = "$stageNumber",
+                    fontFamily = Baloo2FontFamily,
                     fontSize = 21.sp,
                     fontWeight = FontWeight.Black,
-                    color = if (isCleared) Color(0xFF451A03) else Color.White,
+                    color = if (isCleared) Color(0xFF381454) else Color.White,
                     textAlign = TextAlign.Center
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = "Locked",
-                    tint = Color(0xFF94A3B8),
-                    modifier = Modifier.size(22.dp)
+                    tint = Color(0xFF9F72D6),
+                    modifier = Modifier.size(20.dp)
                 )
             }
+        }
+
+        // Hard spike flaming badge
+        if (isHardSpike && isUnlocked) {
+            Text(
+                text = "🔥",
+                fontSize = 15.sp,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .offset(x = (-27).dp, y = (-27).dp)
+            )
         }
 
         // Boss crown badge on the orb's top-right shoulder.
@@ -262,6 +285,8 @@ fun ThemedLadderActiveHeroNode(
         label = "hero_press"
     )
 
+    val isHardSpike = (stageNumber % 10 == 9)
+
     Box(
         modifier = Modifier
             .size(width = MapNodeSlotWidth, height = MapNodeSlotHeight)
@@ -272,24 +297,23 @@ fun ThemedLadderActiveHeroNode(
             .testTag("active_hero_level_tile"),
         contentAlignment = Alignment.Center
     ) {
-        // Pass 5 (amendment 5): expanding pulse RINGS behind the orb — a scale
-        // pulse in storybook gold, never a neon-style glow.
+        // Expanding pulse RINGS in Toy Gold
         Box(
             modifier = Modifier
                 .size(88.dp)
                 .scale(beaconPulse)
                 .clip(CircleShape)
-                .border(2.5.dp, StoryGold.copy(alpha = 0.55f), CircleShape)
+                .border(2.5.dp, ToyGold.copy(alpha = 0.65f), CircleShape)
         )
         Box(
             modifier = Modifier
                 .size(76.dp)
                 .scale(beaconPulse * 0.88f)
                 .clip(CircleShape)
-                .border(2.dp, StoryGold.copy(alpha = 0.35f), CircleShape)
+                .border(2.dp, ToyGold.copy(alpha = 0.40f), CircleShape)
         )
 
-        // --- Enlarged current-stage orb ---
+        // --- Enlarged current-stage orb (Hero Lime / Gold Medallion) ---
         Box(
             modifier = Modifier
                 .size(MapHeroOrbSize)
@@ -297,14 +321,15 @@ fun ThemedLadderActiveHeroNode(
                 .shadow(
                     elevation = DesignTokens.ElevationActive,
                     shape = CircleShape,
-                    spotColor = CoralPrimary
+                    spotColor = if (isHardSpike) Color(0xFFEF4444) else HeroLimeBottom
                 )
                 .clip(CircleShape)
-                .background(DesignTokens.SunsetGradient)
+                .background(DesignTokens.HeroLimeGradient)
                 .border(
-                    width = if (isBoss) 3.dp else 2.5.dp,
+                    width = if (isBoss || isHardSpike) 3.5.dp else 2.8.dp,
                     brush = Brush.verticalGradient(
-                        listOf(Color.White, DesignTokens.StarGoldFilled)
+                        if (isHardSpike) listOf(Color(0xFFFF8A8A), Color(0xFFEF4444), Color(0xFF991B1B))
+                        else listOf(Color.White, ToyGold, ToyGoldShelf)
                     ),
                     shape = CircleShape
                 ),
@@ -325,6 +350,7 @@ fun ThemedLadderActiveHeroNode(
 
             Text(
                 text = "$stageNumber",
+                fontFamily = Baloo2FontFamily,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.White,
@@ -332,8 +358,7 @@ fun ThemedLadderActiveHeroNode(
             )
         }
 
-        // Balloon knot: a small tied diamond at the orb's base, so the current
-        // node reads as a balloon pin tied to the map's string path.
+        // Balloon knot: a small tied diamond at the orb's base
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
@@ -341,7 +366,7 @@ fun ThemedLadderActiveHeroNode(
                 .size(13.dp)
                 .rotate(45f)
                 .clip(RoundedCornerShape(3.dp))
-                .background(SunsetBottom)
+                .background(HeroLimeShelf)
                 .border(1.dp, Color.White.copy(alpha = 0.7f), RoundedCornerShape(3.dp))
         )
 

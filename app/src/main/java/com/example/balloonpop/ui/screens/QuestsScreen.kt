@@ -66,10 +66,9 @@ fun QuestsScreen(
 ) {
     val bgGradient = Brush.verticalGradient(
         listOf(
-            Color(0xFF070B1C),
-            Color(0xFF0D1432),
-            Color(0xFF11183C),
-            Color(0xFF080C20)
+            com.example.balloonpop.ui.theme.StageMagentaTop,
+            com.example.balloonpop.ui.theme.StageMagentaDeep,
+            com.example.balloonpop.ui.theme.StageCurtainEdge
         )
     )
 

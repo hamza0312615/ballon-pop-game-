@@ -210,23 +210,54 @@ fun GamePlayScreen(
             modifier = Modifier.fillMaxSize()
         )
 
-        // 2. High-End Translucent Glossy Capsule Top HUD (Compact floating glass pill)
+        // Theatrical backdrop flats overlay (curtain-dark edges, spotlight pool in middle)
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            // Warm theatrical spotlight pool in center
+            drawOval(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0x28FFD166), Color(0x0CFFD166), Color.Transparent),
+                    center = Offset(w * 0.5f, h * 0.35f),
+                    radius = w * 0.65f
+                ),
+                topLeft = Offset(w * 0.1f, 0f),
+                size = androidx.compose.ui.geometry.Size(w * 0.8f, h * 0.7f)
+            )
+            // Curtain-dark edges
+            drawRect(
+                brush = Brush.horizontalGradient(
+                    listOf(
+                        Color(0xD919061F),
+                        Color.Transparent,
+                        Color.Transparent,
+                        Color(0xD919061F)
+                    )
+                )
+            )
+        }
+
+        // 2. Slim deep-violet top strip holding LEVEL n, timer pill, and picture-goals
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .shadow(12.dp, RoundedCornerShape(26.dp), spotColor = Color(0x66171233))
-                .clip(RoundedCornerShape(26.dp))
-                .background(Color(0xD9171233))
+                .padding(horizontal = 14.dp, vertical = 6.dp)
+                .shadow(12.dp, RoundedCornerShape(22.dp), spotColor = Color(0x66000000))
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF55277D), Color(0xFF381454))
+                    )
+                )
                 .border(
                     width = 1.5.dp,
                     brush = Brush.verticalGradient(
-                        listOf(Color(0x88FFD166), Color(0x33B8A9D9), Color(0x22FFFFFF))
+                        listOf(Color.White.copy(alpha = 0.45f), Color(0xFF7E38B3))
                     ),
-                    shape = RoundedCornerShape(26.dp)
+                    shape = RoundedCornerShape(22.dp)
                 )
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 14.dp, vertical = 6.dp)
         ) {
             // Top Inner Specular Sheen Arc (matches pill size, never expanding parent)
             Canvas(modifier = Modifier.matchParentSize()) {
@@ -685,25 +716,53 @@ fun GamePlayScreen(
             }
         }
 
-        // 5. High-End 5-Orb Power-Up & Booster Dock (Pass 5: all five
-        //    boosters — HAMMER and VORTEX were sold in the shop but had no
-        //    orb here, so they could never be fired in a stage.)
+        // Stage-side Popster reaction medallion (reacts when time runs low or combos climb)
+        val mascotMood = when {
+            timeLeft <= 10f && (gameMode == GameMode.CAMPAIGN || gameMode == GameMode.TIME_RUSH) -> com.example.balloonpop.ui.components.MascotMood.SAD
+            combo >= 3 -> com.example.balloonpop.ui.components.MascotMood.JOYFUL
+            else -> com.example.balloonpop.ui.components.MascotMood.HAPPY
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = if (gameMode != GameMode.CAMPAIGN) 124.dp else 78.dp, start = 12.dp)
+                .size(46.dp)
+                .shadow(8.dp, CircleShape, spotColor = Color(0x66000000))
+                .clip(CircleShape)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color(0xFF6B2D9E), Color(0xFF381454))
+                    )
+                )
+                .border(2.dp, ToyGold, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            com.example.balloonpop.ui.components.MascotCharacter(
+                mood = mascotMood,
+                size = 36.dp,
+                showGoldRing = false
+            )
+        }
+
+        // 5. Booster Dock: WOODEN TOY TRAY #C07F3A with dark wood edge #7A4A16
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .shadow(16.dp, RoundedCornerShape(28.dp), spotColor = Color(0x99000000))
-                .clip(RoundedCornerShape(28.dp))
-                .background(Color(0xD9171233))
-                .border(
-                    width = 1.5.dp,
-                    brush = Brush.verticalGradient(
-                        listOf(Color(0x55FFD166), Color(0x22B8A9D9), Color(0x11FFFFFF))
-                    ),
-                    shape = RoundedCornerShape(28.dp)
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .shadow(16.dp, RoundedCornerShape(22.dp), spotColor = Color(0x99000000))
+                .clip(RoundedCornerShape(22.dp))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(ToyWoodHighlight, ToyWoodFloor, ToyWoodFloorDark)
+                    )
                 )
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .border(
+                    width = 2.5.dp,
+                    color = ToyWoodFloorDark,
+                    shape = RoundedCornerShape(22.dp)
+                )
+                .padding(horizontal = 10.dp, vertical = 6.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -1558,85 +1617,84 @@ private fun GameOrbButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // Pass 6: outer wrapper Box — the count badge is a child of THIS box
-        // (not of the clipped orb circle below), so the orb's CircleShape
-        // clip can no longer crop the badge where it overhangs the corner.
-        Box(modifier = Modifier.size(56.dp)) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .shadow(12.dp, CircleShape, spotColor = if (isEnabled) glowColor else Color.Transparent)
-                .clip(CircleShape)
-                .background(Brush.radialGradient(orbGradient))
-                .border(
-                    width = 2.dp,
-                    brush = Brush.verticalGradient(
-                        listOf(Color.White.copy(alpha = 0.85f), glowColor, Color.White.copy(alpha = 0.25f))
+        // Chunky square toy button with beveled frame
+        Box(modifier = Modifier.size(54.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .shadow(8.dp, RoundedCornerShape(14.dp), spotColor = if (isEnabled) glowColor else Color(0x66000000))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Brush.radialGradient(orbGradient))
+                    .border(
+                        width = 2.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(Color.White.copy(alpha = 0.85f), glowColor, Color(0xFF381454))
+                        ),
+                        shape = RoundedCornerShape(14.dp)
                     ),
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            // Specular sheen
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val w = size.width
-                val h = size.height
-                drawOval(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.60f), Color.Transparent),
-                        startY = 0f,
-                        endY = h * 0.45f
-                    ),
-                    topLeft = Offset(w * 0.15f, h * 0.05f),
-                    size = Size(w * 0.70f, h * 0.35f)
-                )
-
-                // Cooldown radial progress sweep overlay
-                if (isOnCooldown) {
-                    val sweepProgress = (cooldownRemaining / 3.5f).coerceIn(0f, 1f)
-                    drawArc(
-                        color = Color(0xCC0B0F19),
-                        startAngle = -90f,
-                        sweepAngle = 360f * sweepProgress,
-                        useCenter = true,
-                        size = Size(w, h),
-                        topLeft = Offset(0f, 0f)
+                contentAlignment = Alignment.Center
+            ) {
+                // Specular sheen
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    drawOval(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color.White.copy(alpha = 0.60f), Color.Transparent),
+                            startY = 0f,
+                            endY = h * 0.45f
+                        ),
+                        topLeft = Offset(w * 0.15f, h * 0.05f),
+                        size = Size(w * 0.70f, h * 0.35f)
                     )
+
+                    // Cooldown radial progress sweep overlay
+                    if (isOnCooldown) {
+                        val sweepProgress = (cooldownRemaining / 3.5f).coerceIn(0f, 1f)
+                        drawArc(
+                            color = Color(0xCC0B0F19),
+                            startAngle = -90f,
+                            sweepAngle = 360f * sweepProgress,
+                            useCenter = true,
+                            size = Size(w, h),
+                            topLeft = Offset(0f, 0f)
+                        )
+                    }
                 }
+
+                Text(text = icon, fontSize = 24.sp)
             }
 
-            Text(text = icon, fontSize = 26.sp)
-
-        }
-
-            // Pass 6: top-right count badge — filled dark-plum circle (22dp)
-            // with a 1.5dp gold border and a bold white number, sitting proud
-            // of the orb's corner so it reads at a glance mid-game.
+            // Fat count badge in Toy Orange with gold/white rim
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .offset(x = 5.dp, y = (-5).dp)
-                    .size(22.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF241A4D))
-                    .border(1.5.dp, StoryGold, CircleShape),
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFFFF9D2E), Color(0xFFF97D0C))
+                        )
+                    )
+                    .border(1.5.dp, Color.White, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = badgeText,
-                    fontFamily = NunitoFontFamily,
-                    fontSize = if (isOnCooldown) 8.sp else 11.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = Baloo2FontFamily,
+                    fontSize = if (isOnCooldown) 9.sp else 12.sp,
+                    fontWeight = FontWeight.Black,
                     color = Color.White
                 )
             }
         }
 
         Text(
-            text = label,
+            text = label.uppercase(),
             fontFamily = Baloo2FontFamily,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Black,
             color = if (isEnabled) Color.White else Color(0x99FFFFFF),
             letterSpacing = 0.5.sp
         )

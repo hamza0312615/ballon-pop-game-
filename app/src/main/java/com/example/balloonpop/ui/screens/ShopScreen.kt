@@ -47,13 +47,12 @@ import com.example.balloonpop.ui.theme.CosmosNavyDeep
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.DiamondBlue
 import com.example.balloonpop.ui.theme.GoldCoin
-import com.example.balloonpop.ui.theme.CreamSurface
-import com.example.balloonpop.ui.theme.PlumText
-import com.example.balloonpop.ui.theme.StoryGold
-import com.example.balloonpop.ui.theme.StorybookIndigo
-import com.example.balloonpop.ui.theme.StorybookPlum
-import com.example.balloonpop.ui.theme.StorybookPlumDeep
 import com.example.balloonpop.ui.theme.NunitoFontFamily
+import com.example.balloonpop.ui.theme.StageMagentaTop
+import com.example.balloonpop.ui.theme.StageMagentaDeep
+import com.example.balloonpop.ui.theme.ToyWoodHighlight
+import com.example.balloonpop.ui.theme.ToyWoodFloor
+import com.example.balloonpop.ui.theme.ToyWoodFloorDark
 
 enum class ShopTab(val label: String, val icon: String) {
     BOOSTERS("Boosters", "⚡"),
@@ -120,13 +119,12 @@ fun ShopScreen(
     var selectedTab by remember { mutableStateOf(ShopTab.THEMES) }
     var selectedIapPack by remember { mutableStateOf<DiamondStorePack?>(null) }
 
-    // Pass 5: Golden Storybook world gradient behind the shop sheets.
+    // Pass 10: Theatrical violet stage wall with warm spotlight & wooden shelves
     val cosmicBg = Brush.verticalGradient(
         listOf(
-            StorybookPlumDeep,
-            StorybookPlum,
-            StorybookIndigo,
-            StorybookPlumDeep
+            StageMagentaTop,
+            StageMagentaDeep,
+            Color(0xFF260A3D)
         )
     )
 
@@ -136,26 +134,50 @@ fun ShopScreen(
             .background(cosmicBg)
             .testTag("shop_screen")
     ) {
-        // Ambient golden starry dust and subtle corner arcs
+        // Wooden shelves against violet wall under a warm spotlight
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
             val h = size.height
 
-            // Corner geometric gold accent lines
-            drawLine(
-                brush = Brush.horizontalGradient(listOf(Color.Transparent, Color(0x44FFD700))),
-                start = Offset(0f, 60f),
-                end = Offset(w * 0.45f, 0f),
-                strokeWidth = 1f
-            )
-            drawLine(
-                brush = Brush.horizontalGradient(listOf(Color(0x44FFD700), Color.Transparent)),
-                start = Offset(w * 0.55f, 0f),
-                end = Offset(w, 80f),
-                strokeWidth = 1f
+            // 1. Warm spotlight cone glowing down from top center
+            drawOval(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0x44FFD166), Color(0x18FFD166), Color.Transparent),
+                    center = Offset(w * 0.5f, 0f),
+                    radius = h * 0.55f
+                ),
+                topLeft = Offset(w * 0.05f, -h * 0.05f),
+                size = androidx.compose.ui.geometry.Size(w * 0.9f, h * 0.6f)
             )
 
-            // Sparkles
+            // 2. Wooden shelves running horizontally behind shop items (#C07F3A with dark wood edge #7A4A16)
+            val shelfRatios = listOf(0.42f, 0.68f, 0.94f)
+            shelfRatios.forEach { ratio ->
+                val sy = h * ratio
+                drawRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(ToyWoodHighlight, ToyWoodFloor, ToyWoodFloorDark),
+                        startY = sy,
+                        endY = sy + 14.dp.toPx()
+                    ),
+                    topLeft = Offset(0f, sy),
+                    size = androidx.compose.ui.geometry.Size(w, 14.dp.toPx())
+                )
+                drawLine(
+                    color = Color.White.copy(alpha = 0.35f),
+                    start = Offset(0f, sy),
+                    end = Offset(w, sy),
+                    strokeWidth = 2f
+                )
+                drawLine(
+                    color = ToyWoodFloorDark,
+                    start = Offset(0f, sy + 14.dp.toPx()),
+                    end = Offset(w, sy + 14.dp.toPx()),
+                    strokeWidth = 3f
+                )
+            }
+
+            // Sparkle dust
             val sparkles = listOf(
                 Offset(w * 0.12f, h * 0.15f) to 2.5f,
                 Offset(w * 0.88f, h * 0.12f) to 3f,
@@ -764,13 +786,19 @@ private fun UniformShopCard(
         modifier = modifier
             .fillMaxWidth()
             .height(ShopCardHeight)
-            .shadow(6.dp, DesignTokens.ShapeCardStory)
-            .clip(DesignTokens.ShapeCardStory)
-            .background(CreamSurface)
+            .shadow(6.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF55277D), Color(0xFF381454))
+                )
+            )
             .border(
-                width = 1.dp,
-                brush = borderBrush,
-                shape = DesignTokens.ShapeCardStory
+                width = 2.dp,
+                brush = Brush.verticalGradient(
+                    listOf(Color.White.copy(alpha = 0.45f), Color(0xFF7E38B3))
+                ),
+                shape = RoundedCornerShape(16.dp)
             )
             .padding(DesignTokens.Space12)
     ) {
@@ -785,13 +813,13 @@ private fun UniformShopCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(ShopCardArtHeight)
-                    .clip(RoundedCornerShape(DesignTokens.RadiusSmall))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(
                         previewBrush ?: Brush.radialGradient(
-                            listOf(artColor.copy(alpha = 0.40f), Color(0x11000000))
+                            listOf(artColor.copy(alpha = 0.35f), Color(0x331E0A2B))
                         )
                     )
-                    .border(1.dp, Color(0xFF2A1B4E).copy(alpha = 0.14f), RoundedCornerShape(DesignTokens.RadiusSmall)),
+                    .border(1.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 com.example.balloonpop.ui.components.ShopItemArt(
@@ -806,8 +834,8 @@ private fun UniformShopCard(
                             .align(Alignment.TopEnd)
                             .padding(DesignTokens.Space4)
                             .clip(DesignTokens.ShapePill)
-                            .background(Color(0xCC05070F))
-                            .border(1.dp, Color(0x55FFFFFF), DesignTokens.ShapePill)
+                            .background(Color(0xEE1E0A2B))
+                            .border(1.dp, Color(0xFFE2D4F0), DesignTokens.ShapePill)
                             .padding(horizontal = DesignTokens.Space8, vertical = 2.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -815,7 +843,7 @@ private fun UniformShopCard(
                             text = badgeText,
                             fontFamily = Baloo2FontFamily,
                             fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Black,
                             color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -824,7 +852,7 @@ private fun UniformShopCard(
                 }
             }
 
-            // Item name: fixed 2-line slot, always ellipsised.
+            // Item name: fixed 2-line slot, poster caps styling
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -835,8 +863,8 @@ private fun UniformShopCard(
                     text = title,
                     fontFamily = Baloo2FontFamily,
                     fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PlumText,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -844,7 +872,7 @@ private fun UniformShopCard(
                 )
             }
 
-            // Description / amount: fixed 2-line slot, always ellipsised.
+            // Description / amount: fixed 2-line slot, soft lilac text
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -855,8 +883,8 @@ private fun UniformShopCard(
                     text = subtitle,
                     fontFamily = NunitoFontFamily,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF6E6491),
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFE2D4F0),
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
@@ -864,7 +892,7 @@ private fun UniformShopCard(
                 )
             }
 
-            // Exactly one price pill, with its currency icon.
+            // Exactly one price pill, in Toy Orange with white border
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -892,15 +920,17 @@ private fun ShopPricePill(
     isGem: Boolean,
     modifier: Modifier = Modifier
 ) {
-    // Pass 5 (amendment 2): price pills are PLUM with a gold icon — sunset,
-    // gold and berry never compete on the same card.
-    val accent = if (isGem) Color(0xFFB8A9D9) else StoryGold
+    // Toybox Stage: price pills in Toy Orange with white drop bevel
     Box(
         modifier = modifier
             .height(ShopCardPricePillHeight)
             .clip(DesignTokens.ShapePill)
-            .background(Color(0xFF241A4D))
-            .border(1.dp, accent.copy(alpha = 0.65f), DesignTokens.ShapePill)
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFFFF9D2E), Color(0xFFF97D0C))
+                )
+            )
+            .border(1.2.dp, Color.White.copy(alpha = 0.75f), DesignTokens.ShapePill)
             .padding(horizontal = DesignTokens.Space12),
         contentAlignment = Alignment.Center
     ) {
@@ -908,8 +938,8 @@ private fun ShopPricePill(
             text = text,
             fontFamily = Baloo2FontFamily,
             fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            color = if (isGem) Color(0xFFE8E4F5) else StoryGold,
+            fontWeight = FontWeight.Black,
+            color = Color.White,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )

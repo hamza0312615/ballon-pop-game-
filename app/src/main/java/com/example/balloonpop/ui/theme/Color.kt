@@ -67,22 +67,68 @@ val IslandCosmicBlue = Color(0xFF0284C7)
 val IslandNeonGlow = Color(0xFF2F6DB3)
 
 
-// Pass 5 — Golden Storybook identity (binding palette; zero neon)
-val StorybookPlumDeep = Color(0xFF171233)   // world base (night sky at golden hour)
-val StorybookPlum = Color(0xFF241A4D)       // world gradient light end
-val StorybookIndigo = Color(0xFF2C2160)     // deep indigo surface on dark
-val CreamSurface = Color(0xFFFFF6E9)        // warm ivory — dialogs / shop / skins sheets only
-val CreamText = Color(0xFFFFF9F0)           // primary text on dark
-val PlumText = Color(0xFF2A1B4E)            // primary text on cream
-val PlumPill = Color(0x8C171233)            // dark translucent pill (55% plum) — currency & HUD trays
-val SunsetTop = Color(0xFFFFB347)           // CTA gradient top
-val SunsetBottom = Color(0xFFFF6B4A)        // CTA gradient bottom
-val SunsetShelf = Color(0xFFD64A26)         // CTA shelf (bottom darkened ~18%)
-val StoryGold = Color(0xFFFFC93C)           // coins, stars, current-node ring
-val StoryGoldShelf = Color(0xFFD99A16)
-val StoryMint = Color(0xFF3ED6A5)           // success / owned only
-val StoryMintShelf = Color(0xFF23A87B)
-val StoryBerry = Color(0xFFEF476F)          // danger / discount only
-val StoryBerryShelf = Color(0xFFC2264B)
-val PlumButton = Color(0xFF3A2A6E)          // neutral jewel button top
-val PlumButtonShelf = Color(0xFF241A4D)
+// =====================================================================
+// Pass 10 — Toybox Stage Design System (Peak Games / Toon Blast "Juicy UI")
+// =====================================================================
+
+// 1. World & Theatrical Stage
+val StageMagentaTop = Color(0xFF7A1E46)    // stage gradient top
+val StageMagentaDeep = Color(0xFF33103D)   // stage gradient bottom / shadow
+val StageCurtainEdge = Color(0xFF19061F)   // theatrical vignette / curtain edges
+val StageSpotlightWarm = Color(0xFFFFD166) // warm spotlight glow
+
+// 2. Toy Panels & Surfaces (Deep Violet Plastic, Never Flat)
+val ToyVioletPanel = Color(0xFF55277D)     // deep violet toy panel
+val ToyVioletPanelDark = Color(0xFF3D165C) // panel rim / shelf
+val ToyVioletPanelLight = Color(0xFF7A3EAE)// panel inner highlight
+val ToyVioletPill = Color(0xCC3D165C)      // HUD / tray translucent pill
+
+// 3. Wooden Toy Shelves & Floorboards
+val ToyWoodFloor = Color(0xFFC07F3A)       // wooden floorboards & shelves
+val ToyWoodFloorDark = Color(0xFF7A4A16)   // wood edge planking & dark grain
+val ToyWoodHighlight = Color(0xFFE2A05B)   // wood top grain highlight
+
+// 4. Hero Button: Lime Green (One Hero Per Screen: PLAY / NEXT / CLAIM)
+val HeroLimeTop = Color(0xFFA6F750)
+val HeroLimeBottom = Color(0xFF63C70A)
+val HeroLimeShelf = Color(0xFF4A9605)
+val HeroLimeText = Color(0xFF153B00)
+
+// 5. Toy Action Colors
+val ToyOrangeTop = Color(0xFFFF9D2E)
+val ToyOrangeBottom = Color(0xFFF97D0C)
+val ToyOrangeShelf = Color(0xFFC45A00)
+
+val ToyGold = Color(0xFFFFC93C)            // medallions, coins, stars
+val ToyGoldShelf = Color(0xFFD99A16)
+val ToyGoldGlow = Color(0xFFFFEA00)
+
+val ToyRedTop = Color(0xFFFF4D6D)
+val ToyRedBottom = Color(0xFFE61C48)
+val ToyRedShelf = Color(0xFFA00D2F)
+
+val ToyCyanTop = Color(0xFF38BDF8)
+val ToyCyanBottom = Color(0xFF0284C7)
+val ToyCyanShelf = Color(0xFF0369A1)
+
+// =====================================================================
+// Backward-Compatibility Aliases (Replaces Golden Storybook with Toybox)
+// =====================================================================
+val StorybookPlumDeep = StageMagentaDeep
+val StorybookPlum = StageMagentaTop
+val StorybookIndigo = ToyVioletPanelDark
+val CreamSurface = ToyVioletPanel           // Dialogs/sheets become rich violet toy panels!
+val CreamText = Color(0xFFFFF9F0)          // Primary text on dark
+val PlumText = Color(0xFFFFFFFF)           // High-contrast white poster text on violet!
+val PlumPill = ToyVioletPill               // Beveled violet pill
+val SunsetTop = HeroLimeTop                // Hero button inherits Lime
+val SunsetBottom = HeroLimeBottom
+val SunsetShelf = HeroLimeShelf
+val StoryGold = ToyGold
+val StoryGoldShelf = ToyGoldShelf
+val StoryMint = Color(0xFF22C55E)
+val StoryMintShelf = Color(0xFF15803D)
+val StoryBerry = ToyRedBottom
+val StoryBerryShelf = ToyRedShelf
+val PlumButton = ToyVioletPanel
+val PlumButtonShelf = ToyVioletPanelDark

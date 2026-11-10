@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -38,32 +39,41 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.DesignTokens
-import com.example.balloonpop.ui.theme.PlumButton
-import com.example.balloonpop.ui.theme.PlumButtonShelf
-import com.example.balloonpop.ui.theme.StoryBerry
-import com.example.balloonpop.ui.theme.StoryBerryShelf
-import com.example.balloonpop.ui.theme.StoryGold
-import com.example.balloonpop.ui.theme.StoryGoldShelf
-import com.example.balloonpop.ui.theme.StoryMint
-import com.example.balloonpop.ui.theme.StoryMintShelf
-import com.example.balloonpop.ui.theme.SunsetBottom
-import com.example.balloonpop.ui.theme.SunsetShelf
-import com.example.balloonpop.ui.theme.SunsetTop
+import com.example.balloonpop.ui.theme.HeroLimeBottom
+import com.example.balloonpop.ui.theme.HeroLimeShelf
+import com.example.balloonpop.ui.theme.HeroLimeTop
+import com.example.balloonpop.ui.theme.ToyOrangeBottom
+import com.example.balloonpop.ui.theme.ToyOrangeShelf
+import com.example.balloonpop.ui.theme.ToyOrangeTop
+import com.example.balloonpop.ui.theme.ToyRedBottom
+import com.example.balloonpop.ui.theme.ToyRedShelf
+import com.example.balloonpop.ui.theme.ToyRedTop
+import com.example.balloonpop.ui.theme.ToyVioletPanel
+import com.example.balloonpop.ui.theme.ToyVioletPanelDark
 
-/** Colour families for [JewelButton]. Sunset is the one CTA colour (PLAY/Next/Retry). */
+/**
+ * Toybox Stage chunky beveled plastic buttons (ToyButton system).
+ * The HERO button (SUNSET) is juicy lime green (#A6F750 -> #63C70A with shelf #4A9605).
+ * Secondary actions use Toy Orange (#F97D0C) or Toy Violet (#55277D).
+ */
 enum class JewelButtonStyle(
     val top: Color,
     val bottom: Color,
     val shelf: Color,
     val textColor: Color
 ) {
-    SUNSET(SunsetTop, SunsetBottom, SunsetShelf, Color.White),
-    // Pass 6: sky family for the pause menu's Settings action.
-    SKY(Color(0xFF7ED3FC), Color(0xFF2F7FD0), Color(0xFF1E40AF), Color.White),
-    GOLD(Color(0xFFFFD166), StoryGold, StoryGoldShelf, Color(0xFF2A1B4E)),
-    MINT(Color(0xFF6FEBC0), StoryMint, StoryMintShelf, Color(0xFF0B2E23)),
-    BERRY(Color(0xFFFF7A97), StoryBerry, StoryBerryShelf, Color.White),
-    PLUM(Color(0xFF4A3A85), PlumButton, PlumButtonShelf, Color.White)
+    // HERO CTA: Lime Green (PLAY / NEXT / CLAIM / REVIVE)
+    SUNSET(HeroLimeTop, HeroLimeBottom, HeroLimeShelf, Color.White),
+    // Toy Orange (Secondary actions & prizes)
+    GOLD(ToyOrangeTop, ToyOrangeBottom, ToyOrangeShelf, Color.White),
+    // Toy Cyan / Sky (Settings & info)
+    SKY(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1), Color.White),
+    // Toy Green
+    MINT(Color(0xFF4ADE80), Color(0xFF16A34A), Color(0xFF15803D), Color.White),
+    // Toy Red (Danger / retry / discount)
+    BERRY(ToyRedTop, ToyRedBottom, ToyRedShelf, Color.White),
+    // Toy Violet (Neutral dialog actions & map options)
+    PLUM(Color(0xFF7E38B3), ToyVioletPanel, ToyVioletPanelDark, Color.White)
 }
 
 /**
@@ -97,16 +107,17 @@ fun JewelButton(
     ) {
         if (leading != null) leading()
         Text(
-            text = text,
+            text = text.uppercase(),
             color = if (enabled) (textColorOverride ?: style.textColor) else (textColorOverride ?: style.textColor).copy(alpha = 0.55f),
             fontFamily = Baloo2FontFamily,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 18.sp,
+            fontWeight = FontWeight.Black,
+            fontSize = 19.sp,
+            letterSpacing = 0.8.sp,
             style = TextStyle(
                 shadow = Shadow(
-                    color = Color.Black.copy(alpha = 0.25f),
-                    offset = Offset(0f, 2f),
-                    blurRadius = 2f
+                    color = Color.Black.copy(alpha = 0.45f),
+                    offset = Offset(0f, 2.5f),
+                    blurRadius = 3f
                 )
             ),
             maxLines = 1
@@ -175,6 +186,13 @@ fun JewelButtonContainer(
                             style.bottom.copy(alpha = faceAlpha)
                         )
                     )
+                )
+                .border(
+                    width = 1.5.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.12f))
+                    ),
+                    shape = shape
                 )
                 .clickable(
                     interactionSource = interaction,
