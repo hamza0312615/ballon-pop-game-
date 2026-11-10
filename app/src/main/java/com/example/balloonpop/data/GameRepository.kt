@@ -360,6 +360,18 @@ class GameRepository(context: Context) {
     fun setWinStreak(streak: Int) =
         prefs.edit().putInt("bp_win_streak", streak.coerceAtLeast(0)).apply()
 
+    // Pass 9: 7-Day Daily Gifts track persistence (keys live OUTSIDE signed payload)
+    fun getDailyTrackDay(): Int = prefs.getInt("bp_daily_track_day", 1).coerceIn(1, 7)
+
+    fun setDailyTrackDay(day: Int) =
+        prefs.edit().putInt("bp_daily_track_day", day.coerceIn(1, 7)).apply()
+
+    fun getDailyTrackLastClaimDate(): String =
+        prefs.getString("bp_daily_track_last_claim_date", "") ?: ""
+
+    fun setDailyTrackLastClaimDate(dateStr: String) =
+        prefs.edit().putString("bp_daily_track_last_claim_date", dateStr).apply()
+
     fun getAllBoosterCounts(): Map<String, Int> {
         return mapOf(
             "booster_thunder" to getBoosterCount("booster_thunder"),

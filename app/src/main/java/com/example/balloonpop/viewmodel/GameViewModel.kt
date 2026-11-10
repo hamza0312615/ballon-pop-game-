@@ -22,6 +22,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sin
@@ -144,7 +148,15 @@ data class UiState(
     // Pass 8: win-streak fuel (persisted) + kindness-assist flag for the
     // stage currently being attempted (drives the fail-dialog help line).
     val winStreak: Int = 0,
-    val assistUnlocked: Boolean = false
+    val assistUnlocked: Boolean = false,
+    // Pass 9: Stage Objective Variety & Daily Gifts track
+    val currentObjectiveType: StageObjectiveType = StageObjectiveType.STANDARD,
+    val currentFocusColors: List<Color> = emptyList(),
+    val steadyHandsBonusEarned: Int = 0,
+    val steadyHandsMissedCount: Int = 0,
+    val dailyTrackDay: Int = 1,
+    val dailyTrackCanClaimToday: Boolean = true,
+    val dailyTrackResetStreakNotice: Boolean = false
 )
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
@@ -311,6 +323,139 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 graphicsQuality = repository.getGraphicsQuality(),
                 isWideAssistEnabled = repository.isWideAssistEnabled(),
                 boosterCounts = repository.getAllBoosterCounts()
+            )
+        }
+        checkDailyTrackStatus()
+    }
+
+    /**
+     * Pass 9: 7-Day Daily Gifts track calendar check.
+     * Stored in plain prefs keys outside signed payload.
+     */
+    fun checkDailyTrackStatus() {
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val lastClaim = repository.getDailyTrackLastClaimDate()
+        val savedDay = repository.getDailyTrackDay()
+
+        var currentDay = savedDay
+        var canClaim = false
+        var resetNotice = false
+
+        if (lastClaim.isEmpty()) {
+            currentDay = 1
+            canClaim = true
+        } else if (lastClaim == todayStr) {
+            canClaim = false
+        } else {
+            val daysDiff = try {
+                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val d1 = sdf.parse(lastClaim)
+                val d2 = sdf.parse(todayStr)
+                if (d1 != null && d2 != null) {
+                    TimeUnit.MILLISECONDS.toDays(d2.time - d1.time)
+                } else Long.MAX_VALUE
+            } catch (e: Exception) {
+                Long.MAX_VALUE
+            }
+
+            if (daysDiff == 1L) {
+                // Consecutive day: streak intact
+                canClaim = true
+            } else if (daysDiff > 1L) {
+                // Missed at least one calendar day: reset to day 1
+                currentDay = 1
+                repository.setDailyTrackDay(1)
+                canClaim = true
+                resetNotice = true
+            }
+        }
+
+        _uiState.update {
+            it.copy(
+                dailyTrackDay = currentDay,
+                dailyTrackCanClaimToday = canClaim,
+                dailyTrackResetStreakNotice = resetNotice
+            )
+        }
+    }
+
+    /**
+     * Pass 9: Claim today's Daily Gift.
+     * All coin, gem, and booster updates go through GameRepository setters so the integrity
+     * signature is preserved.
+     */
+    fun claimDailyTrackGift() {
+        if (!_uiState.value.dailyTrackCanClaimToday) return
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val currentDay = _uiState.value.dailyTrackDay
+
+        when (currentDay) {
+            1 -> {
+                val newCoins = _uiState.value.coins + 50
+                repository.setCoins(newCoins)
+                _uiState.update { it.copy(coins = newCoins) }
+                showBannerMessage("🎁 Day 1: +50 Coins claimed!")
+            }
+            2 -> {
+                val newCoins = _uiState.value.coins + 100
+                repository.setCoins(newCoins)
+                _uiState.update { it.copy(coins = newCoins) }
+                showBannerMessage("🎁 Day 2: +100 Coins claimed!")
+            }
+            3 -> {
+                repository.addBooster("booster_freeze", 1)
+                _uiState.update { it.copy(boosterCounts = repository.getAllBoosterCounts()) }
+                showBannerMessage("🎁 Day 3: +1 Freeze Booster claimed!")
+            }
+            4 -> {
+                val newCoins = _uiState.value.coins + 150
+                repository.setCoins(newCoins)
+                _uiState.update { it.copy(coins = newCoins) }
+                showBannerMessage("🎁 Day 4: +150 Coins claimed!")
+            }
+            5 -> {
+                val newGems = _uiState.value.gems + 10
+                repository.setGems(newGems)
+                _uiState.update { it.copy(gems = newGems) }
+                showBannerMessage("🎁 Day 5: +10 Gems claimed!")
+            }
+            6 -> {
+                val newCoins = _uiState.value.coins + 250
+                repository.setCoins(newCoins)
+                _uiState.update { it.copy(coins = newCoins) }
+                showBannerMessage("🎁 Day 6: +250 Coins claimed!")
+            }
+            7 -> {
+                val newCoins = _uiState.value.coins + 500
+                val newGems = _uiState.value.gems + 25
+                repository.setCoins(newCoins)
+                repository.setGems(newGems)
+                repository.addBooster("booster_thunder", 1)
+                repository.addBooster("booster_color_bomb", 1)
+                repository.addBooster("booster_hammer", 1)
+                repository.addBooster("booster_freeze", 1)
+                repository.addBooster("booster_vortex", 1)
+                _uiState.update {
+                    it.copy(
+                        coins = newCoins,
+                        gems = newGems,
+                        boosterCounts = repository.getAllBoosterCounts()
+                    )
+                }
+                showBannerMessage("👑 Day 7 Royal Chest: +500 Coins, +25 Gems & 5 Boosters!")
+            }
+        }
+
+        sound.playRewardClaim()
+        repository.setDailyTrackLastClaimDate(todayStr)
+        val nextDay = if (currentDay < 7) currentDay + 1 else 1
+        repository.setDailyTrackDay(nextDay)
+
+        _uiState.update {
+            it.copy(
+                dailyTrackDay = nextDay,
+                dailyTrackCanClaimToday = false,
+                dailyTrackResetStreakNotice = false
             )
         }
     }
@@ -875,15 +1020,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         musicPlayer.resume()
         initAmbientsForZone(zoneNum)
 
+        val recipe = StageRecipes.getRecipe(lvl.level)
         _uiState.update {
             it.copy(
                 gameMode = GameMode.CAMPAIGN,
                 currentLevel = lvl.level,
-                targetPops = lvl.targetPops,
+                targetPops = recipe.targetPops,
                 targetScore = lvl.targetScore,
-                timeLeft = lvl.timeLimit,
-                maxMissesAllowed = lvl.maxMissesAllowed,
+                timeLeft = recipe.timeLimit,
+                maxMissesAllowed = recipe.maxMisses,
                 missedCount = 0,
+                currentObjectiveType = recipe.objectiveType,
+                currentFocusColors = recipe.focusColors,
+                steadyHandsBonusEarned = 0,
+                steadyHandsMissedCount = 0,
                 currentScreen = CurrentScreen.GAMEPLAY
             )
         }
@@ -957,12 +1107,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val levelNum = state.currentLevel
         val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(levelNum - 1)
         if (state.gameMode == GameMode.CAMPAIGN && lvl != null && levelNum > 0) {
+            val recipe = StageRecipes.getRecipe(lvl.level)
             _uiState.update {
                 it.copy(
-                    timeLeft = lvl.timeLimit,
-                    maxMissesAllowed = lvl.maxMissesAllowed,
-                    targetPops = lvl.targetPops,
-                    missedCount = 0
+                    timeLeft = recipe.timeLimit,
+                    maxMissesAllowed = recipe.maxMisses,
+                    targetPops = recipe.targetPops,
+                    missedCount = 0,
+                    currentObjectiveType = recipe.objectiveType,
+                    currentFocusColors = recipe.focusColors,
+                    steadyHandsBonusEarned = 0,
+                    steadyHandsMissedCount = 0
                 )
             }
             // Pass 8: a Retry is also a "next try" — streak +5s and a
@@ -1613,7 +1768,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             SpawnFormation.CLUSTER -> {
                 // CLUSTER: 5–7 balloons of one colour in a loose bunch
                 val count = Random.nextInt(5, 8)
-                val clusterColor = skin.palette.random()
+                val clusterColor = if (recipe != null && recipe.objectiveType == StageObjectiveType.COLOUR_FOCUS && recipe.focusColors.isNotEmpty()) {
+                    if (Random.nextFloat() < 0.85f) recipe.focusColors.random() else skin.palette.random()
+                } else {
+                    skin.palette.random()
+                }
                 val cx = (radiusBase() + 30f + Random.nextFloat() * (canvasWidth - radiusBase() * 2f - 60f).coerceAtLeast(100f))
                 val cy = canvasHeight + radiusBase() + 30f
                 val clusterSpeed = computeBaseSpeed(BalloonType.STANDARD)
@@ -1649,7 +1808,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 synchronized(pendingSpawns) {
                     for (i in 0 until count) {
                         val type = pickBalloonType(recipe)
-                        val color = getBalloonColor(type, skin)
+                        val color = getBalloonColor(type, skin, recipe)
                         val r = computeBalloonRadius(type)
                         val maxHp = if (type == BalloonType.SHIELDED) 2 else 1
                         pendingSpawns.add(
@@ -1674,12 +1833,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 val cy = canvasHeight + 115f
                 val ringSpeed = computeBaseSpeed(BalloonType.STANDARD)
                 val targetR = 135f
-
                 synchronized(pendingSpawns) {
                     for (i in 0 until 8) {
                         val angle = (i.toFloat() / 8f) * 6.2831853f
                         val type = pickBalloonType(recipe)
-                        val color = getBalloonColor(type, skin)
+                        val color = getBalloonColor(type, skin, recipe)
                         val r = computeBalloonRadius(type)
                         val maxHp = if (type == BalloonType.SHIELDED) 2 else 1
                         pendingSpawns.add(
@@ -1785,7 +1943,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val x = radius + Random.nextFloat() * (canvasWidth - radius * 2).coerceAtLeast(100f)
         val y = canvasHeight + radius + 15f
         val vy = computeBaseSpeed(type)
-        val color = getBalloonColor(type, skin)
+        val color = getBalloonColor(type, skin, recipe)
         val shape = getBalloonShape(type, skin)
         val maxHp = when (type) {
             BalloonType.MEGA_BOSS -> (15 + (_uiState.value.currentLevel / 10) * 5).coerceIn(15, 45)
@@ -1864,6 +2022,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             return if (roll < 75) BalloonType.STANDARD else BalloonType.GOLDEN
         }
 
+        // Pass 9: Bomb Survival elevated bomb spawn rate
+        if (recipe.objectiveType == StageObjectiveType.BOMB_SURVIVAL) {
+            if (Random.nextFloat() < 0.28f) {
+                return BalloonType.BOMB
+            }
+        }
+
         val roll = Random.nextFloat()
         if (roll >= recipe.specialChance || recipe.unlockedBalloonTypes.size <= 1) {
             return BalloonType.STANDARD
@@ -1875,7 +2040,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         return if (availableSpecials.isNotEmpty()) availableSpecials.random() else BalloonType.STANDARD
     }
 
-    private fun getBalloonColor(type: BalloonType, skin: BalloonSkin): Color {
+    private fun getBalloonColor(type: BalloonType, skin: BalloonSkin, recipe: StageRecipe? = null): Color {
         return when (type) {
             BalloonType.GOLDEN -> Color(0xFFFFD700)
             BalloonType.BOMB -> Color(0xFF222226)
@@ -1891,7 +2056,18 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             BalloonType.GOLDEN_PIGGY -> Color(0xFFF59E0B)
             BalloonType.ELECTRIC_STORM -> Color(0xFF38BDF8)
             BalloonType.MEGA_BOSS -> Color(0xFF7C3AED)
-            else -> skin.palette.random()
+            else -> {
+                // Pass 9: Colour Focus stages bias 75% of standard balloon spawns to the focus colors
+                if (recipe != null && recipe.objectiveType == StageObjectiveType.COLOUR_FOCUS && recipe.focusColors.isNotEmpty()) {
+                    if (Random.nextFloat() < 0.75f) {
+                        recipe.focusColors.random()
+                    } else {
+                        skin.palette.random()
+                    }
+                } else {
+                    skin.palette.random()
+                }
+            }
         }
     }
 
@@ -2309,11 +2485,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         var shouldClearStage = false
         _uiState.update { current ->
             val updatedScore = maxOf(0, current.score + earnedScore)
-            val updatedPopped = maxOf(current.poppedCount + 1, current.poppedCount)
+            val isCampaign = current.gameMode == GameMode.CAMPAIGN && current.currentLevel > 0
+            val countsTowardGoal = if (isCampaign && current.currentObjectiveType == StageObjectiveType.COLOUR_FOCUS) {
+                StageRecipes.isFocusColorMatch(b.color, current.currentFocusColors)
+            } else {
+                true
+            }
+            val updatedPopped = if (countsTowardGoal) maxOf(current.poppedCount + 1, current.poppedCount) else current.poppedCount
             repository.updateLifetimeHighScore(updatedScore)
             // Pass 5 (audit L2): currentLevel > 0 keeps custom challenges
             // (CAMPAIGN mode, level 0) out of the campaign clear path.
-            if (current.gameMode == GameMode.CAMPAIGN && current.currentLevel > 0 && updatedPopped >= current.targetPops) {
+            if (isCampaign && updatedPopped >= current.targetPops) {
                 shouldClearStage = true
             }
             current.copy(
@@ -2781,8 +2963,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // Pass 5 (audit L10): replay taper — the FIRST clear pays the full
         // stage reward; replays of an already-cleared stage pay 25%, so
         // re-running stage 1 is no longer the game's best economy.
+        val recipe = StageRecipes.getRecipe(lvl.level)
+        val steadyHandsBonus = if (recipe.objectiveType == StageObjectiveType.NO_MISS_BONUS && _uiState.value.missedCount <= 2) 30 else 0
         val isReplay = _uiState.value.completedLevels.containsKey(lvl.level)
-        val paidCoins = if (isReplay) (lvl.rewardCoins * 0.25f).toInt() else lvl.rewardCoins
+        val basePaidCoins = if (isReplay) (lvl.rewardCoins * 0.25f).toInt() else lvl.rewardCoins
+        val paidCoins = basePaidCoins + steadyHandsBonus
         val paidGems = if (isReplay) (lvl.rewardGems * 0.25f).toInt() else lvl.rewardGems
 
         val newCoins = _uiState.value.coins + paidCoins
@@ -2807,7 +2992,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 isNewHighScoreAchieved = isHighScore,
                 previousHighScore = sessionBaselineHighScore,
                 shouldPromptFirstClearNotification = wasFirstLevelCompleted,
-                winStreak = newWinStreak
+                winStreak = newWinStreak,
+                steadyHandsBonusEarned = steadyHandsBonus,
+                steadyHandsMissedCount = _uiState.value.missedCount
             )
         }
     }

@@ -119,6 +119,11 @@ fun GamePlayScreen(
     transitionTargetLevel: Int? = null,
     onFinishLevelTransition: () -> Unit = {},
     showComboHintBanner: Boolean = false,
+    // Pass 9: Stage Objective Variety & Steady Hands Bonus
+    objectiveType: StageObjectiveType = StageObjectiveType.STANDARD,
+    focusColors: List<Color> = emptyList(),
+    steadyHandsBonusEarned: Int = 0,
+    steadyHandsMissedCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     var resumeCountdown by remember { mutableStateOf<Int?>(null) }
@@ -299,13 +304,53 @@ fun GamePlayScreen(
                             .padding(horizontal = 10.dp, vertical = 3.dp),
                         verticalArrangement = Arrangement.spacedBy(1.dp)
                     ) {
-                        Text(
-                            text = if (gameMode == GameMode.CAMPAIGN) "🎈 $poppedCount/$targetPops" else "🎈 $poppedCount",
-                            fontFamily = Baloo2FontFamily,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = if (gameMode == GameMode.CAMPAIGN) "🎈 $poppedCount/$targetPops" else "🎈 $poppedCount",
+                                fontFamily = Baloo2FontFamily,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+
+                            // Colour Focus: show the two target color dots beside the counter
+                            if (gameMode == GameMode.CAMPAIGN && objectiveType == StageObjectiveType.COLOUR_FOCUS && focusColors.isNotEmpty()) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    focusColors.forEach { c ->
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .clip(CircleShape)
+                                                .background(c)
+                                                .border(1.dp, Color.White.copy(alpha = 0.9f), CircleShape)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Objective type subtitle tag if not standard
+                        if (gameMode == GameMode.CAMPAIGN && objectiveType != StageObjectiveType.STANDARD) {
+                            val objectiveTag = when (objectiveType) {
+                                StageObjectiveType.COLOUR_FOCUS -> "Focus: Only 🔴🔵"
+                                StageObjectiveType.NO_MISS_BONUS -> "Goal: ≤2 Miss (+30🪙)"
+                                StageObjectiveType.BOMB_SURVIVAL -> "💣 Bomb Survival"
+                                else -> ""
+                            }
+                            Text(
+                                text = objectiveTag,
+                                fontFamily = Baloo2FontFamily,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFFD166)
+                            )
+                        }
 
                         // Pass 8 FTUE: the Miss pill stays hidden for
                         // stages 1–2 (progressive disclosure; stage 1 can't
@@ -956,6 +1001,8 @@ fun GamePlayScreen(
                     isNewHighScore = isNewHighScore,
                     previousHighScore = previousHighScore,
                     winStreak = winStreak,
+                    steadyHandsBonusEarned = steadyHandsBonusEarned,
+                    steadyHandsMissedCount = steadyHandsMissedCount,
                     onNextLevel = onNextLevel,
                     onReplay = onRestart,
                     onMap = onStageMenu,

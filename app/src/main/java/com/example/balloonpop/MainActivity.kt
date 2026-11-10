@@ -168,7 +168,11 @@ class MainActivity : ComponentActivity() {
                                             onOpenSettings = { viewModel.openSettings() },
                                             onStartCustomChallenge = { time, pops, misses ->
                                                 viewModel.startCustomChallenge(time, pops, misses)
-                                            }
+                                            },
+                                            dailyTrackDay = uiState.dailyTrackDay,
+                                            dailyTrackCanClaimToday = uiState.dailyTrackCanClaimToday,
+                                            dailyTrackResetStreakNotice = uiState.dailyTrackResetStreakNotice,
+                                            onClaimDailyGift = { viewModel.claimDailyTrackGift() }
                                         )
                                     }
                                     CurrentScreen.SKILL_VAULT -> {
@@ -400,7 +404,11 @@ class MainActivity : ComponentActivity() {
                                             isTransitioningLevel = uiState.isTransitioningLevel,
                                             transitionTargetLevel = uiState.transitionTargetLevel,
                                             onFinishLevelTransition = { viewModel.finishLevelTransition() },
-                                            showComboHintBanner = uiState.showComboHintBanner
+                                            showComboHintBanner = uiState.showComboHintBanner,
+                                            objectiveType = uiState.currentObjectiveType,
+                                            focusColors = uiState.currentFocusColors,
+                                            steadyHandsBonusEarned = uiState.steadyHandsBonusEarned,
+                                            steadyHandsMissedCount = uiState.steadyHandsMissedCount
                                         )
                                     }
                                 }

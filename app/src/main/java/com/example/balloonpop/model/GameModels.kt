@@ -319,6 +319,13 @@ enum class StagePacingRole(val displayName: String) {
     CELEBRATION("Celebration")
 }
 
+enum class StageObjectiveType(val displayName: String) {
+    STANDARD("Standard"),
+    COLOUR_FOCUS("Colour Focus"),
+    NO_MISS_BONUS("Steady Hands"),
+    BOMB_SURVIVAL("Bomb Survival")
+}
+
 data class StageRecipe(
     val level: Int,
     val zoneNumber: Int,
@@ -330,7 +337,10 @@ data class StageRecipe(
     val unlockedBalloonTypes: List<BalloonType>,
     val allowedFormations: List<SpawnFormation>,
     val specialChance: Float,
-    val goldRushChance: Float
+    val goldRushChance: Float,
+    val objectiveType: StageObjectiveType = StageObjectiveType.STANDARD,
+    val focusColors: List<Color> = emptyList(),
+    val focusColorNames: List<String> = emptyList()
 )
 
 object StageRecipes {
@@ -347,13 +357,35 @@ object StageRecipes {
             else -> StagePacingRole.CELEBRATION
         }
 
+        // Pass 9 Stage-Type Rotation by zone position:
+        // Positions 1-3, 6, 8: STANDARD
+        // Position 4: COLOUR_FOCUS (Red & Blue only)
+        // Position 5: NO_MISS_BONUS (finish with <= 2 misses for +30 coins)
+        // Position 7: BOMB_SURVIVAL (notably higher bomb rate, ~20% lower target)
+        // Position 9: HARD spike (STANDARD)
+        // Position 10: CELEBRATION (STANDARD)
+        val objectiveType = when (zoneStage) {
+            4 -> StageObjectiveType.COLOUR_FOCUS
+            5 -> StageObjectiveType.NO_MISS_BONUS
+            7 -> StageObjectiveType.BOMB_SURVIVAL
+            else -> StageObjectiveType.STANDARD
+        }
+
+        val focusColors = if (objectiveType == StageObjectiveType.COLOUR_FOCUS) {
+            listOf(Color(0xFFE53935), Color(0xFF1E88E5))
+        } else emptyList()
+
+        val focusColorNames = if (objectiveType == StageObjectiveType.COLOUR_FOCUS) {
+            listOf("RED", "BLUE")
+        } else emptyList()
+
         // Unlocked balloon types introduced gradually across the whole game:
         // Frozen from stage 3, bombs from stage 4, Armored from stage 6, Splitter from stage 8
         val unlockedTypes = mutableListOf(BalloonType.STANDARD)
         if (safeLvl >= 1) unlockedTypes.add(BalloonType.GOLDEN)
         if (safeLvl >= 2) unlockedTypes.add(BalloonType.RAINBOW)
         if (safeLvl >= 3) unlockedTypes.add(BalloonType.FREEZE)
-        if (safeLvl >= 4) unlockedTypes.add(BalloonType.BOMB)
+        if (safeLvl >= 4 || objectiveType == StageObjectiveType.BOMB_SURVIVAL) unlockedTypes.add(BalloonType.BOMB)
         if (safeLvl >= 5) unlockedTypes.add(BalloonType.FAST_ROCKET)
         if (safeLvl >= 6) unlockedTypes.add(BalloonType.SHIELDED)
         if (safeLvl >= 7) {
@@ -375,6 +407,13 @@ object StageRecipes {
         // Early stages use CLUSTER / STREAM / RING only; heavier patterns unlock as stages progress.
         // Bomb Dodge never before stage 4.
         val allowedFormations = when {
+            objectiveType == StageObjectiveType.BOMB_SURVIVAL -> listOf(
+                SpawnFormation.BOMB_DODGE,
+                SpawnFormation.STREAM,
+                SpawnFormation.CLUSTER,
+                SpawnFormation.RING,
+                SpawnFormation.MIXED_RAIN
+            )
             safeLvl < 4 -> listOf(
                 SpawnFormation.CLUSTER,
                 SpawnFormation.STREAM,
@@ -429,33 +468,33 @@ object StageRecipes {
             }
             StagePacingRole.MIX -> {
                 // Zone stages 4–6 "Mix": standard values
-                val target = (32 + (zoneNumber - 1) * 3 + (zoneStage - 4) * 4).coerceIn(32, 66)
+                val baseTarget = (32 + (zoneNumber - 1) * 3 + (zoneStage - 4) * 4).coerceIn(32, 66)
                 val time = (48 + (zoneNumber / 5) * 2).coerceIn(48, 56)
                 val misses = 5
                 val specials = 0.22f
                 val goldChance = 0.08f
-                RecipeStats(target, time, misses, specials, goldChance)
+                RecipeStats(baseTarget, time, misses, specials, goldChance)
             }
             StagePacingRole.CHALLENGE -> {
                 // Zone stages 7–9 "Challenge": denser targets, more specials, slightly tighter time
-                val target = (46 + (zoneNumber - 1) * 3 + (zoneStage - 7) * 5).coerceIn(46, 84)
+                val rawTarget = (46 + (zoneNumber - 1) * 3 + (zoneStage - 7) * 5).coerceIn(46, 84)
                 val time = (44 + (zoneNumber / 6) * 2).coerceIn(42, 50)
                 val misses = 4
-                val specials = 0.38f
+                val specials = if (zoneStage == 7) 0.52f else 0.38f
                 val goldChance = 0.10f
-                if (zoneStage == 9) {
+                if (zoneStage == 7) {
+                    // Position 7 BOMB_SURVIVAL: target ~20% lower, bomb rate notably higher
+                    val survivalTarget = (rawTarget * 0.80f).roundToInt().coerceAtLeast(18)
+                    RecipeStats(survivalTarget, time, misses, specials, goldChance)
+                } else if (zoneStage == 9) {
                     // Pass 8 sawtooth retune: position 9 is the zone's SPIKE
-                    // (stages 7–8 keep the elevated-specials Challenge mix) —
-                    // a SHORTER timer (~0.9x) and a near-miss target (~1.05x),
-                    // so a decent run lands just short instead of walled.
-                    // Curve shape only; magnitudes stay close to the old 9.
                     RecipeStats(
-                        (target * 1.05f).roundToInt(),
+                        (rawTarget * 1.05f).roundToInt(),
                         (time * 0.9f).roundToInt(),
                         misses, specials, goldChance
                     )
                 } else {
-                    RecipeStats(target, time, misses, specials, goldChance)
+                    RecipeStats(rawTarget, time, misses, specials, goldChance)
                 }
             }
             StagePacingRole.CELEBRATION -> {
@@ -493,7 +532,10 @@ object StageRecipes {
             unlockedBalloonTypes = unlockedTypes,
             allowedFormations = allowedFormations,
             specialChance = specialChance,
-            goldRushChance = goldRushChance
+            goldRushChance = goldRushChance,
+            objectiveType = objectiveType,
+            focusColors = focusColors,
+            focusColorNames = focusColorNames
         )
     }
 
@@ -520,6 +562,25 @@ object StageRecipes {
         6 -> "New: 🛡 Shielded balloons — they take 2 pops!"
         8 -> "New: ✂ Splitter balloons — they split into two!"
         else -> null
+    }
+
+    /** Pass 9: headline intro line for stage objective variety. */
+    fun objectiveIntroLineFor(recipe: StageRecipe): String? = when (recipe.objectiveType) {
+        StageObjectiveType.COLOUR_FOCUS -> "🎨 Colour Focus: only RED and BLUE pops count!"
+        StageObjectiveType.NO_MISS_BONUS -> "🎯 Steady Hands: finish with ≤2 misses for +30 bonus coins!"
+        StageObjectiveType.BOMB_SURVIVAL -> "💣 Bomb Survival: dodge the bombs, reach the target!"
+        StageObjectiveType.STANDARD -> null
+    }
+
+    /** Colour Focus matching check */
+    fun isFocusColorMatch(color: Color, focusColors: List<Color>): Boolean {
+        if (focusColors.isEmpty()) return true
+        return focusColors.any { fc ->
+            val dr = kotlin.math.abs(fc.red - color.red)
+            val dg = kotlin.math.abs(fc.green - color.green)
+            val db = kotlin.math.abs(fc.blue - color.blue)
+            dr < 0.22f && dg < 0.22f && db < 0.22f
+        }
     }
 }
 
@@ -867,6 +928,51 @@ object GameConstants {
             pattern = BalloonPattern.SPARKLE,
             glossStrength = 1.4f,
             description = "The crown jewel — liquid gold with stardust sparkle."
+        ),
+        BalloonSkin(
+            id = "balloon_rose_gold",
+            name = "Rose Gold",
+            icon = "🌸✨",
+            cost = 1500,
+            currency = CurrencyType.COINS,
+            tier = 5,
+            palette = listOf(
+                Color(0xFFE8A598), Color(0xFFF4C2BA), Color(0xFFD48B7E), Color(0xFFFFD1C4)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.SMILEY, BalloonShapeStyle.COOL, BalloonShapeStyle.STAR_SHAPE),
+            pattern = BalloonPattern.SOLID,
+            glossStrength = 1.45f,
+            description = "Liquid rose-gold with a mirror metallic sheen."
+        ),
+        BalloonSkin(
+            id = "balloon_pearl_opal",
+            name = "Pearl Opal",
+            icon = "🦪✨",
+            cost = 40,
+            currency = CurrencyType.GEMS,
+            tier = 6,
+            palette = listOf(
+                Color(0xFFF8FAFC), Color(0xFFE0E7FF), Color(0xFFFCE7F3), Color(0xFFEDE9FE)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.STAR_SHAPE, BalloonShapeStyle.CAT_FACE, BalloonShapeStyle.SMILEY),
+            pattern = BalloonPattern.SPARKLE,
+            glossStrength = 1.35f,
+            description = "Iridescent mother-of-pearl gleaming with soft prism light."
+        ),
+        BalloonSkin(
+            id = "balloon_midnight_velvet",
+            name = "Midnight Velvet",
+            icon = "👑💜",
+            cost = 2000,
+            currency = CurrencyType.COINS,
+            tier = 5,
+            palette = listOf(
+                Color(0xFF2A1038), Color(0xFF3B184F), Color(0xFF4C1D66), Color(0xFFD4A017)
+            ),
+            faceStyles = listOf(BalloonShapeStyle.COOL, BalloonShapeStyle.SMILEY, BalloonShapeStyle.STAR_SHAPE),
+            pattern = BalloonPattern.SPARKLE,
+            glossStrength = 0.85f,
+            description = "Royal midnight plum matte accented with rich gold dust."
         )
     )
 

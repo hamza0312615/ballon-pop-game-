@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.example.balloonpop.ui.components.AmberDialogFrame
 import com.example.balloonpop.ui.components.JellyButton
 import com.example.balloonpop.ui.components.JellyColorVariant
+import com.example.balloonpop.ui.dialogs.DailyGiftsDialog
 import com.example.balloonpop.ui.components.TopBar
 import com.example.balloonpop.ui.dialogs.CustomChallengeDialog
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
@@ -81,10 +82,16 @@ fun HomeScreen(
     onOpenRanks: () -> Unit = {},
     onOpenSettings: () -> Unit,
     onStartCustomChallenge: (timeSeconds: Int, targetPops: Int, maxMisses: Int) -> Unit = { _, _, _ -> },
+    // Pass 9: 7-Day Daily Gifts track
+    dailyTrackDay: Int = 1,
+    dailyTrackCanClaimToday: Boolean = true,
+    dailyTrackResetStreakNotice: Boolean = false,
+    onClaimDailyGift: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showHowToPlay by remember { mutableStateOf(false) }
     var showCustomChallenge by remember { mutableStateOf(false) }
+    var showDailyGifts by remember { mutableStateOf(false) }
 
     val infiniteTransition = rememberInfiniteTransition(label = "home_animations")
 
@@ -462,8 +469,32 @@ fun HomeScreen(
                         testTag = "custom_challenge_button",
                         modifier = Modifier.weight(1f)
                     )
+                    HomeIconActionButton(
+                        iconContent = {
+                            Text(text = "🎁", fontSize = 22.sp)
+                        },
+                        label = "Gifts",
+                        accentColor = StoryGold,
+                        badge = if (dailyTrackCanClaimToday) "CLAIM" else null,
+                        onClick = { showDailyGifts = true },
+                        testTag = "home_daily_gifts_button",
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
+        }
+
+        // Pass 9: 7-Day Daily Gifts Calendar Dialog
+        if (showDailyGifts) {
+            DailyGiftsDialog(
+                currentDay = dailyTrackDay,
+                canClaimToday = dailyTrackCanClaimToday,
+                streakResetNotice = dailyTrackResetStreakNotice,
+                onClaimToday = {
+                    onClaimDailyGift()
+                },
+                onDismiss = { showDailyGifts = false }
+            )
         }
 
         // How to Play Dialog

@@ -24,6 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -157,6 +158,9 @@ fun VictoryStageDialog(
     previousHighScore: Int = 0,
     // Pass 8: win-streak fuel — the streak AFTER this win (persisted).
     winStreak: Int = 0,
+    // Pass 9: Steady Hands objective bonus
+    steadyHandsBonusEarned: Int = 0,
+    steadyHandsMissedCount: Int = 0,
     onNextLevel: () -> Unit,
     onReplay: () -> Unit,
     onMap: () -> Unit,
@@ -171,11 +175,17 @@ fun VictoryStageDialog(
     // Card pops in with a slight overshoot spring and slides up gently
     val cardPop = remember { Animatable(0.85f) }
     val cardSlideY = remember { Animatable(45f) }
+    // Pass 9 win ceremony: 6 small coin icons arc from the reward row up to the dialog's top area (<= 900ms)
+    val coinFlight = remember { Animatable(0f) }
+
     LaunchedEffect(Unit) {
         cardPop.animateTo(1f, DesignTokens.DialogPopSpring)
     }
     LaunchedEffect(Unit) {
         cardSlideY.animateTo(0f, tween(320, easing = FastOutSlowInEasing))
+    }
+    LaunchedEffect(Unit) {
+        coinFlight.animateTo(1f, tween(750, easing = FastOutSlowInEasing))
     }
 
     Box(
@@ -192,6 +202,27 @@ fun VictoryStageDialog(
 
         // Celebratory Falling Confetti Cannon
         ConfettiCelebrationView(particleCount = 50)
+
+        // Self-contained coin flight ceremony (arcs from reward row to dialog top area)
+        if (coinFlight.value < 1f) {
+            val progress = coinFlight.value
+            val sinArc = kotlin.math.sin(progress * Math.PI.toFloat())
+            for (i in 0 until 6) {
+                val spread = ((i - 2.5f) / 2.5f) // -1.0 .. 1.0
+                val arcX = spread * (80f * sinArc)
+                val arcY = 70f - (progress * 190f)
+                val alpha = (1f - progress * progress).coerceIn(0f, 1f)
+                val scale = (0.75f + 0.35f * sinArc).coerceIn(0.5f, 1.25f)
+                Box(
+                    modifier = Modifier
+                        .offset(x = arcX.dp, y = arcY.dp)
+                        .scale(scale)
+                        .alpha(alpha)
+                ) {
+                    CurrencyArt(currencyType = "coin", modifier = Modifier.size(18.dp))
+                }
+            }
+        }
 
         Column(
             modifier = Modifier
@@ -249,6 +280,17 @@ fun VictoryStageDialog(
                     color = PlumText
                 )
                 CurrencyArt(currencyType = "gem", modifier = Modifier.size(18.dp))
+            }
+
+            // Pass 9: Steady Hands objective bonus message
+            if (steadyHandsBonusEarned > 0) {
+                Text(
+                    text = "🎯 Steady Hands bonus: +$steadyHandsBonusEarned coins (only $steadyHandsMissedCount missed!)",
+                    fontSize = DesignTokens.SizeCaption,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD97706),
+                    textAlign = TextAlign.Center
+                )
             }
 
             // Pass 8: win-streak fuel made visible — the next stage's +5s

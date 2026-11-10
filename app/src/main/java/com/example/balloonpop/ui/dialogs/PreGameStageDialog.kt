@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.balloonpop.ui.theme.StoryGold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AvTimer
 import androidx.compose.material.icons.filled.GpsFixed
@@ -182,15 +183,35 @@ fun PreGameStageDialog(
                     }
                 }
 
-                // Pass 8: intro info lines — HARD tag for the zone's spike
-                // stage (position 9), win-streak fuel announcement, and the
-                // one-line coach text on a special balloon's debut stage.
+                // Pass 8 & 9: intro info lines — Stage Objective Variety banner,
+                // HARD tag for the zone's spike stage (position 9), win-streak fuel
+                // announcement, and the one-line coach text on debut stage.
+                val recipe = remember(level) { if (level > 0) StageRecipes.getRecipe(level) else null }
                 val coachLine = remember(level) { StageRecipes.coachLineFor(level) }
-                if (StageRecipes.isHardStage(level) || winStreak >= 2 || coachLine != null) {
+                val objectiveLine = remember(recipe) { recipe?.let { StageRecipes.objectiveIntroLineFor(it) } }
+                if (StageRecipes.isHardStage(level) || winStreak >= 2 || coachLine != null || objectiveLine != null) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        if (objectiveLine != null) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF261938))
+                                    .border(1.dp, StoryGold, RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = objectiveLine,
+                                    fontFamily = Baloo2FontFamily,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFFFFD166),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                         if (StageRecipes.isHardStage(level)) {
                             Box(
                                 modifier = Modifier
