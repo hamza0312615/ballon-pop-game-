@@ -1,6 +1,7 @@
 package com.example.balloonpop.model
 
 import androidx.compose.ui.graphics.Color
+import kotlin.math.roundToInt
 
 enum class BalloonType(
     val typeName: String,
@@ -442,7 +443,20 @@ object StageRecipes {
                 val misses = 4
                 val specials = 0.38f
                 val goldChance = 0.10f
-                RecipeStats(target, time, misses, specials, goldChance)
+                if (zoneStage == 9) {
+                    // Pass 8 sawtooth retune: position 9 is the zone's SPIKE
+                    // (stages 7–8 keep the elevated-specials Challenge mix) —
+                    // a SHORTER timer (~0.9x) and a near-miss target (~1.05x),
+                    // so a decent run lands just short instead of walled.
+                    // Curve shape only; magnitudes stay close to the old 9.
+                    RecipeStats(
+                        (target * 1.05f).roundToInt(),
+                        (time * 0.9f).roundToInt(),
+                        misses, specials, goldChance
+                    )
+                } else {
+                    RecipeStats(target, time, misses, specials, goldChance)
+                }
             }
             StagePacingRole.CELEBRATION -> {
                 // Zone stage 10 "Celebration": GOLD RUSH chance up, generous time
@@ -455,13 +469,26 @@ object StageRecipes {
             }
         }
 
+        // Pass 8 FTUE kindness: stage 1 must be comfortably winnable on the
+        // first-ever attempt — target drops to ~65% of the recipe value (12
+        // pops: a real stage, reachable in about half the timer by a total
+        // beginner) and the timer is at least 60s (the recipe's Learn time
+        // is 55s). Stage 1 also cannot be failed by misses (see
+        // GameViewModel.onMissBalloon).
+        val finalTargetPops = if (safeLvl == 1) {
+            (targetPops * 0.65f).roundToInt().coerceAtLeast(5)
+        } else {
+            targetPops
+        }
+        val finalTimeLimit = if (safeLvl == 1) maxOf(timeLimit, 60) else timeLimit
+
         return StageRecipe(
             level = safeLvl,
             zoneNumber = zoneNumber,
             zoneStage = zoneStage,
             role = role,
-            targetPops = targetPops,
-            timeLimit = timeLimit,
+            targetPops = finalTargetPops,
+            timeLimit = finalTimeLimit,
             maxMisses = maxMisses,
             unlockedBalloonTypes = unlockedTypes,
             allowedFormations = allowedFormations,
@@ -477,6 +504,23 @@ object StageRecipes {
         val specialChance: Float,
         val goldRushChance: Float
     )
+
+    /** Pass 8: a stage is its zone's spike ("HARD") stage at zone position 9. */
+    fun isHardStage(lvl: Int): Boolean = (((lvl - 1) % 10) + 1) == 9
+
+    /**
+     * Pass 8 FTUE: one-line coach text for a special balloon's debut stage,
+     * aligned with the unlock thresholds in [getRecipe] above (Frozen from
+     * stage 3, Bomb from stage 4, Armored/Shielded from stage 6, Splitter
+     * from stage 8). Null for every other stage.
+     */
+    fun coachLineFor(lvl: Int): String? = when (lvl) {
+        3 -> "New: ❄ Freeze balloons — pop one to freeze time!"
+        4 -> "New: 💣 Bomb balloons — don't tap them!"
+        6 -> "New: 🛡 Shielded balloons — they take 2 pops!"
+        8 -> "New: ✂ Splitter balloons — they split into two!"
+        else -> null
+    }
 }
 
 

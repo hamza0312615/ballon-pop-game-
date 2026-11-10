@@ -492,53 +492,58 @@ internal class CentralSoundEngine(private val context: Context? = null) {
     fun playBalloonPop(type: BalloonType, radius: Float = 35f) {
         val sizeFactor = (60f - radius.coerceIn(18f, 65f)) / 60f // 0.0 to 0.7
         val radiusRate = 0.85f + sizeFactor * 0.4f
+        // Pass 8 juice (research §1): ±10% pitch jitter on every pop, so
+        // repetition never sounds mechanical. Applied to the computed
+        // playback rate of every branch below (SoundPool + fallback
+        // AudioTrack both honour the rate in play()).
+        val popJitter = 0.9f + Random.nextFloat() * 0.2f
 
         when (type) {
             BalloonType.STANDARD -> {
                 val chosen = listOf("pop_standard_1", "pop_standard_2", "pop_standard_3").random()
-                play(chosen, rate = radiusRate, volume = 0.95f)
+                play(chosen, rate = radiusRate * popJitter, volume = 0.95f)
             }
             BalloonType.GOLDEN -> {
-                play("pop_golden", rate = 1.0f, volume = 1.0f)
+                play("pop_golden", rate = 1.0f * popJitter, volume = 1.0f)
             }
             BalloonType.RAINBOW -> {
-                play("pop_rainbow", rate = 1.05f, volume = 0.95f)
+                play("pop_rainbow", rate = 1.05f * popJitter, volume = 0.95f)
             }
             BalloonType.BOMB -> {
-                play("pop_bomb", rate = 0.95f, volume = 1.0f)
+                play("pop_bomb", rate = 0.95f * popJitter, volume = 1.0f)
             }
             BalloonType.FREEZE -> {
-                play("pop_freeze", rate = 1.0f, volume = 0.95f)
+                play("pop_freeze", rate = 1.0f * popJitter, volume = 0.95f)
             }
             BalloonType.HEART -> {
-                play("pop_heart", rate = 1.0f, volume = 0.95f)
+                play("pop_heart", rate = 1.0f * popJitter, volume = 0.95f)
             }
             BalloonType.MULTIPLIER -> {
-                play("pop_multiplier", rate = 1.0f, volume = 0.95f)
+                play("pop_multiplier", rate = 1.0f * popJitter, volume = 0.95f)
             }
             BalloonType.FAST_ROCKET -> {
-                play("pop_fast_rocket", rate = 1.15f, volume = 1.0f)
+                play("pop_fast_rocket", rate = 1.15f * popJitter, volume = 1.0f)
             }
             BalloonType.SPLITTER -> {
-                play("pop_splitter", rate = radiusRate, volume = 0.90f)
+                play("pop_splitter", rate = radiusRate * popJitter, volume = 0.90f)
             }
             BalloonType.SHIELDED -> {
-                play("pop_shielded", rate = 1.0f, volume = 1.0f)
+                play("pop_shielded", rate = 1.0f * popJitter, volume = 1.0f)
             }
             BalloonType.MYSTERY_GIFT -> {
-                play("pop_mystery_gift", rate = 1.0f, volume = 0.95f)
+                play("pop_mystery_gift", rate = 1.0f * popJitter, volume = 0.95f)
             }
             BalloonType.GHOST_PHANTOM -> {
-                play("pop_ghost_phantom", rate = 0.95f, volume = 0.90f)
+                play("pop_ghost_phantom", rate = 0.95f * popJitter, volume = 0.90f)
             }
             BalloonType.GOLDEN_PIGGY -> {
-                play("pop_golden_piggy", rate = 1.0f, volume = 1.0f)
+                play("pop_golden_piggy", rate = 1.0f * popJitter, volume = 1.0f)
             }
             BalloonType.ELECTRIC_STORM -> {
-                play("pop_electric_storm", rate = 1.05f, volume = 1.0f)
+                play("pop_electric_storm", rate = 1.05f * popJitter, volume = 1.0f)
             }
             BalloonType.MEGA_BOSS -> {
-                play("pop_mega_boss", rate = 0.9f, volume = 1.0f)
+                play("pop_mega_boss", rate = 0.9f * popJitter, volume = 1.0f)
             }
         }
     }

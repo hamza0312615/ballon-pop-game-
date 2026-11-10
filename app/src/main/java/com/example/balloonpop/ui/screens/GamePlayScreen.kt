@@ -85,6 +85,10 @@ fun GamePlayScreen(
     boosterCounts: Map<String, Int> = emptyMap(),
     boosterCooldowns: Map<String, Float> = emptyMap(),
     candyPraise: String? = null,
+    // Pass 8: persisted campaign win streak (victory-dialog line) and the
+    // kindness-assist flag for the current stage (fail-dialog help line).
+    winStreak: Int = 0,
+    assistUnlocked: Boolean = false,
     onTriggerBooster: (InGameBooster) -> Unit = {},
     onBuyBooster: (String) -> Unit = {},
     coins: Int = 0,
@@ -141,12 +145,14 @@ fun GamePlayScreen(
     val context = LocalContext.current
     val activity = context as? Activity
 
-    // Pass 5 (audit §2.2): the interstitial show path finally exists in
-    // gameplay — stage clear and game over are the natural breaks. The
-    // manager enforces the 180s cooldown and 60s post-ad gap, preloads the
-    // next unit after each show, and no-ops when no ad is ready.
+    // Pass 8 (research §5 ad policy): interstitials fire ONLY after a
+    // stage WIN — never after a loss (Lose + Ad stacks a second negative
+    // on frustration and is the genre's top churn pattern) — and never
+    // before stage 10. The manager still enforces the 180s cooldown and
+    // 60s post-ad gap, preloads the next unit after each show, and no-ops
+    // when no ad is ready.
     LaunchedEffect(gameState) {
-        if (gameState == GameState.LEVELCLEAR || gameState == GameState.GAMEOVER) {
+        if (gameState == GameState.LEVELCLEAR && gameMode == GameMode.CAMPAIGN && currentLevel >= 10) {
             activity?.let { AdMobManager.showInterstitialAd(it) }
         }
     }
@@ -301,7 +307,11 @@ fun GamePlayScreen(
                             color = Color.White
                         )
 
-                        if (gameMode == GameMode.CAMPAIGN) {
+                        // Pass 8 FTUE: the Miss pill stays hidden for
+                        // stages 1–2 (progressive disclosure; stage 1 can't
+                        // be failed by misses anyway) and appears from
+                        // stage 3 onward. Custom challenges (level 0) keep it.
+                        if (gameMode == GameMode.CAMPAIGN && currentLevel !in 1..2) {
                             val isDanger = missedCount >= maxMissesAllowed - 1
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -945,6 +955,7 @@ fun GamePlayScreen(
                     gemsEarned = earnedGems,
                     isNewHighScore = isNewHighScore,
                     previousHighScore = previousHighScore,
+                    winStreak = winStreak,
                     onNextLevel = onNextLevel,
                     onReplay = onRestart,
                     onMap = onStageMenu,
@@ -960,6 +971,7 @@ fun GamePlayScreen(
                     maxMissesAllowed = maxMissesAllowed,
                     timeLimit = timeLeft,
                     reason = gameOverReason,
+                    assistUnlocked = assistUnlocked,
                     onPlayOn = { onPlayOnRevive(true) },
                     onRetry = onRestart,
                     onWatchAdToRevive = {

@@ -332,6 +332,34 @@ class GameRepository(context: Context) {
         return true
     }
 
+    // Pass 8: Kindness Assist + Win-Streak Fuel persistence.
+    // INTEGRITY: these keys live OUTSIDE the signed payload.
+    // SecurityGuard.computeSignature() covers ONLY coins, gems, lifetime
+    // high score, lifetime pops, the completed-levels star sum and the
+    // booster-count sum — fail counts, the assist flag and the win streak
+    // are none of those, so plain prefs writes here can never make
+    // verifyAndRepairIntegrity() mistake an honest save for a tampered one
+    // (the Pass 5 L1 clamp bug). The one signed value the assist touches —
+    // the free Freeze charge — is granted through addBooster()/
+    // setBoosterCount(), the sanctioned choke point that re-saves the
+    // signature on every write.
+    fun getStageFailCount(stage: Int): Int =
+        prefs.getInt("bp_fail_count_$stage", 0).coerceAtLeast(0)
+
+    fun setStageFailCount(stage: Int, count: Int) =
+        prefs.edit().putInt("bp_fail_count_$stage", count.coerceAtLeast(0)).apply()
+
+    fun isAssistPending(stage: Int): Boolean =
+        prefs.getBoolean("bp_assist_pending_$stage", false)
+
+    fun setAssistPending(stage: Int, pending: Boolean) =
+        prefs.edit().putBoolean("bp_assist_pending_$stage", pending).apply()
+
+    fun getWinStreak(): Int = prefs.getInt("bp_win_streak", 0).coerceAtLeast(0)
+
+    fun setWinStreak(streak: Int) =
+        prefs.edit().putInt("bp_win_streak", streak.coerceAtLeast(0)).apply()
+
     fun getAllBoosterCounts(): Map<String, Int> {
         return mapOf(
             "booster_thunder" to getBoosterCount("booster_thunder"),

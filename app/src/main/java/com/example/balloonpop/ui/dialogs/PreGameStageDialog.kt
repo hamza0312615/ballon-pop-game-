@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.window.Dialog
 import com.example.balloonpop.ui.components.ShopItemArt
 import com.example.balloonpop.model.GameConstants
+import com.example.balloonpop.model.StageRecipes
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.NunitoFontFamily
 import kotlin.math.cos
@@ -62,6 +63,9 @@ fun PreGameStageDialog(
     timeLimit: Int = 15,
     maxMissesAllowed: Int = 4,
     userCoins: Int,
+    // Pass 8: persisted campaign win streak — at 2+ the intro announces
+    // the +5s streak fuel this stage is about to receive.
+    winStreak: Int = 0,
     onStartLevel: (selectedBoosters: Set<String>) -> Unit,
     onClose: () -> Unit
 ) {
@@ -173,6 +177,56 @@ fun PreGameStageDialog(
                                 path = starPath,
                                 color = Color(0xFFFFD54F),
                                 style = Stroke(width = 2.5f)
+                            )
+                        }
+                    }
+                }
+
+                // Pass 8: intro info lines — HARD tag for the zone's spike
+                // stage (position 9), win-streak fuel announcement, and the
+                // one-line coach text on a special balloon's debut stage.
+                val coachLine = remember(level) { StageRecipes.coachLineFor(level) }
+                if (StageRecipes.isHardStage(level) || winStreak >= 2 || coachLine != null) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (StageRecipes.isHardStage(level)) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Color(0xFF7F1D1D))
+                                    .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 10.dp, vertical = 3.dp)
+                            ) {
+                                Text(
+                                    text = "⚠ HARD STAGE",
+                                    fontFamily = Baloo2FontFamily,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = Color(0xFFFCA5A5),
+                                    letterSpacing = 0.8.sp
+                                )
+                            }
+                        }
+                        if (winStreak >= 2) {
+                            Text(
+                                text = "🔥 Win streak x$winStreak: +5s bonus!",
+                                fontFamily = NunitoFontFamily,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFFFC93C),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                        if (coachLine != null) {
+                            Text(
+                                text = coachLine,
+                                fontFamily = NunitoFontFamily,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF7ED3FC),
+                                textAlign = TextAlign.Center
                             )
                         }
                     }

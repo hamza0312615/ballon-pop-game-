@@ -116,6 +116,8 @@ fun CampaignScreen(
     coins: Int = 150,
     gems: Int = 10,
     lives: Int = 5,
+    // Pass 8: persisted campaign win streak, forwarded to the stage intro.
+    winStreak: Int = 0,
     onSelectLevel: (Int, Set<String>) -> Unit,
     onClaimMilestoneChest: (Int) -> Unit = {},
     onClaimStarMilestone: (StarMilestoneReward) -> Unit = {},
@@ -535,6 +537,7 @@ fun CampaignScreen(
                 timeLimit = timeLimit,
                 maxMissesAllowed = maxMissesAllowed,
                 userCoins = coins,
+                winStreak = winStreak,
                 onStartLevel = { boosters ->
                     selectedLevelForDialog = null
                     soundManager.playLevelWarp()
@@ -614,6 +617,20 @@ fun CampaignScreen(
                         text = "Earn stars by clearing campaign stages. Claim each milestone once!",
                         fontSize = 12.sp,
                         color = Color(0xFFCBD5E1)
+                    )
+                    // Pass 8: star-economy visibility — the distance to the
+                    // next chest is always on screen, so stars never read
+                    // as a dead score.
+                    val nextStarMilestone = GameConstants.STAR_MILESTONES.firstOrNull { totalStars < it.starsRequired }
+                    Text(
+                        text = if (nextStarMilestone != null) {
+                            "Next chest in ${nextStarMilestone.starsRequired - totalStars} ★"
+                        } else {
+                            "All chests earned — legend! 👑"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFC93C)
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     LazyColumn(

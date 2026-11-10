@@ -155,6 +155,8 @@ fun VictoryStageDialog(
     gemsEarned: Int,
     isNewHighScore: Boolean = false,
     previousHighScore: Int = 0,
+    // Pass 8: win-streak fuel — the streak AFTER this win (persisted).
+    winStreak: Int = 0,
     onNextLevel: () -> Unit,
     onReplay: () -> Unit,
     onMap: () -> Unit,
@@ -247,6 +249,18 @@ fun VictoryStageDialog(
                     color = PlumText
                 )
                 CurrencyArt(currencyType = "gem", modifier = Modifier.size(18.dp))
+            }
+
+            // Pass 8: win-streak fuel made visible — the next stage's +5s
+            // is promised right here on the win screen.
+            if (winStreak >= 2) {
+                Text(
+                    text = "🔥 Win streak x$winStreak — next stage gets +5s!",
+                    fontSize = DesignTokens.SizeCaption,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFB7791F),
+                    textAlign = TextAlign.Center
+                )
             }
 
             if (hasNextLevel) {
@@ -438,6 +452,9 @@ fun FailedStageDialog(
     maxMissesAllowed: Int = 4,
     timeLimit: Int = 15,
     reason: GameOverReason = GameOverReason.TIME_EXPIRED,
+    // Pass 8: kindness assist — true when this fail unlocked (or an earlier
+    // fail already set) Popster's Help for this stage.
+    assistUnlocked: Boolean = false,
     onPlayOn: () -> Unit,
     onRetry: () -> Unit,
     onWatchAdToRevive: (() -> Unit)? = null,
@@ -508,6 +525,18 @@ fun FailedStageDialog(
                 color = PlumText,
                 textAlign = TextAlign.Center
             )
+
+            // Pass 8: visible kindness — after 3 fails on this stage the
+            // assist is announced, not silently applied.
+            if (assistUnlocked) {
+                Text(
+                    text = "💛 Popster's Help unlocked: +10s and a free Freeze on your next try!",
+                    fontSize = DesignTokens.SizeCaption,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFB7791F),
+                    textAlign = TextAlign.Center
+                )
+            }
 
             // Compact revive pills — secondary to Retry below.
             Row(

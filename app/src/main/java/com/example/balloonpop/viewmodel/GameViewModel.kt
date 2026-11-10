@@ -140,7 +140,11 @@ data class UiState(
     val isTransitioningLevel: Boolean = false,
     val transitionTargetLevel: Int? = null,
     val shouldPromptFirstClearNotification: Boolean = false,
-    val showComboHintBanner: Boolean = false
+    val showComboHintBanner: Boolean = false,
+    // Pass 8: win-streak fuel (persisted) + kindness-assist flag for the
+    // stage currently being attempted (drives the fail-dialog help line).
+    val winStreak: Int = 0,
+    val assistUnlocked: Boolean = false
 )
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
@@ -192,6 +196,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var spawnAccumulator = 0f
     private var spawnIntervalSeconds = 0.75f
     private var freezeTimeRemaining = 0f
+    // Pass 8 juice: hit-stop — while > 0, balloon motion and the spawner
+    // pause for a beat (bomb detonations, gold-rush burst completions).
+    private var hitStopRemaining = 0f
     private var multiplierTimeRemaining = 0f
     private var currentScreenShake = 0f
     private var internalSkillEnergy = 0f
@@ -291,6 +298,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 wheelSpins = repository.getWheelSpins(),
                 claimedQuests = repository.getClaimedQuests(),
                 claimedAchievements = repository.getClaimedAchievements(),
+                winStreak = repository.getWinStreak(),
                 isSoundMuted = muted,
                 soundVolume = vol,
                 isMusicMuted = musicMuted,
@@ -826,6 +834,34 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     // --- Gameplay Navigation ---
+    /**
+     * Pass 8: campaign stage-start bonuses. Must run AFTER the stage's base
+     * state (timeLeft etc.) is set and BEFORE initGameSession() (which reads
+     * timeLeft for spawn calibration and refreshes booster counts):
+     * - Win-streak fuel: a streak of 2+ grants +5s on the timer.
+     * - Kindness assist: a pending assist for this stage is consumed —
+     *   +10s and +1 Freeze charge. The charge goes through
+     *   [GameRepository.addBooster], the sanctioned setter that re-saves
+     *   the integrity signature (booster totals are signed); the assist
+     *   flag itself is an unsigned key, cleared with a plain write.
+     */
+    private fun applyCampaignStartBonuses(levelNum: Int) {
+        if (levelNum <= 0) return
+        var bonusSeconds = 0
+        if (repository.getWinStreak() >= 2) {
+            bonusSeconds += 5
+        }
+        if (repository.isAssistPending(levelNum)) {
+            repository.setAssistPending(levelNum, false)
+            repository.addBooster("booster_freeze", 1)
+            bonusSeconds += 10
+            showBannerMessage("💛 Popster's Help: +10s & free Freeze!")
+        }
+        if (bonusSeconds > 0) {
+            _uiState.update { it.copy(timeLeft = it.timeLeft + bonusSeconds) }
+        }
+    }
+
     fun startCampaignStage(levelNum: Int) {
         val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(levelNum - 1)
             ?: GameConstants.CAMPAIGN_LEVELS.first()
@@ -851,6 +887,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 currentScreen = CurrentScreen.GAMEPLAY
             )
         }
+        applyCampaignStartBonuses(lvl.level)
         initGameSession()
     }
 
@@ -928,6 +965,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     missedCount = 0
                 )
             }
+            // Pass 8: a Retry is also a "next try" — streak +5s and a
+            // pending kindness assist apply here exactly as on a fresh start.
+            applyCampaignStartBonuses(levelNum)
         } else {
             _uiState.update {
                 it.copy(
@@ -1081,6 +1121,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             else -> 0.50f
         }
         freezeTimeRemaining = 0f
+        hitStopRemaining = 0f
         multiplierTimeRemaining = 0f
         currentScreenShake = 0f
         internalSkillEnergy = 0f
@@ -1116,7 +1157,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 earnedGemsThisSession = 0,
                 isNewHighScoreAchieved = false,
                 previousHighScore = sessionBaselineHighScore,
-                showComboHintBanner = false
+                showComboHintBanner = false,
+                assistUnlocked = false
             )
         }
 
@@ -1199,6 +1241,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
+        // 1b. Pass 8: Hit-stop Countdown — decremented by real frame dt,
+        // mirroring the freeze pattern. While hitStopped, balloon motion
+        // (section 6) and the spawner (section 5 + trigger block) pause;
+        // particles, timers' visual effects and rendering continue.
+        if (hitStopRemaining > 0f) {
+            hitStopRemaining -= dtSeconds
+            if (hitStopRemaining < 0f) hitStopRemaining = 0f
+        }
+        val hitStopped = hitStopRemaining > 0f
+
         // 2. Multiplier Countdown
         if (multiplierTimeRemaining > 0f) {
             multiplierTimeRemaining -= dtSeconds
@@ -1247,7 +1299,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // 5. Spawning Formations & Pending Balloons
-        synchronized(pendingSpawns) {
+        // Pass 8: hit-stop pauses the spawner too (pending emissions wait).
+        if (!hitStopped) synchronized(pendingSpawns) {
             if (pendingSpawns.isNotEmpty()) {
                 val it = pendingSpawns.iterator()
                 while (it.hasNext()) {
@@ -1255,6 +1308,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     pending.delayRemaining -= dtSeconds
                     if (pending.delayRemaining <= 0f) {
                         it.remove()
+                        // Pass 8: a GOLD_RUSH burst completes when its last
+                        // staggered balloon is emitted — mark it with a
+                        // beat of hit-stop.
+                        if (pending.isGoldRush && pendingSpawns.none { other -> other.isGoldRush }) {
+                            hitStopRemaining = 0.06f
+                        }
                         val skin = equippedBalloonSkin()
                         synchronized(balloons) {
                             if (balloons.size < 32) {
@@ -1288,7 +1347,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
 
-        spawnAccumulator += dtSeconds
+        if (!hitStopped) spawnAccumulator += dtSeconds
         val effectiveInterval = if (freezeTimeRemaining > 0f) spawnIntervalSeconds * 2f else spawnIntervalSeconds
         val activeBalloons = synchronized(balloons) { balloons.count { !it.popped } }
         val pendingCount = synchronized(pendingSpawns) { pendingSpawns.size }
@@ -1302,12 +1361,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             8 // endless modes
         }
 
-        if (activeBalloons + pendingCount < densityFloor) {
-            spawnAccumulator = 0f
-            triggerNextFormation()
-        } else if (spawnAccumulator >= effectiveInterval && pendingCount == 0) {
-            spawnAccumulator = 0f
-            triggerNextFormation()
+        if (!hitStopped) {
+            if (activeBalloons + pendingCount < densityFloor) {
+                spawnAccumulator = 0f
+                triggerNextFormation()
+            } else if (spawnAccumulator >= effectiveInterval && pendingCount == 0) {
+                spawnAccumulator = 0f
+                triggerNextFormation()
+            }
         }
 
         // Check for first-stage combo hint: 3 same-colour balloons on screen
@@ -1328,8 +1389,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         // 6. Update Balloons (motion, scale-in, ring expansion, sway tilt, and gold rush sparkle trail)
+        // Pass 8: during hit-stop the whole motion update is skipped —
+        // balloons hang frozen for the beat while rendering continues.
         val speedFactor = if (freezeTimeRemaining > 0f) 0.35f else 1.0f
-        synchronized(balloons) {
+        if (!hitStopped) synchronized(balloons) {
             val it = balloons.iterator()
             while (it.hasNext()) {
                 val b = it.next()
@@ -1990,6 +2053,20 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
         lastPopTime = now
 
+        // Pass 8 praise callouts: escalating Candy Crush-style praise via
+        // the bannerMessage system, fired once per threshold crossing
+        // (the combo climbs one pop at a time, so equality IS the crossing;
+        // past 20 the top praise repeats every further +10).
+        val prevCombo = _uiState.value.combo
+        val praiseText = when {
+            newCombo == 5 && prevCombo < 5 -> "Great! 🔥"
+            newCombo == 10 && prevCombo < 10 -> "Amazing! ⚡"
+            newCombo == 15 && prevCombo < 15 -> "Incredible! 🌟"
+            newCombo >= 20 && newCombo % 10 == 0 && prevCombo < newCombo -> "UNSTOPPABLE! 👑"
+            else -> null
+        }
+        if (praiseText != null) showBannerMessage(praiseText)
+
         // Flame Aura Critical Pop Bonus (Psychological variable ratio reward)
         val flame = GameConstants.SHOP_FLAMES.find { it.id == _uiState.value.equippedFlameId }
             ?: GameConstants.SHOP_FLAMES.first()
@@ -2026,6 +2103,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         when (b.type) {
             BalloonType.BOMB -> {
                 sound.playBomb()
+                // Pass 8 juice: a bomb detonation earns a beat of hit-stop.
+                hitStopRemaining = 0.06f
                 addFloatingText(b.x, b.y, "BOMB! 💥", Color(0xFFFF5C8A))
                 internalSkillEnergy = (internalSkillEnergy - 20f).coerceAtLeast(0f)
                 if (_uiState.value.gameMode != GameMode.ZEN) {
@@ -2265,9 +2344,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         if (currentMode == GameMode.CAMPAIGN) {
             sound.playMiss()
             triggerVibration(35L)
-            currentScreenShake = if (newMissed >= maxAllowed) 26f else 16f
+            // Pass 8 FTUE kindness: stage 1 can NOT be failed by misses —
+            // the counter still ticks and warns, but reaching the limit
+            // never ends the stage (it can still end on the timer).
+            val isFirstStage = _uiState.value.currentLevel == 1
+            currentScreenShake = if (newMissed >= maxAllowed && !isFirstStage) 26f else 16f
 
-            if (newMissed >= maxAllowed) {
+            if (newMissed >= maxAllowed && !isFirstStage) {
                 // Pass 6: the miss that REACHES the displayed limit ends the
                 // stage (was `>`, so the HUD could sit at 6/6 for ~30s with
                 // the stage still alive — user's recording).
@@ -2666,6 +2749,13 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val lvl = GameConstants.CAMPAIGN_LEVELS.getOrNull(_uiState.value.currentLevel - 1)
             ?: GameConstants.CAMPAIGN_LEVELS.first()
 
+        // Pass 8: a campaign win clears this stage's consecutive-fail count
+        // (the kindness assist re-arms from zero) and extends the persisted
+        // win streak that fuels the next stage's +5s.
+        repository.setStageFailCount(lvl.level, 0)
+        val newWinStreak = repository.getWinStreak() + 1
+        repository.setWinStreak(newWinStreak)
+
         val currentScore = _uiState.value.score
         // Pass 5 (audit L10): the old score floor
         // (maxOf(score, poppedCount * 35 + level * 25)) is removed — score
@@ -2716,7 +2806,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 lifetimeHighScore = repository.getLifetimeHighScore(),
                 isNewHighScoreAchieved = isHighScore,
                 previousHighScore = sessionBaselineHighScore,
-                shouldPromptFirstClearNotification = wasFirstLevelCompleted
+                shouldPromptFirstClearNotification = wasFirstLevelCompleted,
+                winStreak = newWinStreak
             )
         }
     }
@@ -2740,13 +2831,35 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
         repository.updateLifetimeMaxCombo(_uiState.value.maxCombo)
 
+        // Pass 8: campaign fail bookkeeping. ANY campaign fail breaks the
+        // win streak. Consecutive fails on this stage feed the kindness
+        // assist: at 3, a pending assist is set for the stage (consumed at
+        // its next start — see applyCampaignStartBonuses) and the fail
+        // dialog shows the unlock line. A revived attempt is the SAME
+        // attempt, so a post-revive game over doesn't double-count.
+        val failState = _uiState.value
+        val isCampaignStageFail = failState.gameMode == GameMode.CAMPAIGN && failState.currentLevel > 0
+        if (isCampaignStageFail) {
+            repository.setWinStreak(0)
+            if (stageReviveUsesCount == 0) {
+                val fails = repository.getStageFailCount(failState.currentLevel) + 1
+                repository.setStageFailCount(failState.currentLevel, fails)
+                if (fails >= 3) {
+                    repository.setAssistPending(failState.currentLevel, true)
+                }
+            }
+        }
+        val assistNowPending = isCampaignStageFail && repository.isAssistPending(failState.currentLevel)
+
         _uiState.update {
             it.copy(
                 gameState = GameState.GAMEOVER,
                 gameOverReason = reason,
                 earnedCoinsThisSession = 0,
                 lifetimeHighScore = repository.getLifetimeHighScore(),
-                lifetimeMaxCombo = repository.getLifetimeMaxCombo()
+                lifetimeMaxCombo = repository.getLifetimeMaxCombo(),
+                winStreak = if (isCampaignStageFail) 0 else it.winStreak,
+                assistUnlocked = assistNowPending
             )
         }
     }

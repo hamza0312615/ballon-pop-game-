@@ -134,7 +134,16 @@ class MainActivity : ComponentActivity() {
                                     CurrentScreen.SPLASH -> {
                                         SplashScreen(
                                             onSplashFinished = {
-                                                AdMobManager.showAppOpenAd(this@MainActivity) {
+                                                // Pass 8 (research §5): no App Open ad until the
+                                                // player has completed at least one stage EVER —
+                                                // "never before the first fun". The persisted
+                                                // completed-levels count is read via GameRepository
+                                                // (the ViewModel's instance) right at this call site.
+                                                if (viewModel.repository.getCompletedLevels().isNotEmpty()) {
+                                                    AdMobManager.showAppOpenAd(this@MainActivity) {
+                                                        viewModel.navigateTo(CurrentScreen.HOME)
+                                                    }
+                                                } else {
                                                     viewModel.navigateTo(CurrentScreen.HOME)
                                                 }
                                             }
@@ -183,6 +192,7 @@ class MainActivity : ComponentActivity() {
                                             coins = uiState.coins,
                                             gems = uiState.gems,
                                             lives = uiState.lives,
+                                            winStreak = uiState.winStreak,
                                             onSelectLevel = { levelNum, _ ->
                                                 viewModel.startLevelTransition(levelNum)
                                                 viewModel.navigateTo(CurrentScreen.GAMEPLAY)
@@ -358,6 +368,8 @@ class MainActivity : ComponentActivity() {
                                             boosterCounts = uiState.boosterCounts,
                                             boosterCooldowns = uiState.boosterCooldowns,
                                             candyPraise = uiState.candyPraise,
+                                            winStreak = uiState.winStreak,
+                                            assistUnlocked = uiState.assistUnlocked,
                                             onTriggerBooster = { booster -> viewModel.triggerInGameBooster(booster) },
                                             onBuyBooster = { boosterId -> viewModel.buyBooster(boosterId) },
                                             coins = uiState.coins,
