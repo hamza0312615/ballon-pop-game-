@@ -207,6 +207,19 @@ fun CampaignScreen(
         label = "beacon_pulse"
     )
 
+    // Pass 19: gentle breathing phase for the current node's gold halo —
+    // a slow Reverse oscillation on the SAME ambient transition (no new
+    // clock), consumed by ThemedLadderActiveHeroNode.
+    val haloBreath by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "halo_breath"
+    )
+
     // Play button breathing pulse
     val playButtonPulse by infiniteTransition.animateFloat(
         initialValue = 1.0f,
@@ -359,6 +372,7 @@ fun CampaignScreen(
                     selectedZoneIndex = selectedZoneIndex,
                     mascotBob = mascotBob,
                     beaconPulse = beaconPulse,
+                    haloBreath = haloBreath,
                     riverFlow = riverFlow,
                     particleTime = particleTime,
                     onLevelClick = { lvl ->
@@ -373,10 +387,20 @@ fun CampaignScreen(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = 10.dp)
-                        .shadow(8.dp, RoundedCornerShape(22.dp))
+                        // Pass 19: premium gold rim — soft gold-tinted glow
+                        // (shadow spot colour) + a 2dp vertical gold
+                        // gradient border, matching the gold rim language
+                        // of the node orbs and play button.
+                        .shadow(10.dp, RoundedCornerShape(22.dp), spotColor = Color(0xFFFFC93C))
                         .clip(RoundedCornerShape(22.dp))
                         .background(Color(0xE6171233))
-                        .border(1.5.dp, Color(0xFFFFC93C), RoundedCornerShape(22.dp))
+                        .border(
+                            2.dp,
+                            Brush.verticalGradient(
+                                listOf(Color(0xFFFFE9A8), Color(0xFFFFC93C), Color(0xFFB8860B))
+                            ),
+                            RoundedCornerShape(22.dp)
+                        )
                         .clickable {
                             soundManager.playMenuClick()
                             showStarRoadDialog = true
@@ -496,10 +520,17 @@ fun CampaignScreen(
         }
 
         // 4. Modern Floating Bottom Dock
+        // Pass 19: compact stage-goal line for the dock — read from the
+        // same CAMPAIGN_LEVELS entry (and the same fallbacks) that the
+        // pre-game dialog below uses, so the two can never disagree.
+        val dockStageConfig = GameConstants.CAMPAIGN_LEVELS.getOrNull(currentUnlockedLevel - 1)
+        val dockStageInfo = "Target ${dockStageConfig?.targetPops ?: (15 + currentUnlockedLevel * 2)}" +
+            " · ${dockStageConfig?.timeLimit ?: 15}s · Max miss ${dockStageConfig?.maxMissesAllowed ?: 4}"
         ModernBottomFloatingDock(
             theme = zoneTheme,
             modifier = Modifier.align(Alignment.BottomCenter),
             currentLevel = currentUnlockedLevel,
+            stageInfo = dockStageInfo,
             playPulse = playButtonPulse,
             onHomeClick = {
                 soundManager.playDialogClose()
@@ -1099,17 +1130,25 @@ private fun ModernZoneHeaderCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = "— ${theme.subtitle} —",
-                        fontSize = 12.sp,
-                        // Pass 18: full-strength accent + Bold — the 75%
-                        // alpha SemiBold subtitle was washing out against
-                        // the zone artwork.
-                        fontWeight = FontWeight.Bold,
-                        color = theme.titleAccentColor,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    // Pass 19: subtitle on a soft dark chip at 13sp in a
+                    // full-strength light colour — Pass 18's accent-colour
+                    // text still competed with the zone artwork behind the
+                    // translucent header; the chip separates it cleanly.
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(9.dp))
+                            .background(Color(0x59000000))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "— ${theme.subtitle} —",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFF5EEFF),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     ToyIcon(glyph = ToyGlyph.MAP, size = 11.dp, tint = Color.White)
                 }
             }
@@ -1364,6 +1403,7 @@ private fun VerticalLevelLadder(
     selectedZoneIndex: Int,
     mascotBob: Float,
     beaconPulse: Float,
+    haloBreath: Float,
     riverFlow: Float,
     particleTime: Float = riverFlow * 25f,
     onLevelClick: (Int) -> Unit,
@@ -1468,6 +1508,7 @@ private fun VerticalLevelLadder(
                                 stars = stars,
                                 mascotBob = mascotBob,
                                 beaconPulse = beaconPulse,
+                                haloBreath = haloBreath,
                                 isMilestone = node.isMilestone,
                                 isBoss = node.isBoss,
                                 onClick = { onLevelClick(node.stageNumber) }
@@ -1563,6 +1604,14 @@ private fun DrawScope.drawUnifiedMapPath(
             )
         }
         val ribbonColor = if (traversed) StoryGold else accentColor.copy(alpha = 0.62f)
+        // Pass 19: soft outer glow beneath the road, in the segment's own
+        // colour — the track now sits in a halo of light over the scenery
+        // instead of lying flat on it. Same curve, no geometry change.
+        drawPath(
+            path = curve,
+            color = (if (traversed) StoryGold else accentColor).copy(alpha = 0.16f),
+            style = Stroke(width = 34.dp.toPx(), cap = StrokeCap.Round)
+        )
         // Dark underlay: separates the road from any scenery behind it.
         drawPath(
             path = curve,
@@ -1584,14 +1633,17 @@ private fun DrawScope.drawUnifiedMapPath(
         // Animated flow: dashes streaming along the approach to the current
         // stage — the line itself tells the player where to go next.
         if (flow) {
-            val dashPx = 9.dp.toPx()
-            val gapPx = 13.dp.toPx()
+            // Pass 19: dashes slightly longer, tighter-gapped and thicker
+            // at full brightness, so the stream flowing INTO the current
+            // stage reads clearly at a glance.
+            val dashPx = 11.dp.toPx()
+            val gapPx = 12.dp.toPx()
             val phase = (flowPhase * 70f) % (dashPx + gapPx)
             drawPath(
                 path = curve,
-                color = Color(0xFFFFF3C4).copy(alpha = 0.95f),
+                color = Color(0xFFFFF3C4),
                 style = Stroke(
-                    width = 3.2.dp.toPx(),
+                    width = 4.2.dp.toPx(),
                     cap = StrokeCap.Round,
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashPx, gapPx), phase)
                 )
@@ -1627,6 +1679,7 @@ private fun DrawScope.drawUnifiedMapPath(
 private fun ModernBottomFloatingDock(
     theme: ZoneVisualTheme,
     currentLevel: Int,
+    stageInfo: String,
     playPulse: Float,
     onHomeClick: () -> Unit,
     onEndlessClick: () -> Unit,
@@ -1690,6 +1743,9 @@ private fun ModernBottomFloatingDock(
                 )
         )
 
+        // Pass 19: the dock row plus a slim stage-goal line beneath it,
+        // stacked in a Column inside the dock panel.
+        Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -1812,6 +1868,22 @@ private fun ModernBottomFloatingDock(
                 },
                 testTag = "bottom_shop_btn",
                 modifier = Modifier.weight(0.85f)
+            )
+        }
+
+            // Pass 19: compact stage-goal line ("Target 12 · 60s · Max
+            // miss 6") in the dock's small-label style, centred under
+            // the tab row.
+            Text(
+                text = stageInfo,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White.copy(alpha = 0.85f),
+                letterSpacing = 0.3.sp,
+                maxLines = 1,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 3.dp)
             )
         }
     }

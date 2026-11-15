@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -274,6 +275,7 @@ fun ThemedLadderActiveHeroNode(
     stars: Int,
     mascotBob: Float,
     beaconPulse: Float,
+    haloBreath: Float = 0.5f,
     isMilestone: Boolean,
     isBoss: Boolean,
     onClick: () -> Unit
@@ -298,6 +300,25 @@ fun ThemedLadderActiveHeroNode(
             .testTag("active_hero_level_tile"),
         contentAlignment = Alignment.Center
     ) {
+        // Pass 19: breathing gold halo hugging the orb — a soft radial
+        // glow that gently swells (scale) and fades (alpha) on the map's
+        // shared ambient clock ([haloBreath] is a 0..1 Reverse phase from
+        // CampaignScreen's infinite transition). Deliberately slow and
+        // shallow: alive, never flashing. The brush is a fixed gradient,
+        // remembered once per node.
+        val haloBrush = remember {
+            Brush.radialGradient(
+                listOf(ToyGold.copy(alpha = 0.42f), ToyGold.copy(alpha = 0f))
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .scale(0.94f + haloBreath * 0.10f)
+                .alpha(0.55f + haloBreath * 0.45f)
+                .background(haloBrush, CircleShape)
+        )
+
         // Expanding pulse RINGS in Toy Gold
         Box(
             modifier = Modifier

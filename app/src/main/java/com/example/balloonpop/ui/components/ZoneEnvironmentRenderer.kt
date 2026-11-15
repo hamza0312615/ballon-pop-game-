@@ -95,6 +95,17 @@ object ZoneEnvironmentRenderer {
         }
 
         // ----------------------------------------------------
+        // LAYER 1.5 (Pass 19): Scenic silhouette depth — two bands of
+        // zone-themed silhouettes (far = fainter/smaller, near = stronger/
+        // larger) scattered across the MID-FIELD. The older layers decorate
+        // only the extreme flanks, which left the middle of the map looking
+        // empty and flat. Solid colours only (no brushes to rebuild), fixed
+        // fractional spots (no per-frame allocation), drawn behind the road
+        // so the track and nodes stay the heroes.
+        // ----------------------------------------------------
+        drawScenicSilhouettes(theme, w, h)
+
+        // ----------------------------------------------------
         // LAYER 2: Thematic River / Water / Chasm Flow
         // Pass 16: DISABLED — the fixed full-screen river band wandered on its
         // own route and read as a SECOND track beside the real level path.
@@ -921,6 +932,175 @@ object ZoneEnvironmentRenderer {
             )
             drawCircle(color = crownCol.copy(alpha = 0.85f), radius = 20f, center = Offset(tx + sway, ty - 42f))
         }
+    }
+
+    // ========================================================
+    // PASS 19: SCENIC SILHOUETTE DEPTH LAYER
+    // Flat, low-alpha zone silhouettes in two depth bands. All spots are
+    // fixed fractions of the canvas, all fills are solid colours — nothing
+    // is allocated per frame beyond the small Path objects the existing
+    // midground code already builds the same way.
+    // ========================================================
+    private fun DrawScope.drawScenicSilhouettes(theme: ZoneVisualTheme, w: Float, h: Float) {
+        when (theme.envType) {
+            ZoneEnvironmentType.NEON_GLADE -> drawForestSilhouettes(w, h)
+            ZoneEnvironmentType.PRISM_PEAKS -> drawCrystalSilhouettes(w, h)
+            ZoneEnvironmentType.SUNSET_MESA -> drawMesaSilhouettes(w, h)
+            ZoneEnvironmentType.AQUA_REEF -> drawKelpSilhouettes(w, h)
+            else -> drawGenericSilhouettes(theme, w, h)
+        }
+    }
+
+    /** Simple storybook tree: trunk + three overlapping canopy blobs. */
+    private fun DrawScope.drawSilhouetteTree(cx: Float, baseY: Float, height: Float, color: Color) {
+        val trunkW = height * 0.07f
+        drawRect(
+            color = color,
+            topLeft = Offset(cx - trunkW / 2f, baseY - height * 0.45f),
+            size = Size(trunkW, height * 0.45f)
+        )
+        drawCircle(color = color, radius = height * 0.34f, center = Offset(cx, baseY - height * 0.62f))
+        drawCircle(color = color, radius = height * 0.26f, center = Offset(cx - height * 0.22f, baseY - height * 0.48f))
+        drawCircle(color = color, radius = height * 0.24f, center = Offset(cx + height * 0.23f, baseY - height * 0.50f))
+    }
+
+    /** Toadstool silhouette: short stem + half-disc cap. */
+    private fun DrawScope.drawSilhouetteMushroom(cx: Float, baseY: Float, size: Float, color: Color) {
+        drawRect(
+            color = color,
+            topLeft = Offset(cx - size * 0.09f, baseY - size * 0.5f),
+            size = Size(size * 0.18f, size * 0.5f)
+        )
+        drawArc(
+            color = color,
+            startAngle = 180f,
+            sweepAngle = 180f,
+            useCenter = true,
+            topLeft = Offset(cx - size * 0.55f, baseY - size * 1.05f),
+            size = Size(size * 1.1f, size * 1.1f)
+        )
+    }
+
+    /** Faceted crystal shard silhouette (flat version of the prism spires). */
+    private fun DrawScope.drawSilhouetteShard(cx: Float, baseY: Float, height: Float, color: Color) {
+        val halfW = height * 0.20f
+        val shardPath = Path().apply {
+            moveTo(cx, baseY - height)
+            lineTo(cx + halfW, baseY - height * 0.38f)
+            lineTo(cx + halfW * 0.55f, baseY)
+            lineTo(cx - halfW * 0.55f, baseY)
+            lineTo(cx - halfW, baseY - height * 0.38f)
+            close()
+        }
+        drawPath(shardPath, color)
+    }
+
+    /** Flat-top mesa / butte silhouette. */
+    private fun DrawScope.drawSilhouetteMesa(cx: Float, baseY: Float, width: Float, height: Float, color: Color) {
+        val mesaPath = Path().apply {
+            moveTo(cx - width * 0.32f, baseY - height)
+            lineTo(cx + width * 0.32f, baseY - height)
+            lineTo(cx + width * 0.5f, baseY)
+            lineTo(cx - width * 0.5f, baseY)
+            close()
+        }
+        drawPath(mesaPath, color)
+    }
+
+    /** Saguaro cactus silhouette from round-capped strokes. */
+    private fun DrawScope.drawSilhouetteCactus(cx: Float, baseY: Float, height: Float, color: Color) {
+        val sw = height * 0.13f
+        drawLine(color, Offset(cx, baseY), Offset(cx, baseY - height), strokeWidth = sw, cap = StrokeCap.Round)
+        drawLine(color, Offset(cx, baseY - height * 0.55f), Offset(cx - height * 0.22f, baseY - height * 0.55f), strokeWidth = sw, cap = StrokeCap.Round)
+        drawLine(color, Offset(cx - height * 0.22f, baseY - height * 0.55f), Offset(cx - height * 0.22f, baseY - height * 0.78f), strokeWidth = sw, cap = StrokeCap.Round)
+        drawLine(color, Offset(cx, baseY - height * 0.68f), Offset(cx + height * 0.20f, baseY - height * 0.68f), strokeWidth = sw, cap = StrokeCap.Round)
+        drawLine(color, Offset(cx + height * 0.20f, baseY - height * 0.68f), Offset(cx + height * 0.20f, baseY - height * 0.88f), strokeWidth = sw, cap = StrokeCap.Round)
+    }
+
+    /** Single wavy kelp ribbon silhouette. */
+    private fun DrawScope.drawSilhouetteKelp(cx: Float, baseY: Float, height: Float, color: Color) {
+        val kelpPath = Path().apply {
+            moveTo(cx, baseY)
+            cubicTo(
+                cx + height * 0.10f, baseY - height * 0.33f,
+                cx - height * 0.10f, baseY - height * 0.66f,
+                cx + height * 0.04f, baseY - height
+            )
+        }
+        drawPath(kelpPath, color, style = Stroke(width = height * 0.07f, cap = StrokeCap.Round))
+    }
+
+    private fun DrawScope.drawForestSilhouettes(w: Float, h: Float) {
+        val far = Color(0x4D03100B)   // ~30% near-black green
+        val near = Color(0x8003100B)  // ~50% near-black green
+        // FAR band — smaller, fainter, scattered across the mid-field
+        drawSilhouetteTree(w * 0.20f, h * 0.34f, h * 0.16f, far)
+        drawSilhouetteTree(w * 0.64f, h * 0.22f, h * 0.13f, far)
+        drawSilhouetteTree(w * 0.84f, h * 0.55f, h * 0.15f, far)
+        drawSilhouetteTree(w * 0.36f, h * 0.62f, h * 0.12f, far)
+        drawSilhouetteTree(w * 0.12f, h * 0.78f, h * 0.14f, far)
+        drawSilhouetteMushroom(w * 0.55f, h * 0.78f, w * 0.10f, far)
+        // NEAR band — larger, stronger, anchored low and toward the edges
+        drawSilhouetteTree(w * 0.10f, h * 1.02f, h * 0.24f, near)
+        drawSilhouetteTree(w * 0.93f, h * 1.02f, h * 0.21f, near)
+        drawSilhouetteMushroom(w * 0.86f, h * 0.40f, w * 0.13f, near)
+        drawSilhouetteMushroom(w * 0.16f, h * 0.52f, w * 0.11f, near)
+    }
+
+    private fun DrawScope.drawCrystalSilhouettes(w: Float, h: Float) {
+        val far = Color(0x4D0F0618)   // ~30% deep cavern violet-black
+        val near = Color(0x800F0618)  // ~50%
+        // FAR band
+        drawSilhouetteShard(w * 0.22f, h * 0.30f, h * 0.15f, far)
+        drawSilhouetteShard(w * 0.68f, h * 0.18f, h * 0.13f, far)
+        drawSilhouetteShard(w * 0.85f, h * 0.48f, h * 0.16f, far)
+        drawSilhouetteShard(w * 0.38f, h * 0.58f, h * 0.12f, far)
+        drawSilhouetteShard(w * 0.58f, h * 0.80f, h * 0.14f, far)
+        // NEAR band
+        drawSilhouetteShard(w * 0.08f, h * 1.0f, h * 0.26f, near)
+        drawSilhouetteShard(w * 0.94f, h * 0.98f, h * 0.23f, near)
+        drawSilhouetteShard(w * 0.80f, h * 0.68f, h * 0.15f, near)
+    }
+
+    private fun DrawScope.drawMesaSilhouettes(w: Float, h: Float) {
+        val far = Color(0x4D260A16)   // ~30% canyon shadow plum
+        val near = Color(0x80260A16)  // ~50%
+        // FAR band
+        drawSilhouetteMesa(w * 0.24f, h * 0.30f, w * 0.34f, h * 0.07f, far)
+        drawSilhouetteMesa(w * 0.76f, h * 0.22f, w * 0.40f, h * 0.08f, far)
+        drawSilhouetteMesa(w * 0.55f, h * 0.55f, w * 0.30f, h * 0.06f, far)
+        drawSilhouetteCactus(w * 0.88f, h * 0.60f, h * 0.11f, far)
+        // NEAR band
+        drawSilhouetteMesa(w * 0.16f, h * 1.0f, w * 0.50f, h * 0.10f, near)
+        drawSilhouetteMesa(w * 0.86f, h * 1.0f, w * 0.44f, h * 0.09f, near)
+        drawSilhouetteCactus(w * 0.08f, h * 0.66f, h * 0.15f, near)
+        drawSilhouetteCactus(w * 0.93f, h * 0.42f, h * 0.13f, near)
+    }
+
+    private fun DrawScope.drawKelpSilhouettes(w: Float, h: Float) {
+        val far = Color(0x4D04263B)   // ~30% deep reef teal
+        val near = Color(0x8004263B)  // ~50%
+        // FAR band
+        drawSilhouetteKelp(w * 0.20f, h * 0.55f, h * 0.30f, far)
+        drawSilhouetteKelp(w * 0.70f, h * 0.45f, h * 0.36f, far)
+        drawSilhouetteKelp(w * 0.45f, h * 0.85f, h * 0.28f, far)
+        // NEAR band
+        drawSilhouetteKelp(w * 0.08f, h * 1.0f, h * 0.45f, near)
+        drawSilhouetteKelp(w * 0.93f, h * 1.0f, h * 0.50f, near)
+        drawSilhouetteKelp(w * 0.82f, h * 0.75f, h * 0.34f, near)
+    }
+
+    private fun DrawScope.drawGenericSilhouettes(theme: ZoneVisualTheme, w: Float, h: Float) {
+        val far = Color(0x33000000)   // 20% black
+        val near = Color(0x52000000)  // ~32% black
+        // FAR band — soft rolling mounds sunk into the lower field + one tree
+        drawCircle(color = far, radius = w * 0.38f, center = Offset(w * 0.25f, h * 1.06f))
+        drawCircle(color = far, radius = w * 0.44f, center = Offset(w * 0.78f, h * 1.08f))
+        drawSilhouetteTree(w * 0.85f, h * 0.30f, h * 0.13f, far)
+        // NEAR band — stronger mounds at the bottom corners + one tree
+        drawCircle(color = near, radius = w * 0.34f, center = Offset(w * 0.05f, h * 1.04f))
+        drawCircle(color = near, radius = w * 0.38f, center = Offset(w * 0.98f, h * 1.05f))
+        drawSilhouetteTree(w * 0.12f, h * 1.0f, h * 0.22f, near)
     }
 
     // ========================================================

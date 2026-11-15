@@ -51,8 +51,12 @@ object ZoneMapParticleSystem {
     )
 
     // Pre-allocated deterministic particle seeds per zone type (Zero per-frame allocations)
+    // Pass 19: counts raised modestly (hard cap 44 per type) — seeds spread
+    // across the FULL canvas width/height by the hash generator below, so
+    // more seeds means denser ambient coverage everywhere, not just near
+    // the level road.
     private val FIREFLY_SEEDS = generateSeeds(
-        count = 32,
+        count = 44,
         baseSizeRange = 3f..9.5f,
         speedXRange = -12f..14f,
         speedYRange = 10f..26f, // Gentle upward drift
@@ -61,7 +65,7 @@ object ZoneMapParticleSystem {
     )
 
     private val CRYSTAL_SHARD_SEEDS = generateSeeds(
-        count = 30,
+        count = 40,
         baseSizeRange = 4.5f..15f,
         speedXRange = 10f..28f, // Diagonal chasm breeze
         speedYRange = 14f..34f, // Gentle floating descent/drift
@@ -70,7 +74,7 @@ object ZoneMapParticleSystem {
     )
 
     private val EMBER_SEEDS = generateSeeds(
-        count = 28,
+        count = 38,
         baseSizeRange = 3f..8f,
         speedXRange = -16f..16f,
         speedYRange = 30f..65f, // Rapid canyon thermal rise
@@ -79,7 +83,7 @@ object ZoneMapParticleSystem {
     )
 
     private val BUBBLE_SEEDS = generateSeeds(
-        count = 26,
+        count = 36,
         baseSizeRange = 4f..11f,
         speedXRange = -8f..8f,
         speedYRange = 22f..48f, // Buoyant rise
@@ -88,7 +92,7 @@ object ZoneMapParticleSystem {
     )
 
     private val SAKURA_SEEDS = generateSeeds(
-        count = 24,
+        count = 34,
         baseSizeRange = 6f..14f,
         speedXRange = 18f..38f, // Spring wind gust
         speedYRange = 16f..32f,
@@ -97,7 +101,7 @@ object ZoneMapParticleSystem {
     )
 
     private val SNOWFLAKE_SEEDS = generateSeeds(
-        count = 22,
+        count = 32,
         baseSizeRange = 5f..13f,
         speedXRange = -10f..12f,
         speedYRange = 18f..36f,
@@ -106,7 +110,7 @@ object ZoneMapParticleSystem {
     )
 
     private val GENERIC_MOTE_SEEDS = generateSeeds(
-        count = 20,
+        count = 30,
         baseSizeRange = 3f..8f,
         speedXRange = -10f..10f,
         speedYRange = 12f..28f,
