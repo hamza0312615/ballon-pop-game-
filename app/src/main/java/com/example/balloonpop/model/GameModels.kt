@@ -462,8 +462,8 @@ object StageRecipes {
                 }
                 val time = (55 + (zoneNumber / 4) * 2).coerceIn(52, 65)
                 val misses = 6
-                val specials = if (safeLvl <= 2) 0.05f else 0.08f
-                val goldChance = 0.05f
+                val specials = if (safeLvl <= 2) 0.08f else 0.12f
+                val goldChance = 0.07f
                 RecipeStats(target, time, misses, specials, goldChance)
             }
             StagePacingRole.MIX -> {
@@ -471,8 +471,8 @@ object StageRecipes {
                 val baseTarget = (32 + (zoneNumber - 1) * 3 + (zoneStage - 4) * 4).coerceIn(32, 66)
                 val time = (48 + (zoneNumber / 5) * 2).coerceIn(48, 56)
                 val misses = 5
-                val specials = 0.22f
-                val goldChance = 0.08f
+                val specials = 0.26f
+                val goldChance = 0.10f
                 RecipeStats(baseTarget, time, misses, specials, goldChance)
             }
             StagePacingRole.CHALLENGE -> {
@@ -480,8 +480,8 @@ object StageRecipes {
                 val rawTarget = (46 + (zoneNumber - 1) * 3 + (zoneStage - 7) * 5).coerceIn(46, 84)
                 val time = (44 + (zoneNumber / 6) * 2).coerceIn(42, 50)
                 val misses = 4
-                val specials = if (zoneStage == 7) 0.52f else 0.38f
-                val goldChance = 0.10f
+                val specials = if (zoneStage == 7) 0.55f else 0.42f
+                val goldChance = 0.12f
                 if (zoneStage == 7) {
                     // Position 7 BOMB_SURVIVAL: target ~20% lower, bomb rate notably higher
                     val survivalTarget = (rawTarget * 0.80f).roundToInt().coerceAtLeast(18)
@@ -502,7 +502,7 @@ object StageRecipes {
                 val target = (56 + (zoneNumber - 1) * 4).coerceIn(56, 95)
                 val time = (80 + (zoneNumber / 4) * 2).coerceIn(80, 110)
                 val misses = 6
-                val specials = 0.30f
+                val specials = 0.34f
                 val goldChance = 0.40f // GOLD RUSH chance up!
                 RecipeStats(target, time, misses, specials, goldChance)
             }

@@ -119,6 +119,8 @@ fun GamePlayScreen(
     transitionTargetLevel: Int? = null,
     onFinishLevelTransition: () -> Unit = {},
     showComboHintBanner: Boolean = false,
+    // Pass 14: Balloon Rush event banner
+    showRushBanner: Boolean = false,
     // Pass 9: Stage Objective Variety & Steady Hands Bonus
     objectiveType: StageObjectiveType = StageObjectiveType.STANDARD,
     focusColors: List<Color> = emptyList(),
@@ -530,6 +532,48 @@ fun GamePlayScreen(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFE29A)
+                    )
+                }
+            }
+        }
+
+        // Pass 14: Balloon Rush banner — same pill family as the combo hint,
+        // lime stage colours, shows for ~1.6s when a rush wave bursts in.
+        AnimatedVisibility(
+            visible = showRushBanner && gameState == GameState.PLAYING,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -it }),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 74.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .shadow(12.dp, DesignTokens.ShapePill, spotColor = Color(0x66000000))
+                    .clip(DesignTokens.ShapePill)
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFF63C70A),
+                                Color(0xFFA6F750),
+                                Color(0xFF63C70A)
+                            )
+                        )
+                    )
+                    .border(2.dp, Color(0xFF4A9605), DesignTokens.ShapePill)
+                    .padding(horizontal = 18.dp, vertical = 8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ToyIcon(glyph = ToyGlyph.BALLOON, size = 17.dp, tint = Color(0xFF2A1450))
+                    Text(
+                        text = "BALLOON RUSH!",
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF2A1450)
                     )
                 }
             }

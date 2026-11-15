@@ -145,6 +145,8 @@ data class UiState(
     val transitionTargetLevel: Int? = null,
     val shouldPromptFirstClearNotification: Boolean = false,
     val showComboHintBanner: Boolean = false,
+    // Pass 14: Balloon Rush event banner (bonus formation every ~18s).
+    val showRushBanner: Boolean = false,
     // Pass 8: win-streak fuel (persisted) + kindness-assist flag for the
     // stage currently being attempted (drives the fail-dialog help line).
     val winStreak: Int = 0,
@@ -207,6 +209,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var lightningIdCounter = 0L
     private var spawnAccumulator = 0f
     private var spawnIntervalSeconds = 0.75f
+    // Pass 14: seconds of active play since the last Balloon Rush wave.
+    private var rushAccumulator = 0f
     private var freezeTimeRemaining = 0f
     // Pass 8 juice: hit-stop — while > 0, balloon motion and the spawner
     // pause for a beat (bomb detonations, gold-rush burst completions).
@@ -1264,16 +1268,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         hasShownComboHint = false
         goldRushParticleAccumulator = 0f
         spawnAccumulator = 0f
+        rushAccumulator = 0f
         spawnIntervalSeconds = when {
             state.gameMode == GameMode.CAMPAIGN -> {
                 // Calibrate spawn tempo so target balloon count spawns comfortably within the time limit
                 val popsNeeded = state.targetPops.coerceAtLeast(10)
                 val seconds = state.timeLeft.coerceAtLeast(10)
-                val ideal = (seconds.toFloat() / (popsNeeded.toFloat() * 1.55f)).coerceIn(0.28f, 0.45f)
+                val ideal = (seconds.toFloat() / (popsNeeded.toFloat() * 1.95f)).coerceIn(0.22f, 0.38f)
                 ideal
             }
-            state.gameMode == GameMode.TIME_RUSH -> 0.35f
-            else -> 0.50f
+            state.gameMode == GameMode.TIME_RUSH -> 0.30f
+            else -> 0.42f
         }
         freezeTimeRemaining = 0f
         hitStopRemaining = 0f
@@ -1313,6 +1318,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 isNewHighScoreAchieved = false,
                 previousHighScore = sessionBaselineHighScore,
                 showComboHintBanner = false,
+                showRushBanner = false,
                 assistUnlocked = false
             )
         }
@@ -1506,23 +1512,43 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val effectiveInterval = if (freezeTimeRemaining > 0f) spawnIntervalSeconds * 2f else spawnIntervalSeconds
         val activeBalloons = synchronized(balloons) { balloons.count { !it.popped } }
         val pendingCount = synchronized(pendingSpawns) { pendingSpawns.size }
+        // Pass 14: fuller screens (floor 9/10/11 campaign, 10 endless) with a
+        // hard active cap so low-end phones stay smooth — density is generous
+        // but never unbounded.
         val densityFloor = if (state.gameMode == GameMode.CAMPAIGN) {
             when {
-                state.currentLevel <= 20 -> 7  // zones 1-2 (stages 1-20)
-                state.currentLevel <= 80 -> 8  // zones 3-8
-                else -> 9                       // zones 9-20
+                state.currentLevel <= 20 -> 9   // zones 1-2 (stages 1-20)
+                state.currentLevel <= 80 -> 10  // zones 3-8
+                else -> 11                      // zones 9-20
             }
         } else {
-            8 // endless modes
+            10 // endless modes
         }
+        val spawnCap = 26
 
         if (!hitStopped) {
-            if (activeBalloons + pendingCount < densityFloor) {
+            if (activeBalloons + pendingCount < densityFloor && activeBalloons + pendingCount < spawnCap) {
                 spawnAccumulator = 0f
                 triggerNextFormation()
-            } else if (spawnAccumulator >= effectiveInterval && pendingCount == 0) {
+            } else if (spawnAccumulator >= effectiveInterval && pendingCount == 0 && activeBalloons + pendingCount < spawnCap) {
                 spawnAccumulator = 0f
                 triggerNextFormation()
+            }
+        }
+
+        // Pass 14: Balloon Rush — every ~18s of active play a bonus formation
+        // bursts in under a banner. Event peaks are what stretch sessions:
+        // there is always a next rush to play toward. Zen stays calm by design.
+        if (!hitStopped && state.gameState == GameState.PLAYING && state.gameMode != GameMode.ZEN) {
+            rushAccumulator += dtSeconds
+            if (rushAccumulator >= 18f) {
+                rushAccumulator = 0f
+                triggerNextFormation()
+                _uiState.update { it.copy(showRushBanner = true) }
+                viewModelScope.launch {
+                    delay(1600L)
+                    _uiState.update { it.copy(showRushBanner = false) }
+                }
             }
         }
 
@@ -1767,7 +1793,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         when (formation) {
             SpawnFormation.CLUSTER -> {
                 // CLUSTER: 5–7 balloons of one colour in a loose bunch
-                val count = Random.nextInt(5, 8)
+                val count = Random.nextInt(6, 9)
                 val clusterColor = if (recipe != null && recipe.objectiveType == StageObjectiveType.COLOUR_FOCUS && recipe.focusColors.isNotEmpty()) {
                     if (Random.nextFloat() < 0.85f) recipe.focusColors.random() else skin.palette.random()
                 } else {
@@ -1799,7 +1825,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             SpawnFormation.STREAM -> {
                 // STREAM: 6–8 balloons along a diagonal, released in quick sequence
-                val count = Random.nextInt(6, 9)
+                val count = Random.nextInt(7, 10)
                 val goRight = Random.nextBoolean()
                 val startX = if (goRight) canvasWidth * 0.16f else canvasWidth * 0.84f
                 val dx = if (goRight) (canvasWidth * 0.68f / count) else (-canvasWidth * 0.68f / count)
@@ -1904,7 +1930,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             SpawnFormation.GOLD_RUSH -> {
                 // GOLD RUSH: a short burst of 4–6 golden balloons (rare, celebratory)
-                val count = Random.nextInt(4, 7)
+                val count = Random.nextInt(5, 8)
                 val cx = canvasWidth * (0.30f + Random.nextFloat() * 0.40f)
                 val cy = canvasHeight + 90f
                 val goldSpeed = computeBaseSpeed(BalloonType.GOLDEN)
@@ -2019,7 +2045,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         if (recipe == null) {
             val roll = Random.nextInt(100)
-            return if (roll < 75) BalloonType.STANDARD else BalloonType.GOLDEN
+            return if (roll < 70) BalloonType.STANDARD else BalloonType.GOLDEN
         }
 
         // Pass 9: Bomb Survival elevated bomb spawn rate

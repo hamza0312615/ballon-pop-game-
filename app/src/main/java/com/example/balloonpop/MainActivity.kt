@@ -425,6 +425,7 @@ class MainActivity : ComponentActivity() {
                                             transitionTargetLevel = uiState.transitionTargetLevel,
                                             onFinishLevelTransition = { viewModel.finishLevelTransition() },
                                             showComboHintBanner = uiState.showComboHintBanner,
+                                            showRushBanner = uiState.showRushBanner,
                                             objectiveType = uiState.currentObjectiveType,
                                             focusColors = uiState.currentFocusColors,
                                             steadyHandsBonusEarned = uiState.steadyHandsBonusEarned,
