@@ -1122,6 +1122,10 @@ fun GamePlayScreen(
                     timeLimit = timeLeft,
                     reason = gameOverReason,
                     assistUnlocked = assistUnlocked,
+                    // Pass 18: endless modes get the endless fail dialog
+                    // (no "+15s" continues — Endless Classic has no timer).
+                    endlessMode = gameMode != GameMode.CAMPAIGN,
+                    score = score,
                     onPlayOn = { onPlayOnRevive(true) },
                     onRetry = onRestart,
                     onWatchAdToRevive = {
