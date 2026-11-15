@@ -144,6 +144,19 @@ fun RanksScreen(
 
         // Player's Own Card
         val userPlayer = players.first { it.isCurrentUser }
+        // Pass 18: the badge line is computed from the board actually
+        // shown — it previously hardcoded a percentile ("Top 5%") that
+        // contradicted the displayed #42 rank. No percentile is claimed
+        // at all now: either you're in the shown Top 10, or you see
+        // exactly how many points separate you from #10.
+        val tenthPlace = players.firstOrNull { it.rank == 10 }
+        val userBadgeText = when {
+            userPlayer.rank <= 10 -> "Top 10 on this board"
+            tenthPlace != null -> "%,d pts behind #10".format(
+                (tenthPlace.score - userPlayer.score).coerceAtLeast(0)
+            )
+            else -> "Ranked #${userPlayer.rank} on this board"
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -186,7 +199,7 @@ fun RanksScreen(
                         color = Color.White
                     )
                     Text(
-                        text = "Top 5% of all Balloon Masters",
+                        text = userBadgeText,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFE29A)

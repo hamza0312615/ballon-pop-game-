@@ -442,8 +442,11 @@ private fun QuestItemCard(
 
                     Spacer(modifier = Modifier.height(2.dp))
 
+                    // Pass 18: real per-quest description from the quest
+                    // definition (was synthesised placeholder text:
+                    // "Goal: 40 points or actions").
                     Text(
-                        text = "Goal: ${quest.target} ${if (quest.id.contains("combo")) "combo multiplier" else "points or actions"}",
+                        text = quest.description.ifBlank { quest.title },
                         fontFamily = NunitoFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,

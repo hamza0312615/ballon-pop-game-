@@ -241,21 +241,29 @@ fun HomeScreen(
         }
 
         // Main Layout Container
+        // Pass 18: was Arrangement.SpaceBetween, which stretched the three
+        // blocks apart on tall screens and left a ~1/4-screen empty band
+        // between the hero and the PLAY button. Top-anchored with fixed
+        // spacers keeps the layout tight at any height.
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = DesignTokens.ScreenPadding, vertical = DesignTokens.Space8),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.Top
         ) {
             // STEP 2: Unified Top Resource Bar Component
             TopBar(
                 coins = coins,
                 gems = gems,
                 lives = lives,
+                // Pass 18: real lives cap is 3 (see MainActivity TopBar note).
+                maxLives = 3,
                 onOpenShop = onOpenShop,
                 onOpenSettings = onOpenSettings
             )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Space8))
 
             // 2. Hero Centerpiece: Mascot + Stage Diorama + Balloon Buddies
             Column(
@@ -371,6 +379,8 @@ fun HomeScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(DesignTokens.Space12))
 
             // 3. ONE hero action + every secondary action as a uniform icon button.
             // Nothing else on this screen is a filled CTA: Endless / Vault / Spin /
@@ -665,8 +675,10 @@ fun HomeScreen(
                         JellyButton(
                             text = "GOT IT! LET'S PLAY",
                             onClick = {
+                                // Pass 18: dismiss only — the player is
+                                // already on Home; the button used to throw
+                                // them onto the campaign map.
                                 showHowToPlay = false
-                                onOpenCampaign()
                             },
                             colorVariant = JellyColorVariant.GREEN,
                             testTag = "how_to_play_dismiss_play_button",
@@ -759,7 +771,9 @@ private fun HomeIconActionButton(
             if (badge != null) {
                 Box(
                     modifier = Modifier
-                        .offset(x = 4.dp, y = (-2).dp)
+                        // Pass 18: 2.dp keeps the badge inside the bar's
+                        // right edge on narrow widths (was 4.dp, poking out).
+                        .offset(x = 2.dp, y = (-2).dp)
                         .clip(DesignTokens.ShapeSmall)
                         .background(DesignTokens.DangerRed)
                         .border(1.dp, Color.White, DesignTokens.ShapeSmall)
