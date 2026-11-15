@@ -174,11 +174,14 @@ fun CustomChallengeDialog(
             ) {
                 Text(
                     text = "SCENARIO: Pop $targetPops balloons in ${timeSeconds}s.\nIf you miss more than $maxMisses balloons, GAME OVER!",
-                    fontSize = 11.sp,
+                    // Pass 20: slightly smaller so both lines always fit
+                    // the banner at narrow widths (was clipping mid-line).
+                    fontSize = 10.5.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFFFFB3B3),
                     textAlign = TextAlign.Center,
-                    lineHeight = 15.sp
+                    lineHeight = 14.sp,
+                    maxLines = 2
                 )
             }
 
@@ -308,7 +311,8 @@ private fun PresetChip(
     ) {
         Text(
             text = label,
-            fontSize = 9.sp,
+            // Pass 20: chip labels 9sp -> 10.5sp for readability
+            fontSize = 10.5.sp,
             fontWeight = FontWeight.Black,
             color = if (isSelected) Color.White else Color(0xFFCDB8EC),
             textAlign = TextAlign.Center,

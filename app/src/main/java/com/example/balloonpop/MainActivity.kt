@@ -122,9 +122,27 @@ class MainActivity : ComponentActivity() {
                             .background(bgBrush)
                             .padding(innerPadding)
                     ) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            // Persistent Top Bar on non-gameplay, non-splash, and non-home screens
-                            if (uiState.currentScreen != CurrentScreen.GAMEPLAY && uiState.currentScreen != CurrentScreen.HOME && uiState.currentScreen != CurrentScreen.CAMPAIGN_MAP && uiState.currentScreen != CurrentScreen.SPLASH) {
+                        // Pass 20 (root width fix): the app runs edge-to-edge
+                        // and every screen laid its first/last items out from
+                        // its own immediate parent width with no shared safe
+                        // inset, so edge pills, grid labels and overlay cards
+                        // repeatedly landed flush against — or past — the
+                        // physical edge and read as clipped/shifted left.
+                        // One shared horizontal safe inset on the content
+                        // column makes every screen (and every in-screen
+                        // overlay dialog) lay out inside the same fluid,
+                        // guaranteed-visible width.
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 6.dp)
+                        ) {
+                            // Persistent Top Bar on non-gameplay, non-splash, and non-home screens.
+                            // Pass 20: SHOP is excluded too — the shop renders
+                            // its own live currency row (with its close
+                            // button), and showing this global bar above it
+                            // duplicated the balances on one screen.
+                            if (uiState.currentScreen != CurrentScreen.GAMEPLAY && uiState.currentScreen != CurrentScreen.HOME && uiState.currentScreen != CurrentScreen.CAMPAIGN_MAP && uiState.currentScreen != CurrentScreen.SPLASH && uiState.currentScreen != CurrentScreen.SHOP && uiState.currentScreen != CurrentScreen.DIAMOND_STORE) {
                                 TopBar(
                                     coins = uiState.coins,
                                     gems = uiState.gems,
@@ -175,13 +193,21 @@ class MainActivity : ComponentActivity() {
                                     }
                                     CurrentScreen.HOME -> {
                                         val nextUnlockedLevel = ((uiState.completedLevels.keys.maxOrNull() ?: 0) + 1).coerceIn(1, 200)
-                                        val currentZoneName = GameConstants.WORLD_ZONES.find { nextUnlockedLevel in it.startLevel..it.endLevel }?.name ?: "Twilight Grove"
+                                        val currentZone = GameConstants.WORLD_ZONES.find { nextUnlockedLevel in it.startLevel..it.endLevel }
+                                        val currentZoneName = currentZone?.name ?: "Twilight Grove"
+                                        // Pass 20: zone progress for the Home
+                                        // progress strip — read straight from
+                                        // the same completedLevels state.
+                                        val currentZoneStars = if (currentZone != null) {
+                                            (currentZone.startLevel..currentZone.endLevel).sumOf { uiState.completedLevels[it] ?: 0 }
+                                        } else 0
                                         HomeScreen(
                                             coins = uiState.coins,
                                             gems = uiState.gems,
                                             lives = uiState.lives,
                                             currentLevel = nextUnlockedLevel,
                                             zoneName = currentZoneName,
+                                            zoneStars = currentZoneStars,
                                             onOpenCampaign = { viewModel.navigateTo(CurrentScreen.CAMPAIGN_MAP) },
                                             onOpenSkillVault = { viewModel.navigateTo(CurrentScreen.SKILL_VAULT) },
                                             onOpenEndless = { viewModel.navigateTo(CurrentScreen.ENDLESS_SELECT) },

@@ -374,9 +374,9 @@ fun ShopScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // 4. Category Grid (3 uniform columns; 7 tabs = 3 + 3 + 1)
+            // 4. Category Grid — Pass 20: 2 rows of 4 tiles (was 3 rows
+            // of 3 with an empty 9th slot that read as a missing tile).
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                // Row 1: Boosters, Themes, Hammers
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -399,19 +399,18 @@ fun ShopScreen(
                         onClick = { selectedTab = ShopTab.HAMMERS },
                         modifier = Modifier.weight(1f)
                     )
-                }
-
-                // Row 2: Frames, Blades, Flames
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
                     ShopCategoryTile(
                         tab = ShopTab.FRAMES,
                         isSelected = selectedTab == ShopTab.FRAMES,
                         onClick = { selectedTab = ShopTab.FRAMES },
                         modifier = Modifier.weight(1f)
                     )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     ShopCategoryTile(
                         tab = ShopTab.BLADES,
                         isSelected = selectedTab == ShopTab.BLADES,
@@ -424,13 +423,6 @@ fun ShopScreen(
                         onClick = { selectedTab = ShopTab.FLAMES },
                         modifier = Modifier.weight(1f)
                     )
-                }
-
-                // Row 3: Skins, Gems (kept the same tile width as every other tile)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
                     ShopCategoryTile(
                         tab = ShopTab.SKINS,
                         isSelected = selectedTab == ShopTab.SKINS,
@@ -443,7 +435,6 @@ fun ShopScreen(
                         onClick = { selectedTab = ShopTab.DIAMONDS },
                         modifier = Modifier.weight(1f)
                     )
-                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
 
@@ -513,7 +504,14 @@ fun ShopScreen(
                                         title = theme.name,
                                         description = "Theme visual atmosphere",
                                         icon = ToyGlyph.PALETTE,
-                                        iconBgColor = theme.gradientColors.firstOrNull() ?: Color(0xFF0F172A),
+                                        iconBgColor = theme.gradientColors.lastOrNull() ?: Color(0xFF0F172A),
+                                        artType = "theme ${theme.id}",
+                                        artBorderBrush = Brush.verticalGradient(
+                                            listOf(
+                                                theme.gradientColors.firstOrNull() ?: Color(0xFF7E38B3),
+                                                theme.gradientColors.lastOrNull() ?: Color(0xFF7E38B3)
+                                            )
+                                        ),
                                         previewBrush = Brush.verticalGradient(theme.gradientColors),
                                         priceCoins = if (theme.currency == CurrencyType.COINS) theme.cost else 0,
                                         priceGems = if (theme.currency == CurrencyType.GEMS) theme.cost else 0,
@@ -541,7 +539,11 @@ fun ShopScreen(
                                         title = hammer.name,
                                         description = hammer.description,
                                         icon = ToyGlyph.HAMMER,
-                                        iconBgColor = Color(0xFFF59E0B),
+                                        iconBgColor = hammer.headColor,
+                                        artType = "hammer ${hammer.id}",
+                                        artBorderBrush = Brush.verticalGradient(
+                                            listOf(hammer.headColor, hammer.handleColor)
+                                        ),
                                         priceCoins = if (hammer.currency == CurrencyType.COINS) hammer.cost else 0,
                                         priceGems = if (hammer.currency == CurrencyType.GEMS) hammer.cost else 0,
                                         isUnlocked = isUnlocked,
@@ -568,7 +570,9 @@ fun ShopScreen(
                                         title = frame.name,
                                         description = frame.description,
                                         icon = ToyGlyph.FRAME,
-                                        iconBgColor = Color(0xFFA6F750),
+                                        iconBgColor = frame.glowColor,
+                                        artType = "frame ${frame.id}",
+                                        artBorderBrush = Brush.verticalGradient(frame.borderColors),
                                         priceCoins = if (frame.currency == CurrencyType.COINS) frame.cost else 0,
                                         priceGems = if (frame.currency == CurrencyType.GEMS) frame.cost else 0,
                                         isUnlocked = isUnlocked,
@@ -595,7 +599,11 @@ fun ShopScreen(
                                         title = blade.name,
                                         description = blade.description,
                                         icon = ToyGlyph.SWORD,
-                                        iconBgColor = Color(0xFF7EE82E),
+                                        iconBgColor = blade.trailColor,
+                                        artType = "blade ${blade.id}",
+                                        artBorderBrush = Brush.verticalGradient(
+                                            listOf(blade.trailColor, blade.secondaryColor)
+                                        ),
                                         priceCoins = if (blade.currency == CurrencyType.COINS) blade.cost else 0,
                                         priceGems = if (blade.currency == CurrencyType.GEMS) blade.cost else 0,
                                         isUnlocked = isUnlocked,
@@ -622,7 +630,11 @@ fun ShopScreen(
                                         title = flame.name,
                                         description = flame.description,
                                         icon = ToyGlyph.FLAME,
-                                        iconBgColor = Color(0xFFF97316),
+                                        iconBgColor = flame.primaryColor,
+                                        artType = "flame ${flame.id}",
+                                        artBorderBrush = Brush.verticalGradient(
+                                            listOf(flame.glowColor, flame.primaryColor)
+                                        ),
                                         priceCoins = if (flame.currency == CurrencyType.COINS) flame.cost else 0,
                                         priceGems = if (flame.currency == CurrencyType.GEMS) flame.cost else 0,
                                         isUnlocked = isUnlocked,
@@ -653,6 +665,8 @@ fun ShopScreen(
                                         description = skin.description,
                                         icon = ToyGlyph.BALLOON,
                                         iconBgColor = skin.palette.first(),
+                                        artType = "balloon ${skin.id}",
+                                        artBorderBrush = Brush.horizontalGradient(skin.palette),
                                         priceCoins = if (skin.currency == CurrencyType.COINS) skin.cost else 0,
                                         priceGems = if (skin.currency == CurrencyType.GEMS) skin.cost else 0,
                                         isUnlocked = isUnlocked,
@@ -736,7 +750,7 @@ private fun ShopCategoryTile(
     Box(
         modifier = modifier
             .scale(scale)
-            .height(72.dp)
+            .height(68.dp)
             .shadow(
                 elevation = if (isSelected) 10.dp else 3.dp,
                 shape = DesignTokens.ShapeMedium,
@@ -798,7 +812,7 @@ private fun UniformShopCard(
     previewBrush: Brush? = null,
     badgeText: String? = null,
     borderBrush: Brush = Brush.verticalGradient(
-        listOf(Color(0x33A78BFA), Color(0x11FFFFFF))
+        listOf(Color.White.copy(alpha = 0.45f), Color(0xFF7E38B3))
     ),
     buttonEnabled: Boolean = true,
     buttonTestTag: String? = null
@@ -815,10 +829,11 @@ private fun UniformShopCard(
                 )
             )
             .border(
+                // Pass 20: the per-item borderBrush callers pass is now
+                // actually used — frames/themes/boosters each carry their
+                // own rim colours instead of one shared violet rim.
                 width = 2.dp,
-                brush = Brush.verticalGradient(
-                    listOf(Color.White.copy(alpha = 0.45f), Color(0xFF7E38B3))
-                ),
+                brush = borderBrush,
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(DesignTokens.Space12)
@@ -847,13 +862,15 @@ private fun UniformShopCard(
                     type = artType,
                     title = title,
                     primaryColor = artColor,
-                    modifier = Modifier.size(52.dp)
+                    modifier = Modifier.size(48.dp)
                 )
                 if (badgeText != null) {
+                    // Pass 20: badge inset 6.dp inside the art's corner —
+                    // it sat flush over the artwork's edge before.
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(DesignTokens.Space4)
+                            .padding(6.dp)
                             .clip(DesignTokens.ShapePill)
                             .background(Color(0xEE1E0A2B))
                             .border(1.dp, Color(0xFFE2D4F0), DesignTokens.ShapePill)
@@ -1069,6 +1086,13 @@ private fun CosmeticItemCard(
     isUnlocked: Boolean,
     isEquipped: Boolean,
     previewBrush: Brush? = null,
+    // Pass 20: explicit art routing — callers pass "hammer <id>",
+    // "frame <id>", "blade <id>", "flame <id>", "theme <id>" or
+    // "balloon <id>" so ShopItemArt draws the right glyph per item
+    // instead of guessing from the title text (mallets without the
+    // word "hammer" used to fall through to the generic rainbow orb).
+    artType: String = "$title $description".lowercase(),
+    artBorderBrush: Brush? = null,
     onAction: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1076,7 +1100,7 @@ private fun CosmeticItemCard(
     UniformShopCard(
         title = title,
         subtitle = description,
-        artType = "$title $description".lowercase(),
+        artType = artType,
         artColor = iconBgColor,
         previewBrush = previewBrush,
         badgeText = if (isEquipped) "EQUIPPED" else null,
@@ -1099,10 +1123,13 @@ private fun CosmeticItemCard(
         },
         buttonEnabled = !isEquipped,
         onButtonClick = onAction,
-        borderBrush = Brush.verticalGradient(
-            if (isEquipped) listOf(Color(0xFF7EE82E), Color(0xFF059669))
-            else listOf(Color(0x33A78BFA), Color(0x11FFFFFF))
-        ),
+        borderBrush = if (isEquipped) {
+            Brush.verticalGradient(listOf(Color(0xFF7EE82E), Color(0xFF059669)))
+        } else {
+            artBorderBrush ?: Brush.verticalGradient(
+                listOf(Color.White.copy(alpha = 0.45f), Color(0xFF7E38B3))
+            )
+        },
         modifier = modifier
     )
 }
@@ -1129,8 +1156,10 @@ private fun DiamondStoreCard(
         subtitle = subtitle,
         artType = "diamond pack",
         artColor = DiamondBlue,
-        badgeText = pack.bonusTag,
-        priceText = pack.priceTag,
+        // Pass 20: the ad pack's pill used to read "FREE 🎁" / "INSTANT" —
+        // it now states the offer plainly: 1 FREE claim, with the gem mark.
+        badgeText = if (pack.isAdReward) "FREE" else pack.bonusTag,
+        priceText = if (pack.isAdReward) "1 FREE 💎" else pack.priceTag,
         priceIsGem = true,
         buttonText = when {
             pack.isAdReward -> "WATCH AD"

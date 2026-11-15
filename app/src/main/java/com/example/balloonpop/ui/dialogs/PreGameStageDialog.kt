@@ -92,7 +92,10 @@ fun PreGameStageDialog(
     Dialog(onDismissRequest = onClose) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.96f)
+                // Pass 20: 92% of the dialog width with a 420.dp cap —
+                // consistent with every other large dialog in the game.
+                .fillMaxWidth(0.92f)
+                .widthIn(max = 420.dp)
                 .shadow(28.dp, RoundedCornerShape(26.dp), spotColor = Color(0x66FFD700))
                 .clip(RoundedCornerShape(26.dp))
                 .background(
@@ -118,6 +121,30 @@ fun PreGameStageDialog(
                 .padding(horizontal = 20.dp, vertical = 24.dp)
                 .testTag("stage_intro_dialog")
         ) {
+            // Pass 20: explicit close (X) in the top-right corner — before
+            // this, only tapping the scrim dismissed the card, which
+            // players read as "no way out".
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 8.dp, y = (-12).dp)
+                    .size(32.dp)
+                    .shadow(4.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(Color(0xFF2A1450))
+                    .border(1.5.dp, Color(0xFFFFD54F), CircleShape)
+                    .clickable { onClose() }
+                    .testTag("pregame_close_button"),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "✕",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+            }
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -511,9 +538,10 @@ private fun IntroBoosterOrb(
         Text(
             text = label,
             fontFamily = NunitoFontFamily,
-            fontSize = 11.sp,
+            // Pass 20: booster labels slightly larger (11 -> 12sp)
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isSelected) Color(0xFFFFD54F) else Color.White
+            color = if (isSelected) Color(0xFFFFD54F) else Color(0xFFF5EEFF)
         )
     }
 }

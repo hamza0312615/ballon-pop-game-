@@ -376,11 +376,15 @@ private fun VaultSkillCard(
                         Text(
                             text = skill.description,
                             fontFamily = NunitoFontFamily,
-                            fontSize = 12.sp,
+                            // Pass 20: 2 lines cut descriptions mid-word
+                            // ("...slide and s..."). Cards are full-width
+                            // rows with natural heights, so descriptions
+                            // now get up to 4 lines at a slightly smaller
+                            // size and always show in full.
+                            fontSize = 11.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFFF5EEFF),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            maxLines = 4
                         )
                     }
                 }

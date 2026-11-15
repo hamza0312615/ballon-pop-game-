@@ -226,8 +226,12 @@ fun VictoryStageDialog(
 
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .widthIn(max = 400.dp)
+                // Pass 20: explicit 16.dp screen margins + a 420.dp cap —
+                // the card is sized from the padded parent, never the raw
+                // screen width, so its full-width buttons can't clip.
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .widthIn(max = 420.dp)
                 .offset(y = cardSlideY.value.dp)
                 .scale(cardPop.value)
                 .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeCardStory)
@@ -298,9 +302,11 @@ fun VictoryStageDialog(
             if (winStreak >= 2) {
                 Text(
                     text = "Win streak x$winStreak — next stage gets +5s!",
-                    fontSize = DesignTokens.SizeCaption,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFB7791F),
+                    // Pass 20: streak line was small caption gold — now
+                    // body size, extra-bold, brighter amber for readability.
+                    fontSize = DesignTokens.SizeBody,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFFD97706),
                     textAlign = TextAlign.Center
                 )
             }
@@ -549,8 +555,12 @@ fun FailedStageDialog(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.92f)
-                .widthIn(max = 400.dp)
+                // Pass 20: explicit 16.dp screen margins + a 420.dp cap —
+                // the card is sized from the padded parent, never the raw
+                // screen width, so its full-width buttons can't clip.
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth()
+                .widthIn(max = 420.dp)
                 .offset(y = cardSlideY.value.dp)
                 .scale(cardPop.value)
                 .shadow(DesignTokens.ElevationStrong, DesignTokens.ShapeCardStory)

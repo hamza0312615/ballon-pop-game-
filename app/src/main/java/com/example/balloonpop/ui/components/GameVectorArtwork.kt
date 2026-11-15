@@ -493,36 +493,166 @@ fun ShopItemArt(
             }
 
             type.contains("frame") -> {
-                // Luxury Glowing Ornate Playfield Frame with Corner Studs
+                // Pass 20: every frame item used to draw the SAME ornate
+                // rounded frame in its glow colour — eight frames, one
+                // picture. Each frame id now gets its own silhouette:
+                //   wooden = plain warm rim          golden = double rim + studs
+                //   neon   = sharp square + core     royal  = corner diamonds
+                //   crystal= octagon                 rainbow= 4-colour rim
+                //   shadow = thick dark rim          cosmic = rim + sparkles
                 val frameW = w * 0.65f
                 val frameH = h * 0.70f
-                drawRoundRect(
-                    brush = Brush.linearGradient(listOf(Color.White, primaryColor, Color(0xFF0284C7))),
-                    topLeft = Offset(cx - frameW / 2f, cy - frameH / 2f),
-                    size = Size(frameW, frameH),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(12f, 12f),
-                    style = Stroke(width = 5f)
-                )
-                // Inner bezel
-                drawRoundRect(
-                    color = Color.White.copy(alpha = 0.6f),
-                    topLeft = Offset(cx - frameW / 2f + 5f, cy - frameH / 2f + 5f),
-                    size = Size(frameW - 10f, frameH - 10f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(8f, 8f),
-                    style = Stroke(width = 1.5f)
-                )
-                // Corner Diamond Studs
                 val halfW = frameW / 2f
                 val halfH = frameH / 2f
-                val corners = listOf(
-                    Offset(cx - halfW, cy - halfH),
-                    Offset(cx + halfW, cy - halfH),
-                    Offset(cx - halfW, cy + halfH),
-                    Offset(cx + halfW, cy + halfH)
-                )
-                for (pt in corners) {
-                    drawCircle(color = Color(0xFFFFD700), radius = 5f, center = pt)
-                    drawCircle(color = Color.White, radius = 2.5f, center = pt)
+                val cr12 = androidx.compose.ui.geometry.CornerRadius(12f, 12f)
+                val cr8 = androidx.compose.ui.geometry.CornerRadius(8f, 8f)
+                when {
+                    type.contains("crystal") -> {
+                        val pts = listOf(
+                            Offset(cx - halfW * 0.55f, cy - halfH),
+                            Offset(cx + halfW * 0.55f, cy - halfH),
+                            Offset(cx + halfW, cy - halfH * 0.55f),
+                            Offset(cx + halfW, cy + halfH * 0.55f),
+                            Offset(cx + halfW * 0.55f, cy + halfH),
+                            Offset(cx - halfW * 0.55f, cy + halfH),
+                            Offset(cx - halfW, cy + halfH * 0.55f),
+                            Offset(cx - halfW, cy - halfH * 0.55f)
+                        )
+                        val path = Path().apply {
+                            moveTo(pts[0].x, pts[0].y)
+                            pts.drop(1).forEach { lineTo(it.x, it.y) }
+                            close()
+                        }
+                        drawPath(path, brush = Brush.linearGradient(listOf(Color.White, primaryColor, Color(0xFF0284C7))), style = Stroke(width = 5f))
+                        drawPath(path, color = Color.White.copy(alpha = 0.5f), style = Stroke(width = 1.5f))
+                    }
+                    type.contains("neon") -> {
+                        drawRect(
+                            brush = Brush.linearGradient(listOf(Color.White, primaryColor)),
+                            topLeft = Offset(cx - halfW, cy - halfH),
+                            size = Size(frameW, frameH),
+                            style = Stroke(width = 6f)
+                        )
+                        drawRect(
+                            color = Color.White.copy(alpha = 0.85f),
+                            topLeft = Offset(cx - halfW + 7f, cy - halfH + 7f),
+                            size = Size(frameW - 14f, frameH - 14f),
+                            style = Stroke(width = 2f)
+                        )
+                    }
+                    type.contains("rainbow") -> {
+                        drawLine(Color(0xFFEF4444), Offset(cx - halfW, cy - halfH), Offset(cx + halfW, cy - halfH), strokeWidth = 6f)
+                        drawLine(Color(0xFFF59E0B), Offset(cx + halfW, cy - halfH), Offset(cx + halfW, cy + halfH), strokeWidth = 6f)
+                        drawLine(Color(0xFF22C55E), Offset(cx + halfW, cy + halfH), Offset(cx - halfW, cy + halfH), strokeWidth = 6f)
+                        drawLine(Color(0xFF3B82F6), Offset(cx - halfW, cy + halfH), Offset(cx - halfW, cy - halfH), strokeWidth = 6f)
+                        drawRoundRect(
+                            color = Color.White.copy(alpha = 0.5f),
+                            topLeft = Offset(cx - halfW + 6f, cy - halfH + 6f),
+                            size = Size(frameW - 12f, frameH - 12f),
+                            cornerRadius = cr8,
+                            style = Stroke(width = 1.5f)
+                        )
+                    }
+                    type.contains("shadow") -> {
+                        drawRoundRect(
+                            color = primaryColor,
+                            topLeft = Offset(cx - halfW - 3f, cy - halfH - 3f),
+                            size = Size(frameW + 6f, frameH + 6f),
+                            cornerRadius = cr12,
+                            style = Stroke(width = 10f)
+                        )
+                        drawRoundRect(
+                            color = Color.White.copy(alpha = 0.22f),
+                            topLeft = Offset(cx - halfW + 8f, cy - halfH + 8f),
+                            size = Size(frameW - 16f, frameH - 16f),
+                            cornerRadius = cr8,
+                            style = Stroke(width = 1.5f)
+                        )
+                    }
+                    type.contains("royal") -> {
+                        drawRoundRect(
+                            brush = Brush.linearGradient(listOf(Color.White, primaryColor, Color(0xFF0284C7))),
+                            topLeft = Offset(cx - halfW, cy - halfH),
+                            size = Size(frameW, frameH),
+                            cornerRadius = cr12,
+                            style = Stroke(width = 5f)
+                        )
+                        listOf(
+                            Offset(cx - halfW, cy - halfH), Offset(cx + halfW, cy - halfH),
+                            Offset(cx - halfW, cy + halfH), Offset(cx + halfW, cy + halfH)
+                        ).forEach { c ->
+                            val d = Path().apply {
+                                moveTo(c.x, c.y - 8f); lineTo(c.x + 8f, c.y)
+                                lineTo(c.x, c.y + 8f); lineTo(c.x - 8f, c.y); close()
+                            }
+                            drawPath(d, color = Color(0xFFFFD700))
+                            drawPath(d, color = Color.White, style = Stroke(width = 1f))
+                        }
+                    }
+                    type.contains("cosmic") -> {
+                        drawRoundRect(
+                            brush = Brush.linearGradient(listOf(Color.White, primaryColor, Color(0xFF7C3AED))),
+                            topLeft = Offset(cx - halfW, cy - halfH),
+                            size = Size(frameW, frameH),
+                            cornerRadius = cr12,
+                            style = Stroke(width = 5f)
+                        )
+                        listOf(
+                            Offset(cx - w * 0.10f, cy - h * 0.44f),
+                            Offset(cx + w * 0.40f, cy - h * 0.05f),
+                            Offset(cx + w * 0.05f, cy + h * 0.44f)
+                        ).forEach { c ->
+                            val s = Path().apply {
+                                moveTo(c.x, c.y - 7f)
+                                quadraticBezierTo(c.x, c.y, c.x + 7f, c.y)
+                                quadraticBezierTo(c.x, c.y, c.x, c.y + 7f)
+                                quadraticBezierTo(c.x, c.y, c.x - 7f, c.y)
+                                quadraticBezierTo(c.x, c.y, c.x, c.y - 7f)
+                                close()
+                            }
+                            drawPath(s, color = Color.White)
+                        }
+                    }
+                    type.contains("golden") -> {
+                        drawRoundRect(
+                            brush = Brush.linearGradient(listOf(Color.White, primaryColor, Color(0xFFB45309))),
+                            topLeft = Offset(cx - halfW, cy - halfH),
+                            size = Size(frameW, frameH),
+                            cornerRadius = cr12,
+                            style = Stroke(width = 5f)
+                        )
+                        drawRoundRect(
+                            color = primaryColor.copy(alpha = 0.65f),
+                            topLeft = Offset(cx - halfW + 6f, cy - halfH + 6f),
+                            size = Size(frameW - 12f, frameH - 12f),
+                            cornerRadius = cr8,
+                            style = Stroke(width = 2.5f)
+                        )
+                        listOf(
+                            Offset(cx - halfW, cy - halfH), Offset(cx + halfW, cy - halfH),
+                            Offset(cx - halfW, cy + halfH), Offset(cx + halfW, cy + halfH)
+                        ).forEach { pt ->
+                            drawCircle(color = Color(0xFFFFD700), radius = 5f, center = pt)
+                            drawCircle(color = Color.White, radius = 2.5f, center = pt)
+                        }
+                    }
+                    else -> {
+                        // Wooden / default: single warm rim + soft inner line
+                        drawRoundRect(
+                            brush = Brush.linearGradient(listOf(Color.White, primaryColor, Color(0xFF78350F))),
+                            topLeft = Offset(cx - halfW, cy - halfH),
+                            size = Size(frameW, frameH),
+                            cornerRadius = cr12,
+                            style = Stroke(width = 5f)
+                        )
+                        drawRoundRect(
+                            color = Color.White.copy(alpha = 0.45f),
+                            topLeft = Offset(cx - halfW + 5f, cy - halfH + 5f),
+                            size = Size(frameW - 10f, frameH - 10f),
+                            cornerRadius = cr8,
+                            style = Stroke(width = 1.5f)
+                        )
+                    }
                 }
             }
 
@@ -584,6 +714,39 @@ fun ShopItemArt(
                 drawPath(innerFlame, brush = Brush.verticalGradient(listOf(Color.White, Color(0xFFFFD54F), primaryColor)))
                 drawCircle(Color.White, radius = 2.5f, center = Offset(cx - w * 0.16f, cy - h * 0.24f))
                 drawCircle(Color(0xFFFFEA00), radius = 2.5f, center = Offset(cx + w * 0.18f, cy - h * 0.28f))
+            }
+
+            type.contains("theme") -> {
+                // Pass 20: theme items get a rich little landscape panel in
+                // the theme's own colours (sky gradient, sun disc, hill
+                // silhouettes) instead of the generic rainbow orb.
+                val panelW = w * 0.78f
+                val panelH = h * 0.62f
+                val left = cx - panelW / 2f
+                val top = cy - panelH / 2f
+                drawRoundRect(
+                    brush = Brush.verticalGradient(listOf(Color.White, primaryColor, Color(0xFF1E1B4B))),
+                    topLeft = Offset(left, top),
+                    size = Size(panelW, panelH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f, 10f)
+                )
+                drawCircle(color = Color(0xFFFFF7CC), radius = w * 0.09f, center = Offset(left + panelW * 0.72f, top + panelH * 0.30f))
+                drawCircle(color = Color(0xFFFFD700), radius = w * 0.065f, center = Offset(left + panelW * 0.72f, top + panelH * 0.30f))
+                val hill = Path().apply {
+                    moveTo(left, top + panelH)
+                    quadraticBezierTo(left + panelW * 0.30f, top + panelH * 0.45f, left + panelW * 0.58f, top + panelH * 0.78f)
+                    quadraticBezierTo(left + panelW * 0.80f, top + panelH * 0.95f, left + panelW, top + panelH * 0.72f)
+                    lineTo(left + panelW, top + panelH)
+                    close()
+                }
+                drawPath(hill, color = Color(0xFF14532D).copy(alpha = 0.85f))
+                drawRoundRect(
+                    color = Color.White.copy(alpha = 0.7f),
+                    topLeft = Offset(left, top),
+                    size = Size(panelW, panelH),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(10f, 10f),
+                    style = Stroke(width = 2f)
+                )
             }
 
             type.contains("diamond") || type.contains("pack") -> {

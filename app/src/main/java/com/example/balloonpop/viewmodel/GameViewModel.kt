@@ -217,6 +217,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     // Pass 18: horizontal centre (0..1 of canvas width) of the most recent
     // spawn formation, so consecutive formations don't stack in one lane.
     private var lastFormationCenterRatio = -1f
+    // Pass 20: Endless/Zen formation anti-repeat + special-shape cycler.
+    // The re-test saw a dozen IDENTICAL yellow stars in a row: GOLDEN and
+    // MULTIPLIER always mapped to STAR_SHAPE, and the random formation
+    // picker could serve GOLD_RUSH twice back-to-back.
+    private var lastRandomFormation: SpawnFormation? = null
+    private var specialShapeCycle = 0
     private var freezeTimeRemaining = 0f
     // Pass 8 juice: hit-stop — while > 0, balloon motion and the spawner
     // pause for a beat (bomb detonations, gold-rush burst completions).
@@ -1278,6 +1284,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         rushBannerJob?.cancel()
         rushBannerJob = null
         lastFormationCenterRatio = -1f
+        lastRandomFormation = null
+        specialShapeCycle = 0
         spawnIntervalSeconds = when {
             state.gameMode == GameMode.CAMPAIGN -> {
                 // Calibrate spawn tempo so target balloon count spawns comfortably within the time limit
@@ -1817,16 +1825,28 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 allowed[patternCycleIndex]
             }
         } else if (mode == GameMode.ZEN) {
-            listOf(SpawnFormation.CLUSTER, SpawnFormation.STREAM, SpawnFormation.RING, SpawnFormation.MIXED_RAIN).random()
+            val options = listOf(SpawnFormation.CLUSTER, SpawnFormation.STREAM, SpawnFormation.RING, SpawnFormation.MIXED_RAIN)
+            var pick = options.random()
+            if (pick == lastRandomFormation) {
+                pick = options[(options.indexOf(pick) + 1) % options.size]
+            }
+            lastRandomFormation = pick
+            pick
         } else {
-            listOf(
+            val options = listOf(
                 SpawnFormation.CLUSTER,
                 SpawnFormation.STREAM,
                 SpawnFormation.RING,
                 SpawnFormation.BOMB_DODGE,
                 SpawnFormation.MIXED_RAIN,
                 SpawnFormation.GOLD_RUSH
-            ).random()
+            )
+            var pick = options.random()
+            if (pick == lastRandomFormation) {
+                pick = options[(options.indexOf(pick) + 1) % options.size]
+            }
+            lastRandomFormation = pick
+            pick
         }
 
         scheduleFormation(formation, recipe)
@@ -1864,11 +1884,14 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // Pass 18: spread the bunch by balloon size — the old fixed
                 // 150x130px box was smaller than two balloon diameters, so
                 // cluster balloons spawned stacked on top of each other.
+                // Pass 20: horizontal spread widened again (3.4x -> 4.8x of
+                // balloon radius) — clusters still read as one tight bunch
+                // in the middle with the field's outer thirds empty.
                 val spreadR = radiusBase()
 
                 synchronized(pendingSpawns) {
                     for (i in 0 until count) {
-                        val ox = (Random.nextFloat() - 0.5f) * spreadR * 3.4f
+                        val ox = (Random.nextFloat() - 0.5f) * spreadR * 4.8f
                         val oy = (Random.nextFloat() - 0.5f) * spreadR * 2.4f
                         val r = computeBalloonRadius(BalloonType.STANDARD)
                         pendingSpawns.add(
@@ -1890,8 +1913,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // STREAM: 6–8 balloons along a diagonal, released in quick sequence
                 val count = Random.nextInt(7, 10)
                 val goRight = Random.nextBoolean()
-                val startX = if (goRight) canvasWidth * 0.16f else canvasWidth * 0.84f
-                val dx = if (goRight) (canvasWidth * 0.68f / count) else (-canvasWidth * 0.68f / count)
+                // Pass 20: the diagonal now runs ~8% -> ~92% of the field
+                // (was 16% -> 84%), so streams stop reading as one tight
+                // central chain with empty sides.
+                val startX = if (goRight) canvasWidth * 0.08f else canvasWidth * 0.92f
+                val dx = if (goRight) (canvasWidth * 0.84f / count) else (-canvasWidth * 0.84f / count)
                 val streamSpeed = computeBaseSpeed(BalloonType.STANDARD)
 
                 synchronized(pendingSpawns) {
@@ -1920,10 +1946,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 // RING: 8 balloons in a circle drifting up together
                 // Pass 18: centre range widened (was the middle 30% of the
                 // width only) and lane-varied via pickFormationCenterRatio.
-                val cx = canvasWidth * pickFormationCenterRatio(0.28f, 0.72f)
+                val cx = canvasWidth * pickFormationCenterRatio(0.24f, 0.76f)
                 val cy = canvasHeight + 115f
                 val ringSpeed = computeBaseSpeed(BalloonType.STANDARD)
-                val targetR = 135f
+                // Pass 20: ring radius scales with field width (was fixed 135px)
+                val targetR = (canvasWidth * 0.17f).coerceIn(125f, 175f)
                 synchronized(pendingSpawns) {
                     for (i in 0 until 8) {
                         val angle = (i.toFloat() / 8f) * 6.2831853f
@@ -1954,10 +1981,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             SpawnFormation.BOMB_DODGE -> {
                 // BOMB DODGE: 6 normal balloons arranged around 1 bomb balloon (never before stage 4)
-                val cx = canvasWidth * pickFormationCenterRatio(0.28f, 0.72f)
+                val cx = canvasWidth * pickFormationCenterRatio(0.24f, 0.76f)
                 val cy = canvasHeight + 120f
                 val dodgeSpeed = computeBaseSpeed(BalloonType.STANDARD)
-                val surroundR = 125f
+                // Pass 20: surround radius scales with field width (was fixed 125px)
+                val surroundR = (canvasWidth * 0.16f).coerceIn(115f, 165f)
 
                 synchronized(pendingSpawns) {
                     // Center Bomb
@@ -2005,7 +2033,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
                 synchronized(pendingSpawns) {
                     for (i in 0 until count) {
-                        val ox = (Random.nextFloat() - 0.5f) * spreadR * 3.2f
+                        val ox = (Random.nextFloat() - 0.5f) * spreadR * 4.4f
                         val oy = (Random.nextFloat() - 0.5f) * spreadR * 2.2f
                         val r = computeBalloonRadius(BalloonType.GOLDEN)
                         pendingSpawns.add(
@@ -2017,7 +2045,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                                 vy = goldSpeed * (0.94f + Random.nextFloat() * 0.12f),
                                 type = BalloonType.GOLDEN,
                                 color = Color(0xFFFFD700),
-                                shapeStyle = BalloonShapeStyle.STAR_SHAPE,
+                                // Pass 20: gold balloons cycle faces —
+                                // a whole rush of identical STAR_SHAPE
+                                // balloons read as a copy-paste error.
+                                shapeStyle = variedSpecialShape(),
                                 isGoldRush = true
                             )
                         )
@@ -2165,13 +2196,32 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Pass 20: cycle through the face pool for special balloons so
+     * consecutive spawns never repeat one face — GOLDEN / MULTIPLIER used
+     * to be hard-wired to STAR_SHAPE, producing long runs of identical
+     * yellow stars. Colour still identifies the type; the face varies.
+     */
+    private fun variedSpecialShape(): BalloonShapeStyle {
+        val pool = listOf(
+            BalloonShapeStyle.STAR_SHAPE,
+            BalloonShapeStyle.SMILEY,
+            BalloonShapeStyle.COOL,
+            BalloonShapeStyle.FUNNY,
+            BalloonShapeStyle.CAT_FACE,
+            BalloonShapeStyle.SHOCKED
+        )
+        specialShapeCycle = (specialShapeCycle + 1) % pool.size
+        return pool[specialShapeCycle]
+    }
+
     private fun getBalloonShape(type: BalloonType, skin: BalloonSkin): BalloonShapeStyle {
         return when (type) {
             BalloonType.BOMB -> BalloonShapeStyle.ANGRY
-            BalloonType.GOLDEN, BalloonType.GOLDEN_PIGGY -> BalloonShapeStyle.STAR_SHAPE
+            BalloonType.GOLDEN, BalloonType.GOLDEN_PIGGY -> variedSpecialShape()
             BalloonType.HEART -> BalloonShapeStyle.HEART_SHAPE
             BalloonType.FREEZE -> BalloonShapeStyle.SHOCKED
-            BalloonType.MULTIPLIER -> BalloonShapeStyle.STAR_SHAPE
+            BalloonType.MULTIPLIER -> variedSpecialShape()
             BalloonType.RAINBOW -> listOf(BalloonShapeStyle.COOL, BalloonShapeStyle.FUNNY, BalloonShapeStyle.CAT_FACE).random()
             BalloonType.MEGA_BOSS -> BalloonShapeStyle.ANGRY
             else -> skin.faceStyles.random()

@@ -217,10 +217,12 @@ fun RanksScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Leaderboard List
+        // Leaderboard List — Pass 20: bottom content padding so the
+        // last row (#10) scrolls fully clear of the screen's bottom edge.
         LazyColumn(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(bottom = 24.dp)
         ) {
             itemsIndexed(players.filter { !it.isCurrentUser }) { _, player ->
                 LeaderboardRow(player)

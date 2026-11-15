@@ -102,7 +102,8 @@ fun DailyGiftsDialog(
     Dialog(onDismissRequest = onDismiss) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.96f)
+                // Pass 20: normalized to the shared dialog width (92%, 420.dp cap).
+                .fillMaxWidth(0.92f)
                 .widthIn(max = 420.dp)
                 .shadow(16.dp, RoundedCornerShape(24.dp))
                 .clip(RoundedCornerShape(24.dp))

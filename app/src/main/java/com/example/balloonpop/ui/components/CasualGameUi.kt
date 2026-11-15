@@ -346,14 +346,17 @@ fun StarsDisplay3D(
                                 listOf(Color(0xFFFFEA00), Color(0xFFF59E0B), Color(0xFFD97706))
                             )
                         } else {
+                            // Pass 20: unearned stars sit on a pale lavender
+                            // disc (was a flat grey slab) so the outline star
+                            // inside reads as "not yet", not "disabled".
                             Brush.verticalGradient(
-                                listOf(Color(0xFFD1D5DB), Color(0xFF9CA3AF))
+                                listOf(Color(0xFFF5EEFF), Color(0xFFE9DFFB))
                             )
                         }
                     )
                     .border(
                         width = 2.5.dp,
-                        color = if (isEarned) Color(0xFFFFFBEB) else Color(0xFFE5E7EB),
+                        color = if (isEarned) Color(0xFFFFFBEB) else Color(0xFFCDB8EC),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -391,9 +394,12 @@ fun StarsDisplay3D(
                             center = Offset(cx - outerR * 0.22f, cy - outerR * 0.22f)
                         )
                     } else {
+                        // Pass 20: unearned star = OUTLINE only (was a solid
+                        // dark-grey star on a grey disc).
                         drawPath(
                             path = starPath,
-                            color = Color(0xFF4B5563)
+                            color = Color(0xFF9B7ED9),
+                            style = Stroke(width = 3f)
                         )
                     }
                 }

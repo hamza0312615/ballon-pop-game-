@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -75,20 +77,26 @@ fun WorldMapZoneOverviewDialog(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(0.94f)
-                .fillMaxSize(0.92f)
+                // Pass 20: shared dialog width — 92% with a 430.dp cap.
+                .fillMaxWidth(0.92f)
+                .widthIn(max = 430.dp)
+                .fillMaxHeight(0.92f)
                 .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = Color(0xFF2F6DB3))
                 .clip(RoundedCornerShape(24.dp))
                 .background(
+                    // Pass 20: Toybox plum panel instead of the old near-black
+                    // slate — the dialog read as a huge empty dark slab; the
+                    // plum stage surface lets the zone cards' own gradients
+                    // sit visibly on top of it.
                     Brush.verticalGradient(
                         listOf(
-                            Color(0xFF0F172A),
-                            Color(0xFF090D18),
-                            Color(0xFF050810)
+                            Color(0xFF2A1450),
+                            Color(0xFF1D0B33),
+                            Color(0xFF150826)
                         )
                     )
                 )
-                .border(2.dp, Color(0xFF1E293B), RoundedCornerShape(24.dp))
+                .border(2.dp, Color(0xFF7A3EAE), RoundedCornerShape(24.dp))
                 .clickable(enabled = false) {} // Prevent closing when tapping inside
                 .padding(16.dp)
         ) {
@@ -222,7 +230,7 @@ private fun ZoneSelectionCard(
             .clip(cardShape)
             .background(
                 Brush.horizontalGradient(
-                    if (isUnlocked) theme.bgSkyGradient else listOf(Color(0xFF0C101A), Color(0xFF080C14))
+                    if (isUnlocked) theme.bgSkyGradient else listOf(Color(0xFF1A0F2B), Color(0xFF120A20))
                 )
             )
             .border(
@@ -310,11 +318,23 @@ private fun ZoneSelectionCard(
                         color = if (isUnlocked) Color.White else Color(0xFFCDB8EC)
                     )
 
-                    Text(
-                        text = theme.subtitle,
-                        fontSize = 11.sp,
-                        color = if (isUnlocked) theme.secondaryAccent else Color(0xFFB79BDB)
-                    )
+                    // Pass 20: same readable treatment as the campaign
+                    // header — light text on a soft dark chip (was the
+                    // zone's secondary accent straight on the card, which
+                    // read grey-on-dark for Prism Peaks).
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0x59000000))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = theme.subtitle,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isUnlocked) Color(0xFFF5EEFF) else Color(0xFFB79BDB)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -343,9 +363,15 @@ private fun ZoneSelectionCard(
             // Right: Action / Status Button — Pass 11: the game's own ToyButton
             // (was a raw Material Button, the last flat default in any dialog).
             if (isUnlocked) {
+                // Pass 20: the current zone's button used to say "VIEW" and
+                // tapping it just closed the dialog onto the map you were
+                // already looking at — it read as a dead button. It now
+                // states the truth ("ON MAP", disabled); other zones keep
+                // ENTER, which selects the zone and closes onto its map.
                 JewelButton(
-                    text = if (isCurrentZone) "VIEW" else "ENTER",
+                    text = if (isCurrentZone) "ON MAP" else "ENTER",
                     onClick = onSelect,
+                    enabled = !isCurrentZone,
                     style = if (isCurrentZone) JewelButtonStyle.GOLD else JewelButtonStyle.SUNSET,
                     minHeight = 38.dp,
                     modifier = Modifier.testTag("enter_zone_btn_${zone.zoneNumber}")

@@ -374,9 +374,10 @@ fun EndlessModeScreen(
                     Text(
                         text = "tap to enter the arena",
                         fontFamily = NunitoFontFamily,
-                        fontSize = DesignTokens.TypeTierCaption,
+                        // Pass 20: subtext slightly larger/brighter
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White.copy(alpha = 0.90f),
+                        color = Color.White,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -534,15 +535,29 @@ private fun EndlessModeCard(
                             .background(DesignTokens.GoldFaceGradient)
                             .padding(horizontal = 10.dp, vertical = 2.dp)
                     ) {
-                        Text(
-                            text = if (bestScore > 0) "BEST ${String.format("%,d", bestScore)}" else "BEST —",
-                            fontFamily = Baloo2FontFamily,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF2A1B4E),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                        if (bestScore > 0) {
+                            Text(
+                                text = "BEST ${String.format("%,d", bestScore)}",
+                                fontFamily = Baloo2FontFamily,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFF2A1B4E),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        } else {
+                            // Pass 20: "BEST —" read as a broken value; an
+                            // unplayed mode now says so in words.
+                            Text(
+                                text = "Not played yet",
+                                fontFamily = NunitoFontFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2A1B4E),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }

@@ -1079,15 +1079,16 @@ fun GamePlayScreen(
                                 }
                             )
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(2.dp))
 
-                            // Subtle Footer Caption
+                            // Subtle Footer Caption — Pass 20: unified
+                            // version string (same as Settings footer).
                             Text(
-                                text = "Version 1.4 • Tap outside to resume",
+                                text = "Balloon Pop Deluxe v1.4 • Tap outside to resume",
                                 fontFamily = NunitoFontFamily,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Color(0x66FFFFFF),
+                                color = Color(0x99FFFFFF),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -1741,9 +1742,11 @@ private fun GameOrbButton(
         Text(
             text = label.uppercase(),
             fontFamily = Baloo2FontFamily,
-            fontSize = 10.sp,
+            // Pass 20: booster dock labels were tiny and dim (10sp, 60%
+            // white when disabled) — slightly larger and brighter.
+            fontSize = 11.sp,
             fontWeight = FontWeight.Black,
-            color = if (isEnabled) Color.White else Color(0x99FFFFFF),
+            color = if (isEnabled) Color.White else Color(0xB3FFFFFF),
             letterSpacing = 0.5.sp
         )
     }

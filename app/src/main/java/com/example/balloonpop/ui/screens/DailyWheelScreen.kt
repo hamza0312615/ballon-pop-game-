@@ -537,10 +537,13 @@ private fun FortuneWheelDisc(
                 strokeWidth = 2f
             )
 
-            // Text on segment
+            // Text on segment — Pass 20: labels pulled slightly inward
+            // (0.65R -> 0.60R) and shrunk (34f -> 30f below) so the top
+            // segment's label clears the pointer instead of hiding
+            // behind it.
             val midAngleDeg = ((startAngle + sweepAngle / 2f) % 360f + 360f) % 360f
             val midAngleRad = Math.toRadians(midAngleDeg.toDouble())
-            val textDist = radius * 0.65f
+            val textDist = radius * 0.60f
             val tx = (cx + textDist * cos(midAngleRad)).toFloat()
             val ty = (cy + textDist * sin(midAngleRad)).toFloat()
 
@@ -551,14 +554,14 @@ private fun FortuneWheelDisc(
                 rotate(textRotation)
                 val paint = Paint().apply {
                     color = android.graphics.Color.WHITE
-                    textSize = 34f
+                    textSize = 30f
                     isFakeBoldText = true
                     textAlign = Paint.Align.CENTER
                     setShadowLayer(4f, 0f, 2f, android.graphics.Color.DKGRAY)
                 }
                 val lines = seg.label.split("\n")
                 lines.forEachIndexed { lIdx, line ->
-                    drawText(line, 0f, (lIdx * 34f) - 10f, paint)
+                    drawText(line, 0f, (lIdx * 30f) - 9f, paint)
                 }
                 restore()
             }

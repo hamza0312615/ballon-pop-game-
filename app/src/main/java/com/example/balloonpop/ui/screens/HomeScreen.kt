@@ -93,6 +93,9 @@ fun HomeScreen(
     lives: Int = 5,
     currentLevel: Int = 1,
     zoneName: String = "Twilight Grove",
+    // Pass 20: stars earned in the current zone (from MainActivity's
+    // completedLevels) for the zone-progress strip under the tile grid.
+    zoneStars: Int = 0,
     onOpenCampaign: () -> Unit,
     onOpenSkillVault: () -> Unit,
     onOpenEndless: () -> Unit,
@@ -606,6 +609,22 @@ fun HomeScreen(
                     }
                 }
             }
+
+            // Pass 20: the space below the tile grid was a ~29%-of-screen
+            // empty wooden-floor band. A weighted spacer now distributes
+            // the leftover height and the zone-progress strip anchors the
+            // bottom of the screen, so Home reads as a finished stage at
+            // any screen height.
+            Spacer(modifier = Modifier.weight(1f))
+
+            HomeZoneProgressStrip(
+                zoneName = zoneName,
+                currentLevel = currentLevel,
+                zoneStars = zoneStars,
+                dailyGiftReady = dailyTrackCanClaimToday
+            )
+
+            Spacer(modifier = Modifier.height(DesignTokens.Space4))
         }
 
         // Pass 9: 7-Day Daily Gifts Calendar Dialog
@@ -673,7 +692,9 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(DesignTokens.Space4))
 
                         JellyButton(
-                            text = "GOT IT! LET'S PLAY",
+                            // Pass 20: the button only dismisses the dialog —
+                            // the label now says exactly that.
+                            text = "GOT IT!",
                             onClick = {
                                 // Pass 18: dismiss only — the player is
                                 // already on Home; the button used to throw
@@ -701,6 +722,118 @@ fun HomeScreen(
                 },
                 onClose = { showCustomChallenge = false }
             )
+        }
+    }
+}
+
+/**
+ * Pass 20: bottom-of-Home zone progress strip. Uses only state Home
+ * already receives (zone name, next stage, zone stars from
+ * MainActivity, and the daily-track claim flag) — no new plumbing.
+ */
+@Composable
+private fun HomeZoneProgressStrip(
+    zoneName: String,
+    currentLevel: Int,
+    zoneStars: Int,
+    dailyGiftReady: Boolean
+) {
+    val zoneTotalStars = 30
+    val progress = (zoneStars.toFloat() / zoneTotalStars.toFloat()).coerceIn(0f, 1f)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(10.dp, RoundedCornerShape(20.dp), spotColor = Color(0x66000000))
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF55277D), Color(0xFF381454))
+                )
+            )
+            .border(
+                1.5.dp,
+                Brush.verticalGradient(
+                    listOf(Color(0xFFFFE9A8), Color(0xFFB8860B))
+                ),
+                RoundedCornerShape(20.dp)
+            )
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = "ZONE PROGRESS",
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black,
+                        color = ToyGold,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = zoneName,
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        maxLines = 1
+                    )
+                }
+                Text(
+                    text = "⭐ $zoneStars/$zoneTotalStars",
+                    fontFamily = Baloo2FontFamily,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    color = ToyGold
+                )
+            }
+
+            // Zone star progress bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(DesignTokens.ShapePill)
+                    .background(Color(0xFF1D0B33))
+                    .border(1.dp, Color(0x55FFFFFF), DesignTokens.ShapePill)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .fillMaxHeight()
+                        .clip(DesignTokens.ShapePill)
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(HeroLimeTop, HeroLimeBottom)
+                            )
+                        )
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Next: Stage $currentLevel",
+                    fontFamily = NunitoFontFamily,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFE2D4F0)
+                )
+                Text(
+                    text = if (dailyGiftReady) "🎁 Daily gift ready — tap Gifts" else "Daily gift claimed ✓",
+                    fontFamily = NunitoFontFamily,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (dailyGiftReady) ToyGold else Color(0xFFCDB8EC)
+                )
+            }
         }
     }
 }
@@ -743,37 +876,71 @@ private fun HomeIconActionButton(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(contentAlignment = Alignment.TopEnd) {
-            // Chunky violet toy tile with beveled highlight
+            // Pass 20: Toybox tile — each tile now wears its OWN accent
+            // colour as a chunky gradient face (bright accent top melting
+            // into deep plum), with a glossy top crescent and the drawn
+            // icon sitting large on a dark glass plate. The old uniform
+            // flat dark-purple squares read as placeholders next to the
+            // rest of the game.
             Box(
                 modifier = Modifier
-                    .size(50.dp)
-                    .shadow(4.dp, RoundedCornerShape(14.dp), spotColor = Color(0x66000000))
-                    .clip(RoundedCornerShape(14.dp))
+                    .size(56.dp)
+                    .shadow(5.dp, RoundedCornerShape(16.dp), spotColor = Color(0x66000000))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color(0xFF6B2D9E), Color(0xFF43186B))
+                            listOf(
+                                accentColor.copy(alpha = 0.95f),
+                                accentColor.copy(alpha = 0.55f),
+                                Color(0xFF2A1450)
+                            )
                         )
                     )
                     .border(
                         1.5.dp,
                         Brush.verticalGradient(
-                            listOf(Color.White.copy(alpha = 0.50f), accentColor.copy(alpha = 0.85f))
+                            listOf(Color.White.copy(alpha = 0.65f), accentColor.copy(alpha = 0.85f))
                         ),
-                        RoundedCornerShape(14.dp)
+                        RoundedCornerShape(16.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                iconContent()
+                // Gloss crescent across the top of the face
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth(0.82f)
+                        .height(16.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.White.copy(alpha = 0.35f), Color.Transparent)
+                            )
+                        )
+                )
+                // Icon plate: dark glass disc so every glyph pops at size
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color(0x40000000))
+                        .border(1.dp, Color.White.copy(alpha = 0.30f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(modifier = Modifier.scale(1.22f)) {
+                        iconContent()
+                    }
+                }
             }
 
-            // Small status badge (FREE / SALE / NEW), kept off the label so the
-            // caption always stays on one line.
+            // Small status badge (FREE / SALE / NEW / CLAIM).
+            // Pass 20: seated ON the tile's top-right corner, inset inside
+            // the tile bounds — the old offset hung it half-off the tile.
             if (badge != null) {
                 Box(
                     modifier = Modifier
-                        // Pass 18: 2.dp keeps the badge inside the bar's
-                        // right edge on narrow widths (was 4.dp, poking out).
-                        .offset(x = 2.dp, y = (-2).dp)
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-3).dp, y = 3.dp)
                         .clip(DesignTokens.ShapeSmall)
                         .background(DesignTokens.DangerRed)
                         .border(1.dp, Color.White, DesignTokens.ShapeSmall)
@@ -796,7 +963,7 @@ private fun HomeIconActionButton(
         Text(
             text = label.uppercase(),
             fontFamily = Baloo2FontFamily,
-            fontSize = 10.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Black,
             color = Color.White,
             letterSpacing = 0.5.sp,

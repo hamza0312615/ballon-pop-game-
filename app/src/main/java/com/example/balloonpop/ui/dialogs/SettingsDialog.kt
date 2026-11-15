@@ -270,9 +270,9 @@ fun SettingsDialog(
                 // (versionName "1.4", app/build.gradle.kts); the old string
                 // claimed a different product, a wrong version, and an
                 // unprovable "60-120 FPS" figure.
-                text = "Balloon Pop Deluxe v1.4 • Smooth high-FPS gameplay",
-                fontSize = 10.sp,
-                color = Color(0xFFB79BDB),
+                text = "Balloon Pop Deluxe v1.4",
+                fontSize = 11.sp,
+                color = Color(0xFFD9C8F5),
                 textAlign = TextAlign.Center
             )
         }
@@ -363,7 +363,8 @@ private fun AudioHapticsSection(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         // --- 1. Master Audio ---
         item {
@@ -837,7 +838,8 @@ private fun GraphicsPerfSection(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item {
             SettingCard(title = "PERFORMANCE & REFRESH RATE") {
@@ -946,7 +948,7 @@ private fun GraphicsPerfSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 10.dp)) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -981,7 +983,8 @@ private fun GraphicsPerfSection(
 private fun CodexGuideSection() {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item {
             Text(
@@ -999,7 +1002,7 @@ private fun CodexGuideSection() {
             Triple("Rainbow Balloon", "+30 pts • +2🪙", "Prismatic balloon with high combo power and instant coins."),
             Triple("Freeze Balloon", "Slow-Mo 4s", "Instant deep freeze! Slows all rising balloons by 65% for easy combo chains."),
             Triple("Multiplier Balloon", "2X Score 5s", "Doubles all points and combo rewards for 5 seconds."),
-            Triple("Heart Balloon", "+1 Life / +10 pts", "Restores 1 missing heart life or gives bonus points if full."),
+            Triple("Heart Balloon", "+1 Life / +10 pts", "Restores 1 missing heart. If hearts are full, gives bonus points instead."),
             Triple("Bomb Balloon", "Danger! -1 Life", "Avoid hitting! Causes severe shockwave and deducts 1 life heart.")
         )
 
@@ -1239,7 +1242,7 @@ private fun DataManagementSection(
                 Text(
                     text = "Permanently reset all campaign stars, hammer weapons, frames, blades, coins, and high scores back to factory default.",
                     fontSize = 11.sp,
-                    color = Color(0xFFCDB8EC)
+                    color = Color(0xFFE8DFFB)
                 )
                 Button(
                     onClick = onRequestReset,

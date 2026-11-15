@@ -942,6 +942,12 @@ object ZoneEnvironmentRenderer {
     // midground code already builds the same way.
     // ========================================================
     private fun DrawScope.drawScenicSilhouettes(theme: ZoneVisualTheme, w: Float, h: Float) {
+        // Pass 20 (scenery round 2): soft ground-detail band along the
+        // lower third — three overlapping shadow hills so the field
+        // reads as ground the road travels over, not a flat gradient.
+        drawOval(Color(0x38000000), topLeft = Offset(-w * 0.25f, h * 0.84f), size = Size(w * 0.95f, h * 0.24f))
+        drawOval(Color(0x38000000), topLeft = Offset(w * 0.42f, h * 0.88f), size = Size(w * 0.90f, h * 0.22f))
+        drawOval(Color(0x4D000000), topLeft = Offset(w * 0.02f, h * 0.94f), size = Size(w * 0.75f, h * 0.18f))
         when (theme.envType) {
             ZoneEnvironmentType.NEON_GLADE -> drawForestSilhouettes(w, h)
             ZoneEnvironmentType.PRISM_PEAKS -> drawCrystalSilhouettes(w, h)
@@ -995,6 +1001,20 @@ object ZoneEnvironmentRenderer {
         drawPath(shardPath, color)
     }
 
+    /**
+     * Pass 20: crystal shard with facet highlight lines — a pale spine
+     * and one diagonal facet edge so big near-band crystals catch light
+     * instead of reading as flat black spikes.
+     */
+    private fun DrawScope.drawSilhouetteShardLit(cx: Float, baseY: Float, height: Float, color: Color) {
+        drawSilhouetteShard(cx, baseY, height, color)
+        val halfW = height * 0.20f
+        val facet = Color.White.copy(alpha = 0.28f)
+        drawLine(facet, Offset(cx, baseY - height * 0.96f), Offset(cx, baseY - height * 0.10f), strokeWidth = 2f)
+        drawLine(facet, Offset(cx, baseY - height * 0.96f), Offset(cx + halfW * 0.85f, baseY - height * 0.40f), strokeWidth = 1.5f)
+        drawLine(facet, Offset(cx, baseY - height * 0.55f), Offset(cx - halfW * 0.85f, baseY - height * 0.40f), strokeWidth = 1.5f)
+    }
+
     /** Flat-top mesa / butte silhouette. */
     private fun DrawScope.drawSilhouetteMesa(cx: Float, baseY: Float, width: Float, height: Float, color: Color) {
         val mesaPath = Path().apply {
@@ -1031,8 +1051,8 @@ object ZoneEnvironmentRenderer {
     }
 
     private fun DrawScope.drawForestSilhouettes(w: Float, h: Float) {
-        val far = Color(0x4D03100B)   // ~30% near-black green
-        val near = Color(0x8003100B)  // ~50% near-black green
+        val far = Color(0x7303100B)   // ~30% near-black green
+        val near = Color(0xA603100B)  // ~50% near-black green
         // FAR band — smaller, fainter, scattered across the mid-field
         drawSilhouetteTree(w * 0.20f, h * 0.34f, h * 0.16f, far)
         drawSilhouetteTree(w * 0.64f, h * 0.22f, h * 0.13f, far)
@@ -1045,11 +1065,18 @@ object ZoneEnvironmentRenderer {
         drawSilhouetteTree(w * 0.93f, h * 1.02f, h * 0.21f, near)
         drawSilhouetteMushroom(w * 0.86f, h * 0.40f, w * 0.13f, near)
         drawSilhouetteMushroom(w * 0.16f, h * 0.52f, w * 0.11f, near)
+        // Pass 20 round 2: second scatter — mid-field no longer bare
+        drawSilhouetteTree(w * 0.48f, h * 0.30f, h * 0.11f, far)
+        drawSilhouetteTree(w * 0.72f, h * 0.70f, h * 0.13f, far)
+        drawSilhouetteMushroom(w * 0.30f, h * 0.44f, w * 0.09f, far)
+        drawSilhouetteTree(w * 0.30f, h * 1.03f, h * 0.19f, near)
+        drawSilhouetteMushroom(w * 0.66f, h * 0.90f, w * 0.12f, near)
+        drawSilhouetteTree(w * 0.58f, h * 0.50f, h * 0.10f, far)
     }
 
     private fun DrawScope.drawCrystalSilhouettes(w: Float, h: Float) {
-        val far = Color(0x4D0F0618)   // ~30% deep cavern violet-black
-        val near = Color(0x800F0618)  // ~50%
+        val far = Color(0x730F0618)   // ~30% deep cavern violet-black
+        val near = Color(0xA60F0618)  // ~50%
         // FAR band
         drawSilhouetteShard(w * 0.22f, h * 0.30f, h * 0.15f, far)
         drawSilhouetteShard(w * 0.68f, h * 0.18f, h * 0.13f, far)
@@ -1060,11 +1087,20 @@ object ZoneEnvironmentRenderer {
         drawSilhouetteShard(w * 0.08f, h * 1.0f, h * 0.26f, near)
         drawSilhouetteShard(w * 0.94f, h * 0.98f, h * 0.23f, near)
         drawSilhouetteShard(w * 0.80f, h * 0.68f, h * 0.15f, near)
+        // Pass 20 round 2: Prism Peaks was ~80% bare — more shards,
+        // larger, and the near band gets lit facets (white edge lines)
+        drawSilhouetteShard(w * 0.48f, h * 0.38f, h * 0.17f, far)
+        drawSilhouetteShard(w * 0.14f, h * 0.62f, h * 0.13f, far)
+        drawSilhouetteShard(w * 0.90f, h * 0.78f, h * 0.12f, far)
+        drawSilhouetteShard(w * 0.30f, h * 0.84f, h * 0.11f, far)
+        drawSilhouetteShardLit(w * 0.30f, h * 1.0f, h * 0.22f, near)
+        drawSilhouetteShardLit(w * 0.62f, h * 0.94f, h * 0.18f, near)
+        drawSilhouetteShardLit(w * 0.50f, h * 0.66f, h * 0.13f, near)
     }
 
     private fun DrawScope.drawMesaSilhouettes(w: Float, h: Float) {
-        val far = Color(0x4D260A16)   // ~30% canyon shadow plum
-        val near = Color(0x80260A16)  // ~50%
+        val far = Color(0x73260A16)   // ~30% canyon shadow plum
+        val near = Color(0xA6260A16)  // ~50%
         // FAR band
         drawSilhouetteMesa(w * 0.24f, h * 0.30f, w * 0.34f, h * 0.07f, far)
         drawSilhouetteMesa(w * 0.76f, h * 0.22f, w * 0.40f, h * 0.08f, far)
@@ -1075,11 +1111,16 @@ object ZoneEnvironmentRenderer {
         drawSilhouetteMesa(w * 0.86f, h * 1.0f, w * 0.44f, h * 0.09f, near)
         drawSilhouetteCactus(w * 0.08f, h * 0.66f, h * 0.15f, near)
         drawSilhouetteCactus(w * 0.93f, h * 0.42f, h * 0.13f, near)
+        // Pass 20 round 2: second scatter
+        drawSilhouetteMesa(w * 0.40f, h * 0.78f, w * 0.36f, h * 0.07f, far)
+        drawSilhouetteCactus(w * 0.62f, h * 0.34f, h * 0.10f, far)
+        drawSilhouetteCactus(w * 0.45f, h * 0.95f, h * 0.14f, near)
+        drawSilhouetteMesa(w * 0.58f, h * 1.02f, w * 0.40f, h * 0.08f, near)
     }
 
     private fun DrawScope.drawKelpSilhouettes(w: Float, h: Float) {
-        val far = Color(0x4D04263B)   // ~30% deep reef teal
-        val near = Color(0x8004263B)  // ~50%
+        val far = Color(0x7304263B)   // ~30% deep reef teal
+        val near = Color(0xA604263B)  // ~50%
         // FAR band
         drawSilhouetteKelp(w * 0.20f, h * 0.55f, h * 0.30f, far)
         drawSilhouetteKelp(w * 0.70f, h * 0.45f, h * 0.36f, far)
@@ -1088,11 +1129,16 @@ object ZoneEnvironmentRenderer {
         drawSilhouetteKelp(w * 0.08f, h * 1.0f, h * 0.45f, near)
         drawSilhouetteKelp(w * 0.93f, h * 1.0f, h * 0.50f, near)
         drawSilhouetteKelp(w * 0.82f, h * 0.75f, h * 0.34f, near)
+        // Pass 20 round 2: second scatter
+        drawSilhouetteKelp(w * 0.32f, h * 0.68f, h * 0.32f, far)
+        drawSilhouetteKelp(w * 0.58f, h * 0.30f, h * 0.26f, far)
+        drawSilhouetteKelp(w * 0.25f, h * 1.0f, h * 0.42f, near)
+        drawSilhouetteKelp(w * 0.60f, h * 0.95f, h * 0.38f, near)
     }
 
     private fun DrawScope.drawGenericSilhouettes(theme: ZoneVisualTheme, w: Float, h: Float) {
-        val far = Color(0x33000000)   // 20% black
-        val near = Color(0x52000000)  // ~32% black
+        val far = Color(0x59000000)   // 20% black
+        val near = Color(0x73000000)  // ~32% black
         // FAR band — soft rolling mounds sunk into the lower field + one tree
         drawCircle(color = far, radius = w * 0.38f, center = Offset(w * 0.25f, h * 1.06f))
         drawCircle(color = far, radius = w * 0.44f, center = Offset(w * 0.78f, h * 1.08f))
@@ -1101,6 +1147,11 @@ object ZoneEnvironmentRenderer {
         drawCircle(color = near, radius = w * 0.34f, center = Offset(w * 0.05f, h * 1.04f))
         drawCircle(color = near, radius = w * 0.38f, center = Offset(w * 0.98f, h * 1.05f))
         drawSilhouetteTree(w * 0.12f, h * 1.0f, h * 0.22f, near)
+        // Pass 20 round 2: second scatter
+        drawSilhouetteTree(w * 0.55f, h * 0.42f, h * 0.12f, far)
+        drawCircle(color = far, radius = w * 0.40f, center = Offset(w * 0.50f, h * 1.10f))
+        drawSilhouetteTree(w * 0.88f, h * 1.0f, h * 0.18f, near)
+        drawSilhouetteMushroom(w * 0.40f, h * 0.66f, w * 0.10f, far)
     }
 
     // ========================================================
