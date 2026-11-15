@@ -231,7 +231,7 @@ fun TutorialOverlay(
                         text = "Skip Tutorial ✕",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFFCDB8EC),
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .clickable(onClick = onSkip)
@@ -265,7 +265,7 @@ fun TutorialOverlay(
                             text = data.description,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFFCBD5E1),
+                            color = Color(0xFFF5EEFF),
                             textAlign = TextAlign.Center,
                             lineHeight = 19.sp
                         )

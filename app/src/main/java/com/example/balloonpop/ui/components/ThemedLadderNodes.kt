@@ -111,7 +111,7 @@ fun ThemedLadderTileNode(
                     elevation = DesignTokens.ElevationMedium,
                     shape = CircleShape,
                     spotColor = when {
-                        isHardSpike -> Color(0xFFEF4444)
+                        isHardSpike -> Color(0xFFFF5252)
                         isCleared -> ToyGoldGlow
                         isUnlocked -> HeroLimeBottom
                         else -> Color(0x66000000)
@@ -131,7 +131,7 @@ fun ThemedLadderTileNode(
                     width = if (isHardSpike || isBoss) 3.5.dp else 2.2.dp,
                     brush = Brush.verticalGradient(
                         when {
-                            isHardSpike -> listOf(Color(0xFFFF8A8A), Color(0xFFEF4444), Color(0xFF991B1B))
+                            isHardSpike -> listOf(Color(0xFFFF8A8A), Color(0xFFFF5252), Color(0xFF991B1B))
                             isBoss -> listOf(Color(0xFFFFEA00), ToyGold, ToyGoldShelf)
                             isCleared -> listOf(Color.White, ToyGold, ToyGoldShelf)
                             isUnlocked -> listOf(Color.White, HeroLimeBottom)
@@ -249,7 +249,7 @@ fun ThemedLadderTileNode(
                     text = "$stageNumber",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFFCDB8EC)
                 )
             }
         }
@@ -321,14 +321,14 @@ fun ThemedLadderActiveHeroNode(
                 .shadow(
                     elevation = DesignTokens.ElevationActive,
                     shape = CircleShape,
-                    spotColor = if (isHardSpike) Color(0xFFEF4444) else HeroLimeBottom
+                    spotColor = if (isHardSpike) Color(0xFFFF5252) else HeroLimeBottom
                 )
                 .clip(CircleShape)
                 .background(DesignTokens.HeroLimeGradient)
                 .border(
                     width = if (isBoss || isHardSpike) 3.5.dp else 2.8.dp,
                     brush = Brush.verticalGradient(
-                        if (isHardSpike) listOf(Color(0xFFFF8A8A), Color(0xFFEF4444), Color(0xFF991B1B))
+                        if (isHardSpike) listOf(Color(0xFFFF8A8A), Color(0xFFFF5252), Color(0xFF991B1B))
                         else listOf(Color.White, ToyGold, ToyGoldShelf)
                     ),
                     shape = CircleShape

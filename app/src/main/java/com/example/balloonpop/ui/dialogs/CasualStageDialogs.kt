@@ -108,7 +108,7 @@ fun StageIntroRibbon(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFF382405))
+                                .background(Color(0xFF4A3205))
                                 .border(1.dp, Color(0xFFFFD700), RoundedCornerShape(8.dp))
                                 .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
@@ -119,14 +119,14 @@ fun StageIntroRibbon(
                                 text = if (level > 0) "STAGE $level \u2022 $zoneName" else "CUSTOM CHALLENGE",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Black,
-                                color = Color(0xFFFDE68A)
+                                color = Color(0xFFFFE29A)
                             )
                         }
                         Text(
                             text = "START! 🎯",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFF4A90C4)
+                            color = Color(0xFFA6F750)
                         )
                     }
                     Spacer(modifier = Modifier.height(4.dp))

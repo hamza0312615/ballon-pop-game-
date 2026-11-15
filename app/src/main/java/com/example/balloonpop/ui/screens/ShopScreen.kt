@@ -246,7 +246,7 @@ fun ShopScreen(
                             .border(
                                 width = 1.dp,
                                 brush = Brush.verticalGradient(
-                                    listOf(Color(0xFF38BDF8), Color(0xFF0369A1))
+                                    listOf(Color(0xFFA6F750), Color(0xFF0369A1))
                                 ),
                                 shape = RoundedCornerShape(18.dp)
                             )
@@ -302,7 +302,7 @@ fun ShopScreen(
                             listOf(Color(0xFF064E3B), Color(0xFF059669), Color(0xFF10B981))
                         )
                     )
-                    .border(1.5.dp, Color(0xFF34D399), RoundedCornerShape(22.dp))
+                    .border(1.5.dp, Color(0xFF7EE82E), RoundedCornerShape(22.dp))
                     .clickable { onWatchAdForCoins() }
                     .testTag("shop_watch_ad_banner"),
                 contentAlignment = Alignment.Center
@@ -436,8 +436,8 @@ fun ShopScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFF0C2B40))
-                        .border(1.dp, Color(0xFF38BDF8), RoundedCornerShape(12.dp))
+                        .background(Color(0xFF2A1450))
+                        .border(1.dp, Color(0xFFA6F750), RoundedCornerShape(12.dp))
                         .padding(vertical = 6.dp, horizontal = 12.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -446,7 +446,7 @@ fun ShopScreen(
                         fontFamily = NunitoFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF7DD3FC),
+                        color = Color(0xFFD8F7B0),
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                         textAlign = TextAlign.Center
@@ -547,7 +547,7 @@ fun ShopScreen(
                                         title = frame.name,
                                         description = frame.description,
                                         icon = "🖼️",
-                                        iconBgColor = Color(0xFF38BDF8),
+                                        iconBgColor = Color(0xFFA6F750),
                                         priceCoins = if (frame.currency == CurrencyType.COINS) frame.cost else 0,
                                         priceGems = if (frame.currency == CurrencyType.GEMS) frame.cost else 0,
                                         isUnlocked = isUnlocked,
@@ -574,7 +574,7 @@ fun ShopScreen(
                                         title = blade.name,
                                         description = blade.description,
                                         icon = "⚔️",
-                                        iconBgColor = Color(0xFF34D399),
+                                        iconBgColor = Color(0xFF7EE82E),
                                         priceCoins = if (blade.currency == CurrencyType.COINS) blade.cost else 0,
                                         priceGems = if (blade.currency == CurrencyType.GEMS) blade.cost else 0,
                                         isUnlocked = isUnlocked,
@@ -748,7 +748,7 @@ private fun ShopCategoryTile(
                 fontFamily = Baloo2FontFamily,
                 fontSize = 12.sp,
                 fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
-                color = if (isSelected) Color(0xFFFEF08A) else Color(0xFFCBD5E1),
+                color = if (isSelected) Color(0xFFFEF08A) else Color(0xFFF5EEFF),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1006,11 +1006,11 @@ private fun BoosterItemCard(
     modifier: Modifier = Modifier
 ) {
     val accent = when (booster) {
-        InGameBooster.THUNDER_STRIKE -> Color(0xFF38BDF8)
+        InGameBooster.THUNDER_STRIKE -> Color(0xFFA6F750)
         InGameBooster.COLOR_BOMB -> Color(0xFFB03060)
-        InGameBooster.HAMMER_SMASH -> Color(0xFFFBBF24)
-        InGameBooster.FREEZE_BLIZZARD -> Color(0xFF4A90C4)
-        InGameBooster.TORNADO_VORTEX -> Color(0xFF34D399)
+        InGameBooster.HAMMER_SMASH -> Color(0xFFFFC531)
+        InGameBooster.FREEZE_BLIZZARD -> Color(0xFFA6F750)
+        InGameBooster.TORNADO_VORTEX -> Color(0xFF7EE82E)
     }
 
     UniformShopCard(
@@ -1073,13 +1073,13 @@ private fun CosmeticItemCard(
         buttonGradient = when {
             isEquipped -> Brush.linearGradient(listOf(Color(0xFF064E3B), Color(0xFF064E3B)))
             isUnlocked -> Brush.horizontalGradient(listOf(Color(0xFF10B981), Color(0xFF059669)))
-            usesGems -> Brush.horizontalGradient(listOf(Color(0xFF0284C7), Color(0xFF0369A1)))
+            usesGems -> Brush.horizontalGradient(listOf(Color(0xFF63C70A), Color(0xFF0369A1)))
             else -> DesignTokens.GoldGradient
         },
         buttonEnabled = !isEquipped,
         onButtonClick = onAction,
         borderBrush = Brush.verticalGradient(
-            if (isEquipped) listOf(Color(0xFF34D399), Color(0xFF059669))
+            if (isEquipped) listOf(Color(0xFF7EE82E), Color(0xFF059669))
             else listOf(Color(0x33A78BFA), Color(0x11FFFFFF))
         ),
         modifier = modifier
@@ -1117,11 +1117,11 @@ private fun DiamondStoreCard(
             else -> "BUY"
         },
         buttonGradient = Brush.horizontalGradient(
-            listOf(Color(0xFF0284C7), Color(0xFF0369A1))
+            listOf(Color(0xFF63C70A), Color(0xFF0369A1))
         ),
         onButtonClick = onClaim,
         borderBrush = Brush.verticalGradient(
-            listOf(Color(0xFF38BDF8), Color(0xFF0369A1))
+            listOf(Color(0xFFA6F750), Color(0xFF0369A1))
         ),
         modifier = modifier
     )

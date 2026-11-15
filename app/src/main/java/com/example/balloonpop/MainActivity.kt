@@ -11,6 +11,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
@@ -128,9 +134,23 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
 
-                            // Active Screen Container
+                            // Active Screen Container — Pass 11: produced screen
+                            // transitions (crossfade + a whisper of scale on menu
+                            // screens, quick fade into/out of gameplay) instead of
+                            // the prototype hard cut.
                             Box(modifier = Modifier.weight(1f)) {
-                                when (uiState.currentScreen) {
+                                AnimatedContent(
+                                    targetState = uiState.currentScreen,
+                                    transitionSpec = {
+                                        if (targetState == CurrentScreen.GAMEPLAY || initialState == CurrentScreen.GAMEPLAY) {
+                                            fadeIn(tween(160)) togetherWith fadeOut(tween(120))
+                                        } else {
+                                            (fadeIn(tween(240)) + scaleIn(initialScale = 0.985f, animationSpec = tween(240))) togetherWith fadeOut(tween(160))
+                                        }
+                                    },
+                                    label = "screenTransition"
+                                ) { animatedScreen ->
+                                when (animatedScreen) {
                                     CurrentScreen.SPLASH -> {
                                         SplashScreen(
                                             onSplashFinished = {
@@ -411,6 +431,7 @@ class MainActivity : ComponentActivity() {
                                             steadyHandsMissedCount = uiState.steadyHandsMissedCount
                                         )
                                     }
+                                }
                                 }
                             }
                         }

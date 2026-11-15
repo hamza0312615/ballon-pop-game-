@@ -67,7 +67,7 @@ enum class JewelButtonStyle(
     // Toy Orange (Secondary actions & prizes)
     GOLD(ToyOrangeTop, ToyOrangeBottom, ToyOrangeShelf, Color.White),
     // Toy Cyan / Sky (Settings & info)
-    SKY(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1), Color.White),
+    SKY(Color(0xFFA6F750), Color(0xFF63C70A), Color(0xFF0369A1), Color.White),
     // Toy Green
     MINT(Color(0xFF4ADE80), Color(0xFF16A34A), Color(0xFF15803D), Color.White),
     // Toy Red (Danger / retry / discount)

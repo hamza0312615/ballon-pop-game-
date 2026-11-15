@@ -85,12 +85,12 @@ fun SettingsDialog(
                 .widthIn(max = 420.dp)
                 .fillMaxWidth(0.92f)
                 .fillMaxHeight(0.86f)
-                .shadow(24.dp, RoundedCornerShape(26.dp), spotColor = Color(0x664A90C4))
+                .shadow(24.dp, RoundedCornerShape(26.dp), spotColor = Color(0x6633103D))
                 .clip(RoundedCornerShape(26.dp))
-                .background(Color(0xFF0C0C16))
+                .background(Color(0xFF33103D))
                 .border(
                     1.5.dp,
-                    Color(0xFF28283E),
+                    Color(0xFF7A3EAE),
                     RoundedCornerShape(26.dp)
                 )
                 .padding(18.dp),
@@ -120,8 +120,8 @@ fun SettingsDialog(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF1E1E2E))
-                        .border(1.dp, Color(0xFF383852), CircleShape)
+                        .background(Color(0xFF55277D))
+                        .border(1.dp, Color(0xFF7A3EAE), CircleShape)
                         .clickable { onClose() }
                         .testTag("close_settings_button"),
                     contentAlignment = Alignment.Center
@@ -146,33 +146,33 @@ fun SettingsDialog(
                     val isSelected = selectedSection == sec
                     val bg = if (isSelected) {
                         when (sec) {
-                            SettingsSection.AUDIO_HAPTICS -> Color(0xFF0C2B40)
-                            SettingsSection.GRAPHICS_PERF -> Color(0xFF27134A)
-                            SettingsSection.CODEX_GUIDE -> Color(0xFF382405)
-                            SettingsSection.PRIVACY_POLICY -> Color(0xFF0C381E)
-                            SettingsSection.DATA_MANAGEMENT -> Color(0xFF3D0C13)
+                            SettingsSection.AUDIO_HAPTICS -> Color(0xFF2A1450)
+                            SettingsSection.GRAPHICS_PERF -> Color(0xFF3D165C)
+                            SettingsSection.CODEX_GUIDE -> Color(0xFF4A3205)
+                            SettingsSection.PRIVACY_POLICY -> Color(0xFF1E4608)
+                            SettingsSection.DATA_MANAGEMENT -> Color(0xFF571414)
                         }
-                    } else Color(0xFF141422)
+                    } else Color(0xFF3D165C)
 
                     val borderC = if (isSelected) {
                         when (sec) {
-                            SettingsSection.AUDIO_HAPTICS -> Color(0xFF38BDF8)
-                            SettingsSection.GRAPHICS_PERF -> Color(0xFFA855F7)
-                            SettingsSection.CODEX_GUIDE -> Color(0xFFFBBF24)
-                            SettingsSection.PRIVACY_POLICY -> Color(0xFF34D399)
-                            SettingsSection.DATA_MANAGEMENT -> Color(0xFFF87171)
+                            SettingsSection.AUDIO_HAPTICS -> Color(0xFFA6F750)
+                            SettingsSection.GRAPHICS_PERF -> Color(0xFFB26BFF)
+                            SettingsSection.CODEX_GUIDE -> Color(0xFFFFC531)
+                            SettingsSection.PRIVACY_POLICY -> Color(0xFF7EE82E)
+                            SettingsSection.DATA_MANAGEMENT -> Color(0xFFFF7A7A)
                         }
-                    } else Color(0xFF26263B)
+                    } else Color(0xFF4A2470)
 
                     val textC = if (isSelected) {
                         when (sec) {
-                            SettingsSection.AUDIO_HAPTICS -> Color(0xFF7DD3FC)
-                            SettingsSection.GRAPHICS_PERF -> Color(0xFFD8B4FE)
-                            SettingsSection.CODEX_GUIDE -> Color(0xFFFDE68A)
-                            SettingsSection.PRIVACY_POLICY -> Color(0xFF6EE7B7)
-                            SettingsSection.DATA_MANAGEMENT -> Color(0xFFFCA5A5)
+                            SettingsSection.AUDIO_HAPTICS -> Color(0xFFD8F7B0)
+                            SettingsSection.GRAPHICS_PERF -> Color(0xFFE3C8FF)
+                            SettingsSection.CODEX_GUIDE -> Color(0xFFFFE29A)
+                            SettingsSection.PRIVACY_POLICY -> Color(0xFFB9F58A)
+                            SettingsSection.DATA_MANAGEMENT -> Color(0xFFFFB3B3)
                         }
-                    } else Color(0xFF94A3B8)
+                    } else Color(0xFFCDB8EC)
 
                     Box(
                         modifier = Modifier
@@ -254,7 +254,7 @@ fun SettingsDialog(
             Text(
                 text = "Balloon Pop Pro v2.1.0 • Smooth 60-120 FPS Engine",
                 fontSize = 10.sp,
-                color = Color(0xFF64748B),
+                color = Color(0xFFB79BDB),
                 textAlign = TextAlign.Center
             )
         }
@@ -271,8 +271,8 @@ fun SettingsDialog(
                     modifier = Modifier
                         .widthIn(max = 320.dp)
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color(0xFF141422))
-                        .border(1.5.dp, Color(0xFFEF4444), RoundedCornerShape(20.dp))
+                        .background(Color(0xFF3D165C))
+                        .border(1.5.dp, Color(0xFFFF5252), RoundedCornerShape(20.dp))
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -282,13 +282,13 @@ fun SettingsDialog(
                         text = "RESET ALL PROGRESS?",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFFF87171),
+                        color = Color(0xFFFF7A7A),
                         textAlign = TextAlign.Center
                     )
                     Text(
                         text = "This will wipe all coins, diamonds, weapons, unlocked frames, campaign stars, and records permanently.",
                         fontSize = 12.sp,
-                        color = Color(0xFFCBD5E1),
+                        color = Color(0xFFF5EEFF),
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -298,17 +298,17 @@ fun SettingsDialog(
                     ) {
                         Button(
                             onClick = { showResetConfirmDialog = false },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E2E)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF55277D)),
                             modifier = Modifier.weight(1f).testTag("cancel_reset_button")
                         ) {
-                            Text("Cancel", fontSize = 12.sp, color = Color(0xFFCBD5E1))
+                            Text("Cancel", fontSize = 12.sp, color = Color(0xFFF5EEFF))
                         }
                         Button(
                             onClick = {
                                 showResetConfirmDialog = false
                                 onResetAllData()
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5252)),
                             modifier = Modifier.weight(1f).testTag("confirm_reset_button")
                         ) {
                             Text("WIPE DATA", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
@@ -370,7 +370,7 @@ private fun AudioHapticsSection(
                                 Text(
                                     text = "Global sound switch for all game audio",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = Color(0xFFCDB8EC)
                                 )
                             }
                         }
@@ -378,8 +378,8 @@ private fun AudioHapticsSection(
                             checked = !isSoundMuted,
                             onCheckedChange = { onToggleMute() },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFF4A90C4),
-                                checkedTrackColor = Color(0xFF0C2B40)
+                                checkedThumbColor = Color(0xFFA6F750),
+                                checkedTrackColor = Color(0xFF2A1450)
                             ),
                             modifier = Modifier.testTag("mute_toggle_switch")
                         )
@@ -391,12 +391,12 @@ private fun AudioHapticsSection(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(text = "Master Volume", fontSize = 12.sp, color = Color(0xFF94A3B8))
+                                Text(text = "Master Volume", fontSize = 12.sp, color = Color(0xFFCDB8EC))
                                 Text(
                                     text = "${(soundVolume * 100).toInt()}%",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF38BDF8)
+                                    color = Color(0xFFA6F750)
                                 )
                             }
                             Slider(
@@ -404,9 +404,9 @@ private fun AudioHapticsSection(
                                 onValueChange = { onChangeVolume(it) },
                                 valueRange = 0f..1f,
                                 colors = SliderDefaults.colors(
-                                    thumbColor = Color(0xFF38BDF8),
-                                    activeTrackColor = Color(0xFF0284C7),
-                                    inactiveTrackColor = Color(0xFF1E1E2E)
+                                    thumbColor = Color(0xFFA6F750),
+                                    activeTrackColor = Color(0xFF63C70A),
+                                    inactiveTrackColor = Color(0xFF55277D)
                                 ),
                                 modifier = Modifier.testTag("sound_volume_slider")
                             )
@@ -440,7 +440,7 @@ private fun AudioHapticsSection(
                                 Text(
                                     text = "Balloons, pop bursts, hammer strikes, clicks",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = Color(0xFFCDB8EC)
                                 )
                             }
                         }
@@ -454,8 +454,8 @@ private fun AudioHapticsSection(
                                 }
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFF4A90C4),
-                                checkedTrackColor = Color(0xFF0C2B40)
+                                checkedThumbColor = Color(0xFFA6F750),
+                                checkedTrackColor = Color(0xFF2A1450)
                             ),
                             modifier = Modifier.testTag("sfx_mute_toggle_switch")
                         )
@@ -467,12 +467,12 @@ private fun AudioHapticsSection(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(text = "SFX Volume", fontSize = 12.sp, color = Color(0xFF94A3B8))
+                                Text(text = "SFX Volume", fontSize = 12.sp, color = Color(0xFFCDB8EC))
                                 Text(
                                     text = "${(sfxVolume * 100).toInt()}%",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF4A90C4)
+                                    color = Color(0xFFA6F750)
                                 )
                             }
                             Slider(
@@ -482,9 +482,9 @@ private fun AudioHapticsSection(
                                 },
                                 valueRange = 0f..1f,
                                 colors = SliderDefaults.colors(
-                                    thumbColor = Color(0xFF4A90C4),
-                                    activeTrackColor = Color(0xFF00B4D8),
-                                    inactiveTrackColor = Color(0xFF1E1E2E)
+                                    thumbColor = Color(0xFFA6F750),
+                                    activeTrackColor = Color(0xFF63C70A),
+                                    inactiveTrackColor = Color(0xFF55277D)
                                 ),
                                 modifier = Modifier.testTag("sfx_volume_slider")
                             )
@@ -495,7 +495,7 @@ private fun AudioHapticsSection(
                             text = "PREVIEW SOUNDS",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFFCDB8EC),
                             modifier = Modifier.padding(top = 4.dp)
                         )
                         Row(
@@ -507,10 +507,10 @@ private fun AudioHapticsSection(
                                 modifier = Modifier.weight(1f).height(38.dp),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = Color(0xFF141E28),
-                                    contentColor = Color(0xFF4A90C4)
+                                    containerColor = Color(0xFF3D165C),
+                                    contentColor = Color(0xFFA6F750)
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF4A90C4).copy(alpha = 0.4f)),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA6F750).copy(alpha = 0.4f)),
                                 contentPadding = PaddingValues(horizontal = 6.dp)
                             ) {
                                 Text("🎈 Pop", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -520,10 +520,10 @@ private fun AudioHapticsSection(
                                 modifier = Modifier.weight(1f).height(38.dp),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = Color(0xFF141E28),
-                                    contentColor = Color(0xFF38BDF8)
+                                    containerColor = Color(0xFF3D165C),
+                                    contentColor = Color(0xFFA6F750)
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f)),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA6F750).copy(alpha = 0.4f)),
                                 contentPadding = PaddingValues(horizontal = 6.dp)
                             ) {
                                 Text("🔔 Click", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
@@ -533,7 +533,7 @@ private fun AudioHapticsSection(
                                 modifier = Modifier.weight(1f).height(38.dp),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    containerColor = Color(0xFF141E28),
+                                    containerColor = Color(0xFF3D165C),
                                     contentColor = Color(0xFFFFD700)
                                 ),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f)),
@@ -571,7 +571,7 @@ private fun AudioHapticsSection(
                                 Text(
                                     text = "Procedural chiptune synth soundtrack",
                                     fontSize = 11.sp,
-                                    color = Color(0xFF94A3B8)
+                                    color = Color(0xFFCDB8EC)
                                 )
                             }
                         }
@@ -585,7 +585,7 @@ private fun AudioHapticsSection(
                                 }
                             },
                             colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFFA855F7),
+                                checkedThumbColor = Color(0xFFB26BFF),
                                 checkedTrackColor = Color(0xFF2E1065)
                             ),
                             modifier = Modifier.testTag("music_mute_toggle_switch")
@@ -598,12 +598,12 @@ private fun AudioHapticsSection(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(text = "Music Volume", fontSize = 12.sp, color = Color(0xFF94A3B8))
+                                Text(text = "Music Volume", fontSize = 12.sp, color = Color(0xFFCDB8EC))
                                 Text(
                                     text = "${(musicVolume * 100).toInt()}%",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFFA855F7)
+                                    color = Color(0xFFB26BFF)
                                 )
                             }
                             Slider(
@@ -613,9 +613,9 @@ private fun AudioHapticsSection(
                                 },
                                 valueRange = 0f..1f,
                                 colors = SliderDefaults.colors(
-                                    thumbColor = Color(0xFFA855F7),
+                                    thumbColor = Color(0xFFB26BFF),
                                     activeTrackColor = Color(0xFF9333EA),
-                                    inactiveTrackColor = Color(0xFF1E1E2E)
+                                    inactiveTrackColor = Color(0xFF55277D)
                                 ),
                                 modifier = Modifier.testTag("music_volume_slider")
                             )
@@ -626,7 +626,7 @@ private fun AudioHapticsSection(
                             text = "SYNTH TRACK THEME",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFFCDB8EC),
                             modifier = Modifier.padding(top = 4.dp)
                         )
 
@@ -634,8 +634,8 @@ private fun AudioHapticsSection(
                             Triple(MusicTheme.MEADOW_JOY, "🌸 Meadow Joy", Color(0xFF10B981)),
                             Triple(MusicTheme.COSMIC_DREAM, "🌌 Cosmic Dream", Color(0xFF8B5CF6)),
                             Triple(MusicTheme.TROPICAL_BOP, "🌴 Tropical Bop", Color(0xFFF59E0B)),
-                            Triple(MusicTheme.CYBER_PULSE, "⚡ Clockwork Pulse", Color(0xFF4A90C4)),
-                            Triple(MusicTheme.BOSS_ANTHEM, "👑 Boss Anthem", Color(0xFFEF4444))
+                            Triple(MusicTheme.CYBER_PULSE, "⚡ Clockwork Pulse", Color(0xFFA6F750)),
+                            Triple(MusicTheme.BOSS_ANTHEM, "👑 Boss Anthem", Color(0xFFFF5252))
                         )
 
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -674,7 +674,7 @@ private fun AudioHapticsSection(
                                                     text = label,
                                                     fontSize = 11.sp,
                                                     fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                                                    color = if (isCurrent) Color.White else Color(0xFFCBD5E1)
+                                                    color = if (isCurrent) Color.White else Color(0xFFF5EEFF)
                                                 )
                                                 if (isCurrent) {
                                                     Text(text = "✓", fontSize = 10.sp, color = accentColor, fontWeight = FontWeight.Bold)
@@ -717,7 +717,7 @@ private fun AudioHapticsSection(
                         Text(
                             text = "Tactile impact feedback on hammer strikes and combos",
                             fontSize = 11.sp,
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFFCDB8EC),
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
@@ -725,8 +725,8 @@ private fun AudioHapticsSection(
                         checked = isVibrationEnabled,
                         onCheckedChange = { onToggleVibration(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFF4A90C4),
-                            checkedTrackColor = Color(0xFF0C2B40)
+                            checkedThumbColor = Color(0xFFA6F750),
+                            checkedTrackColor = Color(0xFF2A1450)
                         ),
                         modifier = Modifier.testTag("vibration_toggle_switch")
                     )
@@ -765,7 +765,7 @@ private fun AudioHapticsSection(
                             Text(
                                 text = "Sends 1 friendly notification each day for free spins, rewards & streaks",
                                 fontSize = 11.sp,
-                                color = Color(0xFF94A3B8),
+                                color = Color(0xFFCDB8EC),
                                 modifier = Modifier.padding(top = 2.dp)
                             )
                         }
@@ -830,7 +830,7 @@ private fun GraphicsPerfSection(
                     Text(
                         text = "Select your graphics tier to maximize FPS and battery efficiency:",
                         fontSize = 11.sp,
-                        color = Color(0xFF64748B)
+                        color = Color(0xFFB79BDB)
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -846,10 +846,10 @@ private fun GraphicsPerfSection(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(if (isSelected) Color(0xFF0C2B40) else Color(0xFF141422))
+                                    .background(if (isSelected) Color(0xFF2A1450) else Color(0xFF3D165C))
                                     .border(
                                         1.5.dp,
-                                        if (isSelected) Color(0xFF38BDF8) else Color(0xFF26263B),
+                                        if (isSelected) Color(0xFFA6F750) else Color(0xFF4A2470),
                                         RoundedCornerShape(12.dp)
                                     )
                                     .clickable { onChangeGraphicsQuality(modeKey) }
@@ -862,12 +862,12 @@ private fun GraphicsPerfSection(
                                         text = modeTitle,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) Color(0xFF38BDF8) else Color.White
+                                        color = if (isSelected) Color(0xFFA6F750) else Color.White
                                     )
                                     Text(
                                         text = modeDesc,
                                         fontSize = 8.sp,
-                                        color = if (isSelected) Color(0xFF7DD3FC) else Color(0xFF94A3B8)
+                                        color = if (isSelected) Color(0xFFD8F7B0) else Color(0xFFCDB8EC)
                                     )
                                 }
                             }
@@ -900,7 +900,7 @@ private fun GraphicsPerfSection(
                         Text(
                             text = "Shakes screen on bomb detonations and heavy hammer smashes",
                             fontSize = 11.sp,
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFFCDB8EC),
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
@@ -908,8 +908,8 @@ private fun GraphicsPerfSection(
                         checked = isScreenShakeEnabled,
                         onCheckedChange = { onToggleScreenShake(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFF4A90C4),
-                            checkedTrackColor = Color(0xFF0C2B40)
+                            checkedThumbColor = Color(0xFFA6F750),
+                            checkedTrackColor = Color(0xFF2A1450)
                         ),
                         modifier = Modifier.testTag("shake_toggle_switch")
                     )
@@ -940,7 +940,7 @@ private fun GraphicsPerfSection(
                         Text(
                             text = "Expands hammer pop radius for relaxed and easier popping",
                             fontSize = 11.sp,
-                            color = Color(0xFF94A3B8),
+                            color = Color(0xFFCDB8EC),
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
@@ -948,8 +948,8 @@ private fun GraphicsPerfSection(
                         checked = isWideAssistEnabled,
                         onCheckedChange = { onToggleWideAssist(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFF4A90C4),
-                            checkedTrackColor = Color(0xFF0C2B40)
+                            checkedThumbColor = Color(0xFFA6F750),
+                            checkedTrackColor = Color(0xFF2A1450)
                         ),
                         modifier = Modifier.testTag("assist_toggle_switch")
                     )
@@ -970,7 +970,7 @@ private fun CodexGuideSection() {
                 text = "BALLOON TYPES & ABILITIES",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFF38BDF8),
+                color = Color(0xFFA6F750),
                 letterSpacing = 1.sp
             )
         }
@@ -992,8 +992,8 @@ private fun CodexGuideSection() {
                     .fillMaxWidth()
                     .shadow(2.dp, RoundedCornerShape(14.dp))
                     .clip(RoundedCornerShape(14.dp))
-                    .background(Color(0xFF141422))
-                    .border(1.5.dp, Color(0xFF28283E), RoundedCornerShape(14.dp))
+                    .background(Color(0xFF3D165C))
+                    .border(1.5.dp, Color(0xFF7A3EAE), RoundedCornerShape(14.dp))
                     .padding(12.dp)
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1006,13 +1006,13 @@ private fun CodexGuideSection() {
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(Color(0xFF382405))
+                                .background(Color(0xFF4A3205))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
-                            Text(text = badge, fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFFDE68A))
+                            Text(text = badge, fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFFFFE29A))
                         }
                     }
-                    Text(text = desc, fontSize = 11.sp, color = Color(0xFF94A3B8))
+                    Text(text = desc, fontSize = 11.sp, color = Color(0xFFCDB8EC))
                 }
             }
         }
@@ -1038,7 +1038,7 @@ private fun PrivacyAndGooglePlaySection() {
                         text = "100% Policy Certified & Vetted",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF34D399)
+                        color = Color(0xFF7EE82E)
                     )
                 }
                 Text(
@@ -1047,7 +1047,7 @@ private fun PrivacyAndGooglePlaySection() {
                             "• Network Security: Plaintext traffic strictly disabled (usesCleartextTraffic=false).\n" +
                             "• Code Integrity: R8 & ProGuard rules active to safeguard game algorithms.",
                     fontSize = 11.sp,
-                    color = Color(0xFFCBD5E1),
+                    color = Color(0xFFF5EEFF),
                     lineHeight = 16.sp
                 )
             }
@@ -1062,7 +1062,7 @@ private fun PrivacyAndGooglePlaySection() {
                         text = "Zero Data Collection",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
+                        color = Color(0xFFA6F750)
                     )
                 }
                 Text(
@@ -1070,7 +1070,7 @@ private fun PrivacyAndGooglePlaySection() {
                             "• Zero-Permission Access: No camera, mic, external storage, or location permissions requested.\n" +
                             "• 100% Local Storage: High scores, stars, and coins are kept solely on your device in secure sandbox storage.",
                     fontSize = 11.sp,
-                    color = Color(0xFFCBD5E1),
+                    color = Color(0xFFF5EEFF),
                     lineHeight = 16.sp
                 )
             }
@@ -1085,13 +1085,13 @@ private fun PrivacyAndGooglePlaySection() {
                         text = "Designed for Families & All Ages",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFBBF24)
+                        color = Color(0xFFFFC531)
                     )
                 }
                 Text(
                     text = "Suitable for all audiences. Zero violence, zero predatory gambling mechanics, and fully compliant with Google Play Families policy.",
                     fontSize = 11.sp,
-                    color = Color(0xFFCBD5E1),
+                    color = Color(0xFFF5EEFF),
                     lineHeight = 15.sp
                 )
             }
@@ -1106,7 +1106,7 @@ private fun PrivacyAndGooglePlaySection() {
                         text = "Active Tamper-Proof Protection",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
+                        color = Color(0xFFA6F750)
                     )
                 }
                 Text(
@@ -1115,7 +1115,7 @@ private fun PrivacyAndGooglePlaySection() {
                             "• ADB Backup Extraction Shield: Backup extraction is disabled (allowBackup=false) to prevent save file hacking.\n" +
                             "• Bounds & Overflow Defense: Currency values and scores are strictly sanitized against memory injection.",
                     fontSize = 11.sp,
-                    color = Color(0xFFCBD5E1),
+                    color = Color(0xFFF5EEFF),
                     lineHeight = 16.sp
                 )
             }
@@ -1136,7 +1136,7 @@ private fun PrivacyAndGooglePlaySection() {
                             "3. Upload the resulting .aab file directly to your Google Play Console Production or Closed Testing track.\n" +
                             "4. In the Data Safety form on Google Play Console, select 'No data collected' for instant approval!",
                     fontSize = 11.sp,
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFFCDB8EC),
                     lineHeight = 16.sp
                 )
 
@@ -1160,7 +1160,7 @@ private fun PrivacyAndGooglePlaySection() {
                     Text(
                         text = "🌐 View Google Privacy Policies & Guidelines",
                         fontSize = 12.sp,
-                        color = Color(0xFF38BDF8),
+                        color = Color(0xFFA6F750),
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -1190,13 +1190,13 @@ private fun DataManagementSection(
                 Text(
                     text = "All game records, unlocks, and currencies are automatically saved on device via SharedPreferences.",
                     fontSize = 12.sp,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFFCDB8EC)
                 )
                 Text(
                     text = "Status: Clean & Synchronized ✅",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF34D399)
+                    color = Color(0xFF7EE82E)
                 )
             }
         }
@@ -1206,11 +1206,11 @@ private fun DataManagementSection(
                 Text(
                     text = "Permanently reset all campaign stars, hammer weapons, frames, blades, coins, and high scores back to factory default.",
                     fontSize = 11.sp,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFFCDB8EC)
                 )
                 Button(
                     onClick = onRequestReset,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5252)),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth().testTag("open_reset_dialog_button")
                 ) {
@@ -1236,8 +1236,8 @@ private fun SettingCard(
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF141422))
-            .border(1.5.dp, Color(0xFF28283E), RoundedCornerShape(16.dp))
+            .background(Color(0xFF3D165C))
+            .border(1.5.dp, Color(0xFF7A3EAE), RoundedCornerShape(16.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
@@ -1245,7 +1245,7 @@ private fun SettingCard(
             text = title,
             fontSize = 11.sp,
             fontWeight = FontWeight.Black,
-            color = Color(0xFF38BDF8),
+            color = Color(0xFFA6F750),
             letterSpacing = 1.sp
         )
         content()

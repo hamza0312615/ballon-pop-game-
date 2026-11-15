@@ -29,8 +29,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Place
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import com.example.balloonpop.ui.components.JewelButton
+import com.example.balloonpop.ui.components.JewelButtonStyle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import com.example.balloonpop.ui.components.ZoneEmblemArt
@@ -121,7 +121,7 @@ fun WorldMapZoneOverviewDialog(
                         Text(
                             text = "Explore & select realm environments",
                             fontSize = 11.sp,
-                            color = Color(0xFF94A3B8)
+                            color = Color(0xFFCDB8EC)
                         )
                     }
 
@@ -283,7 +283,7 @@ private fun ZoneSelectionCard(
                             text = "ZONE ${zone.zoneNumber}",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isUnlocked) theme.titleAccentColor else Color(0xFF64748B)
+                            color = if (isUnlocked) theme.titleAccentColor else Color(0xFFB79BDB)
                         )
                         if (isCurrentZone) {
                             Box(
@@ -307,13 +307,13 @@ private fun ZoneSelectionCard(
                         text = zone.name,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
-                        color = if (isUnlocked) Color.White else Color(0xFF94A3B8)
+                        color = if (isUnlocked) Color.White else Color(0xFFCDB8EC)
                     )
 
                     Text(
                         text = theme.subtitle,
                         fontSize = 11.sp,
-                        color = if (isUnlocked) theme.secondaryAccent else Color(0xFF64748B)
+                        color = if (isUnlocked) theme.secondaryAccent else Color(0xFFB79BDB)
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -326,7 +326,7 @@ private fun ZoneSelectionCard(
                         Text(
                             text = "Stages ${zone.startLevel} - ${zone.endLevel}",
                             fontSize = 11.sp,
-                            color = Color(0xFFCBD5E1)
+                            color = Color(0xFFF5EEFF)
                         )
                         if (isUnlocked) {
                             Text(
@@ -340,24 +340,16 @@ private fun ZoneSelectionCard(
                 }
             }
 
-            // Right: Action / Status Button
+            // Right: Action / Status Button — Pass 11: the game's own ToyButton
+            // (was a raw Material Button, the last flat default in any dialog).
             if (isUnlocked) {
-                Button(
+                JewelButton(
+                    text = if (isCurrentZone) "VIEW" else "ENTER",
                     onClick = onSelect,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isCurrentZone) theme.primaryAccent.copy(alpha = 0.3f) else theme.primaryAccent
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    style = if (isCurrentZone) JewelButtonStyle.GOLD else JewelButtonStyle.SUNSET,
+                    minHeight = 38.dp,
                     modifier = Modifier.testTag("enter_zone_btn_${zone.zoneNumber}")
-                ) {
-                    Text(
-                        text = if (isCurrentZone) "VIEW" else "ENTER",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                }
+                )
             } else {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -370,13 +362,13 @@ private fun ZoneSelectionCard(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Locked",
-                        tint = Color(0xFF94A3B8),
+                        tint = Color(0xFFCDB8EC),
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
                         text = "Stage ${zone.startLevel}",
                         fontSize = 10.sp,
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFFCDB8EC),
                         fontWeight = FontWeight.SemiBold
                     )
                 }

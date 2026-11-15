@@ -398,7 +398,7 @@ fun GamePlayScreen(
                                     fontFamily = NunitoFontFamily,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = if (isDanger) Color(0xFFEF4444) else Color(0xFFFBBF24)
+                                    color = if (isDanger) Color(0xFFFF5252) else Color(0xFFFFC531)
                                 )
                                 Text(text = "⚠️", fontSize = 11.sp)
                             }
@@ -416,7 +416,7 @@ fun GamePlayScreen(
                         fontFamily = NunitoFontFamily,
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFFCDB8EC),
                         letterSpacing = 1.sp
                     )
                     Text(
@@ -529,7 +529,7 @@ fun GamePlayScreen(
                         fontFamily = Baloo2FontFamily,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFDE68A)
+                        color = Color(0xFFFFE29A)
                     )
                 }
             }
@@ -708,10 +708,10 @@ fun GamePlayScreen(
                     )
                 }
                 if (isFreezeActive) {
-                    PowerupBadge(icon = "❄️", label = "SLOW MOTION", color = Color(0xFF38BDF8))
+                    PowerupBadge(icon = "❄️", label = "SLOW MOTION", color = Color(0xFFA6F750))
                 }
                 if (isMultiplierActive) {
-                    PowerupBadge(icon = "⭐", label = "2X POINTS", color = Color(0xFFFBBF24))
+                    PowerupBadge(icon = "⭐", label = "2X POINTS", color = Color(0xFFFFC531))
                 }
             }
         }
@@ -780,8 +780,8 @@ fun GamePlayScreen(
                     coins = coins,
                     cooldownRemaining = bombCd,
                     badgeBgColor = if (bombCount > 0) Color(0xFF3B82F6) else Color(0xFFF59E0B),
-                    orbGradient = listOf(Color(0xFFA855F7), Color(0xFF7E22CE), Color(0xFF3B0764)),
-                    glowColor = Color(0xFFA855F7),
+                    orbGradient = listOf(Color(0xFFB26BFF), Color(0xFF7E22CE), Color(0xFF3B0764)),
+                    glowColor = Color(0xFFB26BFF),
                     onClick = {
                         if (bombCount > 0) onTriggerBooster(InGameBooster.COLOR_BOMB)
                         else boosterBuyTarget = InGameBooster.COLOR_BOMB
@@ -798,9 +798,9 @@ fun GamePlayScreen(
                     count = thunderCount,
                     coins = coins,
                     cooldownRemaining = thunderCd,
-                    badgeBgColor = if (thunderCount > 0) Color(0xFF0284C7) else Color(0xFFF59E0B),
-                    orbGradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF0369A1)),
-                    glowColor = Color(0xFF4A90C4),
+                    badgeBgColor = if (thunderCount > 0) Color(0xFF63C70A) else Color(0xFFF59E0B),
+                    orbGradient = listOf(Color(0xFFA6F750), Color(0xFF63C70A), Color(0xFF0369A1)),
+                    glowColor = Color(0xFFA6F750),
                     onClick = {
                         if (thunderCount > 0) onTriggerBooster(InGameBooster.THUNDER_STRIKE)
                         else boosterBuyTarget = InGameBooster.THUNDER_STRIKE
@@ -817,9 +817,9 @@ fun GamePlayScreen(
                     count = freezeCount,
                     coins = coins,
                     cooldownRemaining = freezeCd,
-                    badgeBgColor = if (isFreezeActive) Color(0xFF06B6D4) else if (freezeCount > 0) Color(0xFF38BDF8) else Color(0xFFF59E0B),
-                    orbGradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7), Color(0xFF082F49)),
-                    glowColor = Color(0xFF38BDF8),
+                    badgeBgColor = if (isFreezeActive) Color(0xFF06B6D4) else if (freezeCount > 0) Color(0xFFA6F750) else Color(0xFFF59E0B),
+                    orbGradient = listOf(Color(0xFFA6F750), Color(0xFF63C70A), Color(0xFF082F49)),
+                    glowColor = Color(0xFFA6F750),
                     onClick = {
                         if (freezeCount > 0) onTriggerBooster(InGameBooster.FREEZE_BLIZZARD)
                         else boosterBuyTarget = InGameBooster.FREEZE_BLIZZARD
@@ -907,7 +907,7 @@ fun GamePlayScreen(
                         drawCircle(Color(0x2222C55E), radius = 90.dp.toPx(), center = Offset(w * 0.15f, h * 0.25f))
                         drawCircle(Color(0x20F43F5E), radius = 110.dp.toPx(), center = Offset(w * 0.85f, h * 0.20f))
                         drawCircle(Color(0x22FBBF24), radius = 80.dp.toPx(), center = Offset(w * 0.82f, h * 0.75f))
-                        drawCircle(Color(0x2238BDF8), radius = 95.dp.toPx(), center = Offset(w * 0.18f, h * 0.70f))
+                        drawCircle(Color(0x22A6F750), radius = 95.dp.toPx(), center = Offset(w * 0.18f, h * 0.70f))
                     }
 
                     // Main Glass Capsule Card
@@ -923,7 +923,7 @@ fun GamePlayScreen(
                                     listOf(
                                         Color(0x99FFD54F),
                                         Color(0x55A855F7),
-                                        Color(0x3338BDF8),
+                                        Color(0x33A6F750),
                                         Color(0x66FFD54F)
                                     )
                                 ),
@@ -1159,7 +1159,7 @@ private fun BoosterBuyDialog(
                     fontFamily = NunitoFontFamily,
                     fontSize = DesignTokens.SizeBody,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFFCDB8EC)
                 )
                 // Price pill
                 Box(
@@ -1182,7 +1182,7 @@ private fun BoosterBuyDialog(
                     fontFamily = NunitoFontFamily,
                     fontSize = DesignTokens.SizeCaption,
                     fontWeight = FontWeight.Bold,
-                    color = if (canAfford) Color(0xFF94A3B8) else Color(0xFFEF4444)
+                    color = if (canAfford) Color(0xFFCDB8EC) else Color(0xFFFF5252)
                 )
                 Box(
                     modifier = Modifier
@@ -1209,7 +1209,7 @@ private fun BoosterBuyDialog(
                     fontFamily = NunitoFontFamily,
                     fontSize = DesignTokens.SizeBody,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8),
+                    color = Color(0xFFCDB8EC),
                     modifier = Modifier
                         .clip(DesignTokens.ShapeSmall)
                         .clickable { onDismiss() }
@@ -1256,11 +1256,11 @@ private fun BoosterPowerUpButton(
     )
 
     val boosterAccentColor = when (booster) {
-        InGameBooster.THUNDER_STRIKE -> Color(0xFF38BDF8)
+        InGameBooster.THUNDER_STRIKE -> Color(0xFFA6F750)
         InGameBooster.COLOR_BOMB -> Color(0xFFB03060)
-        InGameBooster.HAMMER_SMASH -> Color(0xFFFBBF24)
-        InGameBooster.FREEZE_BLIZZARD -> Color(0xFF4A90C4)
-        InGameBooster.TORNADO_VORTEX -> Color(0xFF34D399)
+        InGameBooster.HAMMER_SMASH -> Color(0xFFFFC531)
+        InGameBooster.FREEZE_BLIZZARD -> Color(0xFFA6F750)
+        InGameBooster.TORNADO_VORTEX -> Color(0xFF7EE82E)
     }
 
     Box(
@@ -1288,11 +1288,11 @@ private fun BoosterPowerUpButton(
                 .background(
                     if (isAvailable) {
                         when (booster) {
-                            InGameBooster.THUNDER_STRIKE -> Brush.radialGradient(listOf(Color(0xFF38BDF8), Color(0xFF0284C7)))
+                            InGameBooster.THUNDER_STRIKE -> Brush.radialGradient(listOf(Color(0xFFA6F750), Color(0xFF63C70A)))
                             InGameBooster.COLOR_BOMB -> Brush.radialGradient(listOf(Color(0xFFB03060), Color(0xFF7928CA)))
-                            InGameBooster.HAMMER_SMASH -> Brush.radialGradient(listOf(Color(0xFFFBBF24), Color(0xFFD97706)))
+                            InGameBooster.HAMMER_SMASH -> Brush.radialGradient(listOf(Color(0xFFFFC531), Color(0xFFD97706)))
                             InGameBooster.FREEZE_BLIZZARD -> Brush.radialGradient(listOf(Color(0xFFA5F3FC), Color(0xFF0891B2)))
-                            InGameBooster.TORNADO_VORTEX -> Brush.radialGradient(listOf(Color(0xFF6EE7B7), Color(0xFF059669)))
+                            InGameBooster.TORNADO_VORTEX -> Brush.radialGradient(listOf(Color(0xFFB9F58A), Color(0xFF059669)))
                         }
                     } else {
                         Brush.verticalGradient(listOf(Color(0xFF334155), Color(0xFF1E293B)))
@@ -1446,7 +1446,7 @@ private fun SkillPowerUpButton(
                     text = "${skillEnergy.toInt()}%",
                     fontSize = DesignTokens.SizeMicro,
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFFCBD5E1)
+                    color = Color(0xFFF5EEFF)
                 )
             }
         }
@@ -1497,10 +1497,10 @@ private fun BossBattleHealthBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = DesignTokens.Space16)
-            .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFEF4444))
+            .shadow(12.dp, RoundedCornerShape(16.dp), spotColor = Color(0xFFFF5252))
             .clip(RoundedCornerShape(16.dp))
             .background(Color(0xF00F172A))
-            .border(1.5.dp, Color(0xFFF87171), RoundedCornerShape(16.dp))
+            .border(1.5.dp, Color(0xFFFF7A7A), RoundedCornerShape(16.dp))
             .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space8)
     ) {
         Column(
@@ -1521,7 +1521,7 @@ private fun BossBattleHealthBar(
                         text = "TITAN BOSS ENCOUNTER",
                         fontSize = DesignTokens.SizeMicro,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFFFCA5A5),
+                        color = Color(0xFFFFB3B3),
                         letterSpacing = 1.sp
                     )
                 }
@@ -1550,9 +1550,9 @@ private fun BossBattleHealthBar(
                         .background(
                             Brush.horizontalGradient(
                                 listOf(
-                                    Color(0xFFEF4444),
+                                    Color(0xFFFF5252),
                                     Color(0xFFF97316),
-                                    Color(0xFFFBBF24)
+                                    Color(0xFFFFC531)
                                 )
                             )
                         )

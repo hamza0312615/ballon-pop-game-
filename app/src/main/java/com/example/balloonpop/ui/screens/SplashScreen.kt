@@ -147,14 +147,14 @@ fun SplashScreen(
         label = "shimmer_progress"
     )
 
-    // Cosmic background gradient: deep space indigo to vibrant twilight purple
+    // Toybox stage background: deep curtain to warm stage magenta
     val cosmicBg = Brush.verticalGradient(
         listOf(
-            Color(0xFF0C102A),
-            Color(0xFF16153B),
-            Color(0xFF24164C),
-            Color(0xFF33185E),
-            Color(0xFF1E103D)
+            Color(0xFF19061F),
+            Color(0xFF33103D),
+            Color(0xFF4A1030),
+            Color(0xFF7A1E46),
+            Color(0xFF33103D)
         )
     )
 
@@ -179,8 +179,8 @@ fun SplashScreen(
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        Color(0x55A78BFA),
-                        Color(0x22EC4899),
+                        Color(0x557A3EAE),
+                        Color(0x22FFC531),
                         Color.Transparent
                     ),
                     center = Offset(w * 0.5f, h * 0.32f),
@@ -331,13 +331,13 @@ fun SplashScreen(
                     modifier = Modifier
                         .fillMaxWidth(0.88f)
                         .height(48.dp)
-                        .shadow(16.dp, RoundedCornerShape(24.dp), spotColor = Color(0xFFFF5D8F))
+                        .shadow(16.dp, RoundedCornerShape(24.dp), spotColor = Color(0xFF55277D))
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color(0xE6140D26))
+                        .background(Color(0xE62A1450))
                         .border(
                             width = 2.dp,
                             brush = Brush.verticalGradient(
-                                listOf(Color(0xFFD8B4FE), Color(0xFF6B21A8), Color(0xFF3B0764))
+                                listOf(Color(0xFF7A3EAE), Color(0xFF55277D), Color(0xFF3D165C))
                             ),
                             shape = RoundedCornerShape(24.dp)
                         )
@@ -354,9 +354,9 @@ fun SplashScreen(
                             .background(
                                 Brush.horizontalGradient(
                                     listOf(
-                                        Color(0xFFFF5D8F), // Hot pink
-                                        Color(0xFFFB923C), // Warm orange
-                                        Color(0xFFFFC93C)  // Bright gold
+                                        Color(0xFFA6F750), // Hero lime
+                                        Color(0xFF7EE82E), // Parade green
+                                        Color(0xFF63C70A)  // Lime base
                                     )
                                 )
                             )
@@ -415,7 +415,7 @@ fun SplashScreen(
                     fontFamily = NunitoFontFamily,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFE2E8F0),
+                    color = Color(0xFFF5EEFF),
                     textAlign = TextAlign.Center
                 )
 
@@ -432,7 +432,7 @@ fun SplashScreen(
                                 .size(if (isActive) 9.dp else 7.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isActive) Color(0xFFFFC93C) else Color(0x66A78BFA)
+                                    if (isActive) Color(0xFFFFC93C) else Color(0x667A3EAE)
                                 )
                                 .border(
                                     width = 1.dp,
@@ -477,7 +477,7 @@ private fun Candy3DText(
             fontFamily = Baloo2FontFamily,
             fontSize = fontSize,
             fontWeight = FontWeight.Black,
-            color = Color(0xFFC93A5E),
+            color = Color(0xFF7A1E46),
             modifier = Modifier.offset(y = 2.dp)
         )
 
@@ -492,9 +492,9 @@ private fun Candy3DText(
                 brush = Brush.verticalGradient(
                     listOf(
                         Color(0xFFFFFAEB), // Cream white top highlight
-                        Color(0xFFFFD166), // Sunny gold
-                        Color(0xFFFB923C), // Peach
-                        Color(0xFFFF5D8F)  // Candy pink base
+                        Color(0xFFFFE29A), // Pale gold
+                        Color(0xFFFFC531), // Toy gold
+                        Color(0xFFF97D0C)  // Toy orange base
                     )
                 )
             )
@@ -551,12 +551,12 @@ private fun DrawScope.drawKawaiiPartyMascot(size: Size) {
 
     // 4. Rosy Blush Cheeks
     drawOval(
-        color = Color(0xFFC93A5E).copy(alpha = 0.45f),
+        color = Color(0xFF7A1E46).copy(alpha = 0.45f),
         topLeft = Offset(cx - r * 0.70f, cy + r * 0.12f),
         size = Size(r * 0.32f, r * 0.18f)
     )
     drawOval(
-        color = Color(0xFFC93A5E).copy(alpha = 0.45f),
+        color = Color(0xFF7A1E46).copy(alpha = 0.45f),
         topLeft = Offset(cx + r * 0.38f, cy + r * 0.12f),
         size = Size(r * 0.32f, r * 0.18f)
     )

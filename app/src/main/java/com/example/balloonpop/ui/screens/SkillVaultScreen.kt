@@ -173,7 +173,7 @@ fun SkillVaultScreen(
                             .border(
                                 width = 1.dp,
                                 brush = Brush.verticalGradient(
-                                    listOf(Color(0xFFA855F7), Color(0xFF581C87))
+                                    listOf(Color(0xFFB26BFF), Color(0xFF581C87))
                                 ),
                                 shape = RoundedCornerShape(16.dp)
                             )
@@ -207,7 +207,7 @@ fun SkillVaultScreen(
                     fontFamily = Baloo2FontFamily,
                     fontSize = 32.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFFFDE68A),
+                    color = Color(0xFFFFE29A),
                     letterSpacing = 2.sp,
                     style = androidx.compose.ui.text.TextStyle(
                         brush = Brush.verticalGradient(
@@ -294,7 +294,7 @@ fun SkillVaultScreen(
                             fontFamily = Baloo2FontFamily,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFFFDE68A),
+                            color = Color(0xFFFFE29A),
                             letterSpacing = 1.sp
                         )
                         Text(
@@ -358,7 +358,7 @@ private fun VaultSkillCard(
 
     val cardBorder = if (isEquipped) {
         Brush.linearGradient(
-            listOf(Color(0xFF34D399), Color(0xFF059669))
+            listOf(Color(0xFF7EE82E), Color(0xFF059669))
         )
     } else {
         Brush.linearGradient(
@@ -429,7 +429,7 @@ private fun VaultSkillCard(
                             fontFamily = NunitoFontFamily,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFFCBD5E1)
+                            color = Color(0xFFF5EEFF)
                         )
                     }
                 }
@@ -440,7 +440,7 @@ private fun VaultSkillCard(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
                             .background(Color(0xFF064E3B))
-                            .border(1.dp, Color(0xFF34D399), RoundedCornerShape(12.dp))
+                            .border(1.dp, Color(0xFF7EE82E), RoundedCornerShape(12.dp))
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Row(
@@ -450,7 +450,7 @@ private fun VaultSkillCard(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = "Equipped",
-                                tint = Color(0xFF34D399),
+                                tint = Color(0xFF7EE82E),
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
@@ -458,7 +458,7 @@ private fun VaultSkillCard(
                                 fontFamily = NunitoFontFamily,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF34D399)
+                                color = Color(0xFF7EE82E)
                             )
                         }
                     }
@@ -481,7 +481,7 @@ private fun VaultSkillCard(
                         fontFamily = NunitoFontFamily,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
+                        color = Color(0xFFA6F750)
                     )
                     Text(
                         text = "Freeze: ${3.5f + currentLevel * 0.5f}s",
@@ -503,7 +503,7 @@ private fun VaultSkillCard(
                         fontFamily = NunitoFontFamily,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
+                        color = Color(0xFFA6F750)
                     )
                     Text(
                         text = "+${8 + currentLevel * 4}% impact force",

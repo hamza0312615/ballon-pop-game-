@@ -70,11 +70,11 @@ fun ConfettiCelebrationView(
         listOf(
             Color(0xFFFFD700), // Gold
             Color(0xFFC93A5E), // Hot Pink
-            Color(0xFF4A90C4), // Cyan
+            Color(0xFFA6F750), // Cyan
             Color(0xFF10B981), // Emerald
-            Color(0xFFA855F7), // Purple
+            Color(0xFFB26BFF), // Purple
             Color(0xFFFF9100), // Tangerine
-            Color(0xFFFBBF24), // Amber
+            Color(0xFFFFC531), // Amber
             Color(0xFFFFFFFF)  // White diamond
         )
     }
@@ -250,7 +250,7 @@ fun HighScoreCelebrationBadge(
                 text = "NEW ALL-TIME RECORD!",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFFFDE68A),
+                color = Color(0xFFFFE29A),
                 letterSpacing = 1.sp
             )
             Text(text = "👑", fontSize = 20.sp)
@@ -272,7 +272,7 @@ fun HighScoreCelebrationBadge(
                 text = "New: ${String.format("%,d", newScore)}",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Black,
-                color = Color(0xFFFBBF24)
+                color = Color(0xFFFFC531)
             )
             if (diff > 0) {
                 Box(
@@ -358,7 +358,7 @@ fun StagePathBridge(
             }
 
             // Connecting Arrow
-            Text(text = "════▶", fontSize = 11.sp, color = Color(0xFFA855F7), fontWeight = FontWeight.Black)
+            Text(text = "════▶", fontSize = 11.sp, color = Color(0xFFB26BFF), fontWeight = FontWeight.Black)
 
             // Stage N+1 Unlocked Node
             Row(
@@ -412,7 +412,7 @@ fun StagePathBridge(
                     .clip(RoundedCornerShape(3.dp))
                     .background(
                         Brush.horizontalGradient(
-                            listOf(Color(0xFF10B981), Color(0xFFFBBF24), Color(0xFFA855F7))
+                            listOf(Color(0xFF10B981), Color(0xFFFFC531), Color(0xFFB26BFF))
                         )
                     )
             )
@@ -435,7 +435,7 @@ fun StagePathBridge(
             text = "Campaign Progress: $currentLevel/$maxLevels Stages Cleared ($pct%)",
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            color = Color(0xFFCBD5E1)
+            color = Color(0xFFF5EEFF)
         )
     }
 }
@@ -540,7 +540,7 @@ fun LevelTransitionPortal(
                 )
                 .border(
                     3.dp,
-                    if (isBossStage) Color(0xFFA855F7) else Color(0xFFFFD700),
+                    if (isBossStage) Color(0xFFB26BFF) else Color(0xFFFFD700),
                     RoundedCornerShape(32.dp)
                 )
                 .padding(20.dp),
@@ -580,7 +580,7 @@ fun LevelTransitionPortal(
                         text = "Zone ${zone.zoneNumber}: ${zone.name}",
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFFFDE68A)
+                        color = Color(0xFFFFE29A)
                     )
                 }
             }
@@ -672,7 +672,7 @@ fun LevelTransitionPortal(
                 text = "Tap anywhere to skip countdown ▶",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF94A3B8)
+                color = Color(0xFFCDB8EC)
             )
         }
     }
@@ -682,7 +682,7 @@ fun LevelTransitionPortal(
 private fun GoalBadge(icon: String, label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = icon, fontSize = 18.sp)
-        Text(text = label, fontSize = 10.sp, color = Color(0xFF94A3B8), fontWeight = FontWeight.Bold)
+        Text(text = label, fontSize = 10.sp, color = Color(0xFFCDB8EC), fontWeight = FontWeight.Bold)
         Text(text = value, fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Black)
     }
 }

@@ -407,7 +407,7 @@ fun CampaignScreen(
                             .align(Alignment.CenterEnd)
                             .padding(end = 6.dp)
                             .size(38.dp)
-                            .shadow(6.dp, CircleShape, spotColor = Color(0xFF4A90C4))
+                            .shadow(6.dp, CircleShape, spotColor = Color(0xFFA6F750))
                             .clip(CircleShape)
                             .background(Color(0xEE1E1510))
                             .border(1.5.dp, Color(0xFFD4A373), CircleShape)
@@ -434,7 +434,7 @@ fun CampaignScreen(
                             .align(Alignment.CenterStart)
                             .padding(start = 6.dp)
                             .size(38.dp)
-                            .shadow(6.dp, CircleShape, spotColor = Color(0xFF4A90C4))
+                            .shadow(6.dp, CircleShape, spotColor = Color(0xFFA6F750))
                             .clip(CircleShape)
                             .background(Color(0xEE1E1510))
                             .border(1.5.dp, Color(0xFFD4A373), CircleShape)
@@ -617,7 +617,7 @@ fun CampaignScreen(
                     Text(
                         text = "Earn stars by clearing campaign stages. Claim each milestone once!",
                         fontSize = 12.sp,
-                        color = Color(0xFFCBD5E1)
+                        color = Color(0xFFF5EEFF)
                     )
                     // Pass 8: star-economy visibility — the distance to the
                     // next chest is always on screen, so stars never read
@@ -660,7 +660,7 @@ fun CampaignScreen(
                                     Text(
                                         text = "${minOf(totalStars, milestone.starsRequired)}/${milestone.starsRequired} ⭐  •  +${milestone.rewardCoins}🪙 +${milestone.rewardGems}💎",
                                         fontSize = 11.sp,
-                                        color = Color(0xFFCBD5E1)
+                                        color = Color(0xFFF5EEFF)
                                     )
                                 }
                                 when {
@@ -668,7 +668,7 @@ fun CampaignScreen(
                                         text = "✅ CLAIMED",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
-                                        color = Color(0xFF94A3B8)
+                                        color = Color(0xFFCDB8EC)
                                     )
                                     isEarned -> Box(
                                         modifier = Modifier
@@ -1187,9 +1187,9 @@ private fun ModernSecondaryNavRow(
         ModernNavSegment(
             icon = "🗺️",
             label = "Map",
-            tintColor = Color(0x284A90C4),
-            borderColor = Color(0x884A90C4),
-            textColor = Color(0xFF38BDF8),
+            tintColor = Color(0x28A6F750),
+            borderColor = Color(0x88A6F750),
+            textColor = Color(0xFFA6F750),
             onClick = {
                 hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                 onOpenWorldMap()
@@ -1214,9 +1214,9 @@ private fun ModernSecondaryNavRow(
         ModernNavSegment(
             icon = "🎡",
             label = "Spin",
-            tintColor = Color(0x2838BDF8),
-            borderColor = Color(0x8838BDF8),
-            textColor = Color(0xFF7DD3FC),
+            tintColor = Color(0x28A6F750),
+            borderColor = Color(0x88A6F750),
+            textColor = Color(0xFFD8F7B0),
             showPulsingDot = true,
             dotPulse = dotPulse,
             onClick = {
@@ -1318,7 +1318,7 @@ private fun ModernNavSegment(
                     .size(7.dp)
                     .scale(dotPulse)
                     .clip(CircleShape)
-                    .background(Color(0xFFEF4444))
+                    .background(Color(0xFFFF5252))
                     .border(1.dp, Color.White, CircleShape)
             )
         }
@@ -1671,7 +1671,7 @@ private fun ModernBottomFloatingDock(
                 icon = Icons.Default.AllInclusive,
                 label = "Endless",
                 isActive = false,
-                activeAccentColor = Color(0xFF4A90C4),
+                activeAccentColor = Color(0xFFA6F750),
                 onClick = {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     onEndlessClick()
@@ -1746,7 +1746,7 @@ private fun ModernBottomFloatingDock(
                 icon = Icons.Default.Bolt,
                 label = "Vault",
                 isActive = false,
-                activeAccentColor = Color(0xFFA855F7),
+                activeAccentColor = Color(0xFFB26BFF),
                 onClick = {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                     onVaultClick()
@@ -1760,7 +1760,7 @@ private fun ModernBottomFloatingDock(
                 icon = Icons.Default.ShoppingCart,
                 label = "Shop",
                 isActive = false,
-                activeAccentColor = Color(0xFF38BDF8),
+                activeAccentColor = Color(0xFFA6F750),
                 hasNotification = true,
                 dotPulse = dotPulse,
                 onClick = {
@@ -1813,7 +1813,7 @@ private fun DockItem(
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (isActive) activeAccentColor else Color(0xFF94A3B8),
+                tint = if (isActive) activeAccentColor else Color(0xFFCDB8EC),
                 modifier = Modifier
                     .size(20.dp)
                     .scale(if (isActive) 1.1f else 1.0f)
@@ -1825,7 +1825,7 @@ private fun DockItem(
                 text = label,
                 fontSize = 10.sp,
                 fontWeight = if (isActive) FontWeight.Black else FontWeight.Bold,
-                color = if (isActive) Color.White else Color(0xFF94A3B8)
+                color = if (isActive) Color.White else Color(0xFFCDB8EC)
             )
 
             // Active Tab Indicator: Smooth glowing pill under selected tab
@@ -1853,7 +1853,7 @@ private fun DockItem(
                     .size(7.dp)
                     .scale(dotPulse)
                     .clip(CircleShape)
-                    .background(Color(0xFFEF4444))
+                    .background(Color(0xFFFF5252))
                     .border(1.dp, Color.White, CircleShape)
             )
         }

@@ -80,7 +80,7 @@ fun CustomChallengeDialog(
                         text = "Customize time, target balloons & miss limits!",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFCBD5E1)
+                        color = Color(0xFFF5EEFF)
                     )
                 }
             }
@@ -130,7 +130,7 @@ fun CustomChallengeDialog(
                 value = timeSeconds,
                 onDecrease = { timeSeconds = (timeSeconds - 5).coerceAtLeast(5) },
                 onIncrease = { timeSeconds = (timeSeconds + 5).coerceAtMost(120) },
-                accentColor = Color(0xFF38BDF8)
+                accentColor = Color(0xFFA6F750)
             )
 
             // 2. Target Balloons to Pop
@@ -141,7 +141,7 @@ fun CustomChallengeDialog(
                 value = targetPops,
                 onDecrease = { targetPops = (targetPops - 1).coerceAtLeast(5) },
                 onIncrease = { targetPops = (targetPops + 1).coerceAtMost(100) },
-                accentColor = Color(0xFFFBBF24)
+                accentColor = Color(0xFFFFC531)
             )
 
             // 3. Max Missed Balloons Allowed
@@ -152,7 +152,7 @@ fun CustomChallengeDialog(
                 value = maxMisses,
                 onDecrease = { maxMisses = (maxMisses - 1).coerceAtLeast(1) },
                 onIncrease = { maxMisses = (maxMisses + 1).coerceAtMost(20) },
-                accentColor = Color(0xFFF87171)
+                accentColor = Color(0xFFFF7A7A)
             )
 
             // Dynamic Scenario Summary & Game Over Warning
@@ -169,7 +169,7 @@ fun CustomChallengeDialog(
                     text = "⚠️ SCENARIO: Pop $targetPops balloons in ${timeSeconds}s.\nIf you miss more than $maxMisses balloons, GAME OVER!",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFFFCA5A5),
+                    color = Color(0xFFFFB3B3),
                     textAlign = TextAlign.Center,
                     lineHeight = 15.sp
                 )
@@ -225,7 +225,7 @@ private fun ParameterAdjuster(
                     text = unit,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFFCDB8EC)
                 )
             }
         }
@@ -303,7 +303,7 @@ private fun PresetChip(
             text = label,
             fontSize = 9.sp,
             fontWeight = FontWeight.Black,
-            color = if (isSelected) Color.White else Color(0xFF94A3B8),
+            color = if (isSelected) Color.White else Color(0xFFCDB8EC),
             textAlign = TextAlign.Center
         )
     }

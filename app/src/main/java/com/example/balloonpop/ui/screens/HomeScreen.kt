@@ -278,9 +278,9 @@ fun HomeScreen(
                             modifier = Modifier
                                 .size(36.dp)
                                 .offset(y = (-10).dp)
-                                .shadow(6.dp, CircleShape, spotColor = Color(0xFF0284C7))
+                                .shadow(6.dp, CircleShape, spotColor = Color(0xFF63C70A))
                                 .clip(CircleShape)
-                                .background(Brush.radialGradient(listOf(Color(0xFF7DD3FC), Color(0xFF0284C7))))
+                                .background(Brush.radialGradient(listOf(Color(0xFFD8F7B0), Color(0xFF63C70A))))
                                 .border(1.5.dp, Color.White.copy(alpha = 0.8f), CircleShape)
                         )
                         // Right buddy: glossy ruby balloon
@@ -473,7 +473,7 @@ fun HomeScreen(
                                     SkillVaultArt("skill_hammer_slide", modifier = Modifier.size(26.dp))
                                 },
                                 label = "Vault",
-                                accentColor = Color(0xFFA855F7),
+                                accentColor = Color(0xFFB26BFF),
                                 onClick = onOpenSkillVault,
                                 testTag = "home_skill_vault_button",
                                 modifier = Modifier.weight(1f)
@@ -554,7 +554,7 @@ fun HomeScreen(
                                     Icon(
                                         imageVector = Icons.Default.Info,
                                         contentDescription = "How to play",
-                                        tint = Color(0xFF7DD3FC),
+                                        tint = Color(0xFFD8F7B0),
                                         modifier = Modifier.size(24.dp)
                                     )
                                 },
@@ -574,7 +574,7 @@ fun HomeScreen(
                                     )
                                 },
                                 label = "Custom",
-                                accentColor = Color(0xFFA855F7),
+                                accentColor = Color(0xFFB26BFF),
                                 onClick = { showCustomChallenge = true },
                                 testTag = "custom_challenge_button",
                                 modifier = Modifier.weight(1f)

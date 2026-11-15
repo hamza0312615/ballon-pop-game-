@@ -46,10 +46,10 @@ fun RanksScreen(
         LeaderboardPlayer(2, "Lucas", "⚡", Color(0xFFC0C0C0), 48900, 92),
         LeaderboardPlayer(3, "Oliver", "🎯", Color(0xFFCD7F32), 43400, 85),
         LeaderboardPlayer(4, "Emma", "🌸", Color(0xFFEC4899), 39100, 78),
-        LeaderboardPlayer(5, "Noah", "🚀", Color(0xFF38BDF8), 34800, 71),
-        LeaderboardPlayer(6, "Maya", "🍭", Color(0xFFA855F7), 31200, 68),
-        LeaderboardPlayer(7, "Ethan", "🔥", Color(0xFFEF4444), 27500, 62),
-        LeaderboardPlayer(8, "Ava", "⭐", Color(0xFFFBBF24), 24100, 56),
+        LeaderboardPlayer(5, "Noah", "🚀", Color(0xFFA6F750), 34800, 71),
+        LeaderboardPlayer(6, "Maya", "🍭", Color(0xFFB26BFF), 31200, 68),
+        LeaderboardPlayer(7, "Ethan", "🔥", Color(0xFFFF5252), 27500, 62),
+        LeaderboardPlayer(8, "Ava", "⭐", Color(0xFFFFC531), 24100, 56),
         LeaderboardPlayer(9, "Leo", "🎈", Color(0xFF10B981), 21300, 50),
         LeaderboardPlayer(10, "Zoe", "✨", Color(0xFF6366F1), 18900, 46),
         LeaderboardPlayer(42, "You", "😎", Color(0xFFC93A5E), currentScore.coerceAtLeast(12450), currentLevel, isCurrentUser = true)
@@ -61,8 +61,8 @@ fun RanksScreen(
             .padding(14.dp)
             .shadow(24.dp, RoundedCornerShape(26.dp), spotColor = Color(0x66FFD700))
             .clip(RoundedCornerShape(26.dp))
-            .background(Color(0xFF0C0C16))
-            .border(1.5.dp, Color(0xFF28283E), RoundedCornerShape(26.dp))
+            .background(Color(0xFF33103D))
+            .border(1.5.dp, Color(0xFF7A3EAE), RoundedCornerShape(26.dp))
             .padding(16.dp)
     ) {
         // Header Row
@@ -87,7 +87,7 @@ fun RanksScreen(
                         text = "👑 SKY DIAMOND LEAGUE • Season 12",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFBBF24)
+                        color = Color(0xFFFFC531)
                     )
                 }
             }
@@ -96,8 +96,8 @@ fun RanksScreen(
                 modifier = Modifier
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF1E1E2E))
-                    .border(1.dp, Color(0xFF383852), CircleShape)
+                    .background(Color(0xFF55277D))
+                    .border(1.dp, Color(0xFF7A3EAE), CircleShape)
                     .clickable { onClose() }
                     .testTag("ranks_close_button"),
                 contentAlignment = Alignment.Center
@@ -165,7 +165,7 @@ fun RanksScreen(
                     text = "#${userPlayer.rank}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFFFDE68A)
+                    color = Color(0xFFFFE29A)
                 )
                 Box(
                     modifier = Modifier
@@ -187,7 +187,7 @@ fun RanksScreen(
                         text = "Top 5% of all Balloon Masters",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFDE68A)
+                        color = Color(0xFFFFE29A)
                     )
                 }
             }
@@ -228,8 +228,8 @@ private fun LeaderboardRow(player: LeaderboardPlayer) {
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(14.dp))
             .clip(RoundedCornerShape(14.dp))
-            .background(Color(0xFF141422))
-            .border(1.dp, Color(0xFF28283E), RoundedCornerShape(14.dp))
+            .background(Color(0xFF3D165C))
+            .border(1.dp, Color(0xFF7A3EAE), RoundedCornerShape(14.dp))
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -274,7 +274,7 @@ private fun LeaderboardRow(player: LeaderboardPlayer) {
                     text = "Level ${player.level}",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFFCDB8EC)
                 )
             }
         }
@@ -283,7 +283,7 @@ private fun LeaderboardRow(player: LeaderboardPlayer) {
             text = "${String.format("%,d", player.score)} 🎈",
             fontSize = 13.sp,
             fontWeight = FontWeight.Black,
-            color = Color(0xFFFBBF24)
+            color = Color(0xFFFFC531)
         )
     }
 }

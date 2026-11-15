@@ -46,7 +46,7 @@ fun GlassmorphismButton(
     modifier: Modifier = Modifier,
     icon: String? = null,
     badge: String? = null,
-    glowColor: Color = Color(0xFF4A90C4),
+    glowColor: Color = Color(0xFFA6F750),
     bgGradient: List<Color> = listOf(Color(0x33FFFFFF), Color(0x10FFFFFF)),
     borderGradient: List<Color> = listOf(Color(0x80FFFFFF), Color(0x20FFFFFF)),
     textColor: Color = Color.White,
@@ -117,7 +117,7 @@ fun GlassmorphismButton(
                     text = text,
                     fontSize = fontSize.sp,
                     fontWeight = FontWeight.Black,
-                    color = if (enabled) textColor else Color(0xFF64748B),
+                    color = if (enabled) textColor else Color(0xFFB79BDB),
                     maxLines = 1,
                     softWrap = false,
                     overflow = TextOverflow.Ellipsis,
@@ -180,15 +180,15 @@ fun SkillMorphismButton(
         isCosmic -> listOf(Color(0xFF4C1D95), Color(0xFF7C3AED), Color(0xFFC026D3))
         costGems != null && costGems > 0 -> listOf(Color(0xFF3B0764), Color(0xFF6B21A8), Color(0xFF9333EA))
         costCoins != null && costCoins > 0 -> listOf(Color(0xFF78350F), Color(0xFFB45309), Color(0xFFD97706))
-        else -> listOf(Color(0xFF0369A1), Color(0xFF0284C7), Color(0xFF38BDF8))
+        else -> listOf(Color(0xFF0369A1), Color(0xFF63C70A), Color(0xFFA6F750))
     }
 
     val glowColor = when {
         isEquipped -> Color(0xFF10B981)
         isCosmic -> Color(0xFFE879F9)
-        costGems != null && costGems > 0 -> Color(0xFFA855F7)
-        costCoins != null && costCoins > 0 -> Color(0xFFFBBF24)
-        else -> Color(0xFF38BDF8)
+        costGems != null && costGems > 0 -> Color(0xFFB26BFF)
+        costCoins != null && costCoins > 0 -> Color(0xFFFFC531)
+        else -> Color(0xFFA6F750)
     }
 
     Box(
@@ -203,7 +203,7 @@ fun SkillMorphismButton(
             .clip(RoundedCornerShape(14.dp))
             .background(
                 Brush.horizontalGradient(
-                    if (enabled) bgGradient else listOf(Color(0xFF1E1E2C), Color(0xFF141422))
+                    if (enabled) bgGradient else listOf(Color(0xFF1E1E2C), Color(0xFF3D165C))
                 )
             )
             .border(
@@ -237,7 +237,7 @@ fun SkillMorphismButton(
             }
             Text(
                 text = text,
-                color = if (enabled) Color.White else Color(0xFF64748B),
+                color = if (enabled) Color.White else Color(0xFFB79BDB),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.8.sp,
@@ -285,7 +285,7 @@ fun ClaimMorphismButton(
             .background(
                 when {
                     isClaimed -> Brush.verticalGradient(listOf(Color(0xFF1A1A24), Color(0xFF12121A)))
-                    enabled -> Brush.verticalGradient(listOf(Color(0xFF34D399), Color(0xFF10B981), Color(0xFF059669)))
+                    enabled -> Brush.verticalGradient(listOf(Color(0xFF7EE82E), Color(0xFF10B981), Color(0xFF059669)))
                     else -> Brush.verticalGradient(listOf(Color(0xFF262638), Color(0xFF1A1A28)))
                 }
             )
@@ -294,7 +294,7 @@ fun ClaimMorphismButton(
                 color = when {
                     isClaimed -> Color(0xFF2F2F45)
                     enabled -> Color(0xFFA7F3D0)
-                    else -> Color(0xFF383852)
+                    else -> Color(0xFF7A3EAE)
                 },
                 shape = RoundedCornerShape(14.dp)
             )
@@ -308,9 +308,9 @@ fun ClaimMorphismButton(
             fontSize = 12.sp,
             fontWeight = FontWeight.Black,
             color = when {
-                isClaimed -> Color(0xFF64748B)
+                isClaimed -> Color(0xFFB79BDB)
                 enabled -> Color.White
-                else -> Color(0xFF94A3B8)
+                else -> Color(0xFFCDB8EC)
             },
             maxLines = 1,
             softWrap = false
@@ -330,8 +330,8 @@ fun MorphismPillTab(
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    activeColor: Color = Color(0xFF4A90C4),
-    activeGradient: List<Color> = listOf(Color(0xFF0C2B40), Color(0xFF071926)),
+    activeColor: Color = Color(0xFFA6F750),
+    activeGradient: List<Color> = listOf(Color(0xFF2A1450), Color(0xFF071926)),
     testTag: String = "tab"
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -357,7 +357,7 @@ fun MorphismPillTab(
             )
             .border(
                 width = if (isSelected) 1.8.dp else 1.dp,
-                color = if (isSelected) activeColor else Color(0xFF26263B),
+                color = if (isSelected) activeColor else Color(0xFF4A2470),
                 shape = RoundedCornerShape(16.dp)
             )
             .clickable(
@@ -378,7 +378,7 @@ fun MorphismPillTab(
                 text = label,
                 fontSize = 12.sp,
                 fontWeight = if (isSelected) FontWeight.Black else FontWeight.Bold,
-                color = if (isSelected) Color.White else Color(0xFF94A3B8),
+                color = if (isSelected) Color.White else Color(0xFFCDB8EC),
                 maxLines = 1,
                 softWrap = false,
                 overflow = TextOverflow.Ellipsis
@@ -443,7 +443,7 @@ fun LevelDiveOverlay(
                 )
 
                 drawLine(
-                    color = if (i % 2 == 0) Color(0x664A90C4) else Color(0x66FFD700),
+                    color = if (i % 2 == 0) Color(0x6633103D) else Color(0x66FFD700),
                     start = start,
                     end = end,
                     strokeWidth = 3f + diveProgress * 6f
@@ -491,7 +491,7 @@ fun LevelDiveOverlay(
                 text = zoneName,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF38BDF8)
+                color = Color(0xFFA6F750)
             )
         }
     }

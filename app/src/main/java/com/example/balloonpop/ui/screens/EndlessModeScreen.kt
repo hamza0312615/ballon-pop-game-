@@ -223,7 +223,7 @@ fun EndlessModeScreen(
                         fontFamily = NunitoFontFamily,
                         fontSize = DesignTokens.TypeTierBody,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFFCDB8EC),
                         textAlign = TextAlign.Center,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
@@ -266,7 +266,7 @@ fun EndlessModeScreen(
                     badgeText = "SURVIVAL",
                     accentColor = Color(0xFF10B981),
                     badgeBgColor = Color(0x3310B981),
-                    badgeTextColor = Color(0xFF6EE7B7),
+                    badgeTextColor = Color(0xFFB9F58A),
                     isSelected = selectedMode == GameMode.CLASSIC,
                     glowPulse = glowPulse,
                     bestScore = classicBest,
@@ -282,7 +282,7 @@ fun EndlessModeScreen(
                     badgeText = "BLITZ",
                     accentColor = Color(0xFFF59E0B),
                     badgeBgColor = Color(0x33F59E0B),
-                    badgeTextColor = Color(0xFFFDE68A),
+                    badgeTextColor = Color(0xFFFFE29A),
                     isSelected = selectedMode == GameMode.TIME_RUSH,
                     glowPulse = glowPulse,
                     bestScore = timeRushBest,
@@ -312,7 +312,7 @@ fun EndlessModeScreen(
                     subtitle = "No Bombs • Relaxing Ambient",
                     mode = GameMode.ZEN,
                     badgeText = "ZEN",
-                    accentColor = Color(0xFF4A90C4),
+                    accentColor = Color(0xFFA6F750),
                     badgeBgColor = Color(0x334A90C4),
                     badgeTextColor = Color(0xFFBAE6FD),
                     isSelected = selectedMode == GameMode.ZEN,
@@ -328,7 +328,7 @@ fun EndlessModeScreen(
                 GameMode.CLASSIC -> listOf(Color(0xFF10B981), Color(0xFF059669)) to "START CLASSIC"
                 GameMode.TIME_RUSH -> listOf(Color(0xFFF59E0B), Color(0xFFD97706)) to "START TIME RUSH"
                 GameMode.ARCADE -> listOf(Color(0xFFFF5722), Color(0xFFDC2626)) to "START ARCADE"
-                GameMode.ZEN -> listOf(Color(0xFF4A90C4), Color(0xFF0284C7)) to "START ZEN"
+                GameMode.ZEN -> listOf(Color(0xFFA6F750), Color(0xFF63C70A)) to "START ZEN"
                 else -> listOf(Color(0xFF10B981), Color(0xFF059669)) to "START GAME"
             }
 
@@ -582,7 +582,7 @@ private fun EndlessModeCard(
                         fontFamily = NunitoFontFamily,
                         fontSize = DesignTokens.TypeTierCaption,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFF94A3B8),
+                        color = Color(0xFFCDB8EC),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

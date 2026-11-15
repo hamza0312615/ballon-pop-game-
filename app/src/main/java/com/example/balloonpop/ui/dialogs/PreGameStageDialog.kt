@@ -217,7 +217,7 @@ fun PreGameStageDialog(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(10.dp))
                                     .background(Color(0xFF7F1D1D))
-                                    .border(1.dp, Color(0xFFEF4444), RoundedCornerShape(10.dp))
+                                    .border(1.dp, Color(0xFFFF5252), RoundedCornerShape(10.dp))
                                     .padding(horizontal = 10.dp, vertical = 3.dp)
                             ) {
                                 Text(
@@ -225,7 +225,7 @@ fun PreGameStageDialog(
                                     fontFamily = Baloo2FontFamily,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = Color(0xFFFCA5A5),
+                                    color = Color(0xFFFFB3B3),
                                     letterSpacing = 0.8.sp
                                 )
                             }
@@ -261,7 +261,7 @@ fun PreGameStageDialog(
                     // Box 1: TARGET
                     IntroStatBox(
                         iconVector = Icons.Default.GpsFixed,
-                        iconColor = Color(0xFFEF4444),
+                        iconColor = Color(0xFFFF5252),
                         label = "TARGET",
                         value = "$targetPops pops",
                         modifier = Modifier.weight(1f)
@@ -270,7 +270,7 @@ fun PreGameStageDialog(
                     // Box 2: TIME
                     IntroStatBox(
                         iconVector = Icons.Default.AvTimer,
-                        iconColor = Color(0xFF38BDF8),
+                        iconColor = Color(0xFFA6F750),
                         label = "TIME",
                         value = "${timeLimit}s",
                         modifier = Modifier.weight(1f)
@@ -279,7 +279,7 @@ fun PreGameStageDialog(
                     // Box 3: MAX MISS
                     IntroStatBox(
                         iconVector = Icons.Default.Warning,
-                        iconColor = Color(0xFFFBBF24),
+                        iconColor = Color(0xFFFFC531),
                         label = "MAX MISS",
                         value = "$maxMissesAllowed",
                         modifier = Modifier.weight(1f)
@@ -309,8 +309,8 @@ fun PreGameStageDialog(
                         IntroBoosterOrb(
                             boosterId = "booster_freeze",
                             label = "+15s Time",
-                            gradient = listOf(Color(0xFF38BDF8), Color(0xFF0284C7)),
-                            glowColor = Color(0xFF38BDF8),
+                            gradient = listOf(Color(0xFFA6F750), Color(0xFF63C70A)),
+                            glowColor = Color(0xFFA6F750),
                             isSelected = selectedBoosters.contains("booster_time"),
                             onClick = {
                                 selectedBoosters = if (selectedBoosters.contains("booster_time")) {
@@ -339,7 +339,7 @@ fun PreGameStageDialog(
                         IntroBoosterOrb(
                             boosterId = "booster_color_bomb",
                             label = "Rainbow",
-                            gradient = listOf(Color(0xFFFF5D8F), Color(0xFFC084FC), Color(0xFFFBBF24)),
+                            gradient = listOf(Color(0xFFFF5D8F), Color(0xFFC084FC), Color(0xFFFFC531)),
                             glowColor = Color(0xFFFF5D8F),
                             isSelected = selectedBoosters.contains("booster_rainbow"),
                             onClick = {

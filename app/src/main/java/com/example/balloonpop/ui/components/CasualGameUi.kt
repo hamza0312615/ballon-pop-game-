@@ -73,19 +73,19 @@ fun JellyButton(
         JellyColorVariant.ORANGE -> listOf(
             Color(0xFFF59E0B),
             Color(0xFFD97706),
-            Color(0xFFFDE68A),
+            Color(0xFFFFE29A),
             Color(0xFF78350F),
             Color.White
         )
         JellyColorVariant.BLUE -> listOf(
             Color(0xFF06B6D4),
-            Color(0xFF0284C7),
+            Color(0xFF63C70A),
             Color(0xFFBAE6FD),
             Color(0xFF0369A1),
             Color.White
         )
         JellyColorVariant.PURPLE -> listOf(
-            Color(0xFFA855F7),
+            Color(0xFFB26BFF),
             Color(0xFF7E22CE),
             Color(0xFFE9D5FF),
             Color(0xFF581C87),
@@ -99,7 +99,7 @@ fun JellyButton(
             Color.White
         )
         JellyColorVariant.RED -> listOf(
-            Color(0xFFEF4444),
+            Color(0xFFFF5252),
             Color(0xFFB91C1C),
             Color(0xFFFECACA),
             Color(0xFF7F1D1D),
@@ -113,7 +113,7 @@ fun JellyButton(
             Color.White
         )
         JellyColorVariant.GOLD -> listOf(
-            Color(0xFFFBBF24),
+            Color(0xFFFFC531),
             Color(0xFFB45309),
             Color(0xFFFEF3C7),
             Color(0xFF78350F),
@@ -269,12 +269,12 @@ fun AmberDialogFrame(
                     .background(
                         Brush.verticalGradient(
                             listOf(
-                                Color(0xFF141422), // Midnight Obsidian Glass
-                                Color(0xFF0C0C16)
+                                Color(0xFF3D165C), // Midnight Obsidian Glass
+                                Color(0xFF33103D)
                             )
                         )
                     )
-                    .border(1.5.dp, Color(0xFF28283E), RoundedCornerShape(20.dp))
+                    .border(1.5.dp, Color(0xFF7A3EAE), RoundedCornerShape(20.dp))
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -417,7 +417,7 @@ fun MascotCharacter(
     val balloonColor = when (mood) {
         MascotMood.JOYFUL -> Color(0xFFFF2A6D)  // Radiant ruby rose
         MascotMood.HAPPY -> Color(0xFFFFB703)   // Golden sunny amber
-        MascotMood.NEUTRAL -> Color(0xFF4A90C4) // Electric sky cyan
+        MascotMood.NEUTRAL -> Color(0xFFA6F750) // Electric sky cyan
         MascotMood.SAD -> Color(0xFF818CF8)     // Gentle pastel indigo
     }
     val highlightColor = Color.White.copy(alpha = 0.85f)
@@ -591,7 +591,7 @@ fun MascotCharacter(
             drawPath(
                 path = hatPath,
                 brush = Brush.linearGradient(
-                    colors = listOf(Color(0xFFFFEA00), Color(0xFFFF5722), Color(0xFF9C27B0), Color(0xFF4A90C4)),
+                    colors = listOf(Color(0xFFFFEA00), Color(0xFFFF5722), Color(0xFF9C27B0), Color(0xFFA6F750)),
                     start = Offset(hatBaseLeft, hatBaseY),
                     end = Offset(hatApexX, hatApexY)
                 )
@@ -605,7 +605,7 @@ fun MascotCharacter(
                 cap = StrokeCap.Round
             )
             drawLine(
-                color = Color(0xFF4A90C4),
+                color = Color(0xFFA6F750),
                 start = Offset(hatBaseLeft + (hatApexX - hatBaseLeft) * 0.65f, hatBaseY - bodyR * 0.48f),
                 end = Offset(hatBaseRight - bodyR * 0.25f, hatBaseY - bodyR * 0.52f),
                 strokeWidth = bodyR * 0.08f,
@@ -736,7 +736,7 @@ fun ResumeCountdownOverlay(
     }
 
     val (colors, text) = when (count) {
-        3 -> listOf(Color(0xFF4A90C4), Color(0xFF0284C7)) to "3"
+        3 -> listOf(Color(0xFFA6F750), Color(0xFF63C70A)) to "3"
         2 -> listOf(Color(0xFFFFB703), Color(0xFFFB8500)) to "2"
         1 -> listOf(Color(0xFFC93A5E), Color(0xFFE11D48)) to "1"
         else -> listOf(Color(0xFF22C55E), Color(0xFF15803D)) to "GO! 🎈"
@@ -852,7 +852,7 @@ fun StageIntroSplash(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFF382405))
+                    .background(Color(0xFF4A3205))
                     .border(1.5.dp, Color(0xFFFFD700), RoundedCornerShape(16.dp))
                     .padding(horizontal = 18.dp, vertical = 6.dp)
             ) {
@@ -860,7 +860,7 @@ fun StageIntroSplash(
                     text = if (level > 0) "✦ STAGE $level ✦" else "✦ CHALLENGE ✦",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Black,
-                    color = Color(0xFFFDE68A),
+                    color = Color(0xFFFFE29A),
                     letterSpacing = 1.5.sp
                 )
             }
@@ -871,7 +871,7 @@ fun StageIntroSplash(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
                     .background(Color(0xFF161628))
-                    .border(1.5.dp, Color(0xFF28283E), RoundedCornerShape(18.dp))
+                    .border(1.5.dp, Color(0xFF7A3EAE), RoundedCornerShape(18.dp))
                     .padding(14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -897,13 +897,13 @@ fun StageIntroSplash(
                         text = "⏱️ Time: ${timeLimit}s",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF38BDF8)
+                        color = Color(0xFFA6F750)
                     )
                     Text(
                         text = "💨 Max Misses: $maxMissesAllowed",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFCA5A5)
+                        color = Color(0xFFFFB3B3)
                     )
                 }
 
@@ -919,7 +919,7 @@ fun StageIntroSplash(
                         text = "⚠️ Miss > $maxMissesAllowed balloons = Game Over!",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFFFCA5A5),
+                        color = Color(0xFFFFB3B3),
                         textAlign = TextAlign.Center
                     )
                 }

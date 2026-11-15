@@ -200,7 +200,7 @@ fun QuestsScreen(
                                 fontFamily = NunitoFontFamily,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFCBD5E1)
+                                color = Color(0xFFF5EEFF)
                             )
                         }
                     }
@@ -265,7 +265,7 @@ private fun AchievementItemCard(
                         text = achievement.description,
                         fontFamily = NunitoFontFamily,
                         fontSize = 12.sp,
-                        color = Color(0xFFCBD5E1)
+                        color = Color(0xFFF5EEFF)
                     )
                 }
                 Text(
@@ -302,7 +302,7 @@ private fun AchievementItemCard(
                     fontFamily = NunitoFontFamily,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFCBD5E1)
+                    color = Color(0xFFF5EEFF)
                 )
                 when {
                     isClaimed -> Text(
@@ -310,7 +310,7 @@ private fun AchievementItemCard(
                         fontFamily = NunitoFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFF94A3B8)
+                        color = Color(0xFFCDB8EC)
                     )
                     isCompleted -> Box(
                         modifier = Modifier
@@ -335,7 +335,7 @@ private fun AchievementItemCard(
                         fontFamily = NunitoFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF64748B)
+                        color = Color(0xFFB79BDB)
                     )
                 }
             }
@@ -361,7 +361,7 @@ private fun QuestItemCard(
 
     val progressBarBrush = when (quest.category) {
         QuestCategory.DAILY -> Brush.horizontalGradient(listOf(Color(0xFFFF5D8F), Color(0xFFFB923C), Color(0xFFFFD54F)))
-        QuestCategory.WEEKLY -> Brush.horizontalGradient(listOf(Color(0xFF2DD4BF), Color(0xFF38BDF8), Color(0xFFFFD54F)))
+        QuestCategory.WEEKLY -> Brush.horizontalGradient(listOf(Color(0xFF2DD4BF), Color(0xFFA6F750), Color(0xFFFFD54F)))
         else -> Brush.horizontalGradient(listOf(Color(0xFFFFD54F), Color(0xFFF59E0B)))
     }
 
