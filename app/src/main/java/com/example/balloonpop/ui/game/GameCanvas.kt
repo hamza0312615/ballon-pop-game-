@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
@@ -91,6 +92,10 @@ fun GameCanvas(
     var cachedBgBrush by remember(equippedTheme, currentLevel) { mutableStateOf<Brush?>(null) }
     var cachedOrb1 by remember { mutableStateOf<Brush?>(null) }
     var cachedOrb2 by remember { mutableStateOf<Brush?>(null) }
+    // Pass 15: fullscreen effect brushes cached by size (were rebuilt every frame)
+    var cachedFreezeBrush by remember { mutableStateOf<Brush?>(null) }
+    var cachedMultBrush by remember { mutableStateOf<Brush?>(null) }
+    var cachedRayBrushes by remember { mutableStateOf<List<Brush>>(emptyList()) }
 
     Canvas(
         modifier = modifier
@@ -150,6 +155,26 @@ fun GameCanvas(
                 center = Offset(size.width * 0.85f, size.height * 0.7f),
                 radius = size.width * 0.7f
             )
+            cachedFreezeBrush = Brush.radialGradient(
+                colors = listOf(Color.Transparent, Color(0x254A90C4), Color(0x6000B4D8)),
+                center = Offset(size.width / 2f, size.height / 2f),
+                radius = size.maxDimension / 1.4f
+            )
+            cachedMultBrush = Brush.radialGradient(
+                colors = listOf(Color.Transparent, Color(0x20FFD700), Color(0x50FFA000)),
+                center = Offset(size.width / 2f, size.height / 2f),
+                radius = size.maxDimension / 1.5f
+            )
+            cachedRayBrushes = (0..4).map { i ->
+                val rayAngle = (22f + i * 14f) * (kotlin.math.PI.toFloat() / 180f)
+                val rayLength = size.height * 0.95f
+                val startX = size.width * 0.20f + i * 15f
+                Brush.linearGradient(
+                    colors = listOf(Color(0x28FFD700), Color(0x1238BDF8), Color.Transparent),
+                    start = Offset(startX, 0f),
+                    end = Offset(startX + kotlin.math.cos(rayAngle) * rayLength, kotlin.math.sin(rayAngle) * rayLength)
+                )
+            }
         }
 
         val currentShake = screenShake()
@@ -192,7 +217,7 @@ fun GameCanvas(
             val rayLength = h * 0.95f
             val startX = w * 0.20f + i * 15f
             drawLine(
-                brush = Brush.linearGradient(
+                brush = cachedRayBrushes.getOrNull(i) ?: Brush.linearGradient(
                     colors = listOf(Color(0x28FFD700), Color(0x1238BDF8), Color.Transparent),
                     start = Offset(startX, 0f),
                     end = Offset(startX + kotlin.math.cos(rayAngle) * rayLength, kotlin.math.sin(rayAngle) * rayLength)
@@ -588,10 +613,10 @@ fun GameCanvas(
             }
         }
 
-        // 7. Freeze Icy Vignette
+        // 7. Freeze Icy Vignette (Pass 15: cached brush)
         if (isFreezeActive) {
             drawRect(
-                brush = Brush.radialGradient(
+                brush = cachedFreezeBrush ?: Brush.radialGradient(
                     colors = listOf(Color.Transparent, Color(0x254A90C4), Color(0x6000B4D8)),
                     center = Offset(size.width / 2f, size.height / 2f),
                     radius = size.maxDimension / 1.4f
@@ -599,10 +624,10 @@ fun GameCanvas(
             )
         }
 
-        // 8. Multiplier Golden Vignette
+        // 8. Multiplier Golden Vignette (Pass 15: cached brush)
         if (isMultiplierActive) {
             drawRect(
-                brush = Brush.radialGradient(
+                brush = cachedMultBrush ?: Brush.radialGradient(
                     colors = listOf(Color.Transparent, Color(0x20FFD700), Color(0x50FFA000)),
                     center = Offset(size.width / 2f, size.height / 2f),
                     radius = size.maxDimension / 1.5f
@@ -730,19 +755,16 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
         curAlpha
     )
 
-    drawOval(
-        brush = Brush.radialGradient(
-            colors = listOf(
-                highlightTone,
-                b.color.copy(alpha = curAlpha),
-                shadowTone
-            ),
-            center = Offset(x - r * 0.32f, y - r * 0.38f),
-            radius = r * 1.55f
-        ),
-        topLeft = Offset(x - r * 0.9f, y - r * 1.1f),
-        size = Size(r * 1.8f, r * 2.2f)
-    )
+    // Pass 15: body drawn in balloon-local coords so the gradient brush
+    // (centre/ radius depend only on colour, alpha, radius) comes from a
+    // cache instead of building a fresh shader for every balloon every frame.
+    withTransform({ translate(x, y) }) {
+        drawOval(
+            brush = balloonBodyBrush(b.color, curAlpha, r, highlightTone, shadowTone),
+            topLeft = Offset(-r * 0.9f, -r * 1.1f),
+            size = Size(r * 1.8f, r * 2.2f)
+        )
+    }
 
     // Pass 5: equipped balloon-skin pattern overlay (standard balloons only
     // carry a pattern; special types keep their plain jewel body).
@@ -760,11 +782,7 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
             )
         }
         BalloonPattern.POLKA -> {
-            val dots = listOf(
-                -0.42f to -0.55f, 0.30f to -0.22f, -0.14f to 0.14f,
-                0.44f to 0.42f, -0.48f to 0.58f
-            )
-            for ((dx, dy) in dots) {
+            for ((dx, dy) in POLKA_DOTS) {
                 drawCircle(
                     color = Color.White.copy(alpha = 0.25f * curAlpha),
                     radius = r * 0.13f,
@@ -793,8 +811,7 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
             )
         }
         BalloonPattern.SPARKLE -> {
-            val sparks = listOf(-0.40f to -0.60f, 0.35f to -0.10f, -0.10f to 0.50f)
-            for ((dx, dy) in sparks) {
+            for ((dx, dy) in SPARKLE_SPOTS) {
                 val cx = x + dx * r
                 val cy = y + dy * r
                 val arm = r * 0.15f
@@ -817,17 +834,15 @@ private fun DrawScope.drawRoundBalloonWithFace(b: Balloon, emojiPaint: Paint) {
         BalloonPattern.SOLID -> Unit
     }
 
-    // Bottom bounce rim reflection
-    drawOval(
-        brush = Brush.verticalGradient(
-            colors = listOf(Color.Transparent, Color(0x55FFFFFF)),
-            startY = y,
-            endY = y + r * 1.1f
-        ),
-        topLeft = Offset(x - r * 0.85f, y - r * 1.05f),
-        size = Size(r * 1.7f, r * 2.1f),
-        style = Stroke(width = 1.6f)
-    )
+    // Bottom bounce rim reflection (Pass 15: cached brush, local coords)
+    withTransform({ translate(x, y) }) {
+        drawOval(
+            brush = balloonRimBrush(curAlpha, r),
+            topLeft = Offset(-r * 0.85f, -r * 1.05f),
+            size = Size(r * 1.7f, r * 2.1f),
+            style = Stroke(width = 1.6f)
+        )
+    }
 
     // Curved Glossy Crescent Specular Highlight (Upper Left)
     // Pass 5: specular intensity is scaled by the equipped skin's gloss.
@@ -1587,4 +1602,49 @@ private fun DrawScope.drawZoneSignatureDecorations(
             }
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Pass 15 performance: shared pattern geometry + balloon brush caches.
+// Brushes are keyed by (colour, quantized alpha, quantized radius) and drawn
+// in balloon-local coordinates, so a screen full of balloons reuses a small
+// pool of shaders instead of allocating new gradients every frame.
+// ---------------------------------------------------------------------------
+private val POLKA_DOTS = listOf(
+    -0.42f to -0.55f, 0.30f to -0.22f, -0.14f to 0.14f,
+    0.44f to 0.42f, -0.48f to 0.58f
+)
+private val SPARKLE_SPOTS = listOf(-0.40f to -0.60f, 0.35f to -0.10f, -0.10f to 0.50f)
+
+private val bodyBrushCache = HashMap<Int, Brush>()
+private val rimBrushCache = HashMap<Int, Brush>()
+
+private fun balloonBodyBrush(color: Color, alpha: Float, radius: Float, highlight: Color, shadow: Color): Brush {
+    val alphaQ = (alpha * 20f).toInt().coerceIn(0, 20)
+    val radiusQ = (radius * 0.5f).toInt()
+    val key = (color.hashCode() * 31 + alphaQ) * 131 + radiusQ
+    bodyBrushCache[key]?.let { return it }
+    if (bodyBrushCache.size > 160) bodyBrushCache.clear()
+    val brush = Brush.radialGradient(
+        colors = listOf(highlight, color.copy(alpha = alpha), shadow),
+        center = Offset(-radius * 0.32f, -radius * 0.38f),
+        radius = radius * 1.55f
+    )
+    bodyBrushCache[key] = brush
+    return brush
+}
+
+private fun balloonRimBrush(alpha: Float, radius: Float): Brush {
+    val alphaQ = (alpha * 20f).toInt().coerceIn(0, 20)
+    val radiusQ = (radius * 0.5f).toInt()
+    val key = alphaQ * 131 + radiusQ
+    rimBrushCache[key]?.let { return it }
+    if (rimBrushCache.size > 64) rimBrushCache.clear()
+    val brush = Brush.verticalGradient(
+        colors = listOf(Color.Transparent, Color(0x55FFFFFF)),
+        startY = 0f,
+        endY = radius * 1.1f
+    )
+    rimBrushCache[key] = brush
+    return brush
 }

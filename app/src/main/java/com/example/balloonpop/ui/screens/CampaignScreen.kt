@@ -1180,7 +1180,7 @@ private fun ModernSecondaryNavRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 2.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1432,7 +1432,12 @@ private fun VerticalLevelLadder(
                                 prevNode.stageNumber <= currentUnlockedLevel && isUnlocked,
                             isNextSegmentTraversed = nextNode != null &&
                                 isUnlocked && nextNode.stageNumber <= currentUnlockedLevel,
-                            accentColor = theme.primaryAccent
+                            accentColor = theme.primaryAccent,
+                            flowPhase = particleTime,
+                            animatePrevFlow = isCurrent,
+                            animateNextFlow = nextNode != null &&
+                                nextNode.stageNumber == currentUnlockedLevel &&
+                                node.stageNumber < currentUnlockedLevel
                         )
                     }
 
@@ -1510,7 +1515,10 @@ private fun DrawScope.drawUnifiedMapPath(
     nextXRatio: Float?,
     isPrevSegmentTraversed: Boolean,
     isNextSegmentTraversed: Boolean,
-    accentColor: Color
+    accentColor: Color,
+    flowPhase: Float = 0f,
+    animatePrevFlow: Boolean = false,
+    animateNextFlow: Boolean = false
 ) {
     val w = size.width
     val h = size.height
@@ -1522,12 +1530,13 @@ private fun DrawScope.drawUnifiedMapPath(
     val cx = centerXOf(xRatio)
     val cy = h / 2f
 
-    fun drawHalf(targetRatio: Float, toTop: Boolean, traversed: Boolean) {
+    fun drawHalf(targetRatio: Float, toTop: Boolean, traversed: Boolean, flow: Boolean) {
         val edgeX = (cx + centerXOf(targetRatio)) / 2f
         val edgeY = if (toTop) 0f else h
-        // Pass 5 differentiator: the path is a literal balloon STRING — a thin
-        // curved line with a natural mid-span sag, gold where traversed and
-        // pale cream ahead, with a small knot bead where segments join.
+        // Pass 16: the path is now a proper ROAD, not a string — a wide ribbon
+        // with a dark underlay, a bright centre line, and animated flow dashes
+        // on the segment leading into the current stage, so the route reads
+        // as alive and unmistakably THE track.
         val sag = 7.dp.toPx()
         val curve = Path().apply {
             moveTo(cx, cy)
@@ -1538,38 +1547,56 @@ private fun DrawScope.drawUnifiedMapPath(
                 edgeY
             )
         }
-        val stringColor = if (traversed) {
-            StoryGold
-        } else {
-            Color(0xFF8B5CF6).copy(alpha = 0.65f)
-        }
-        // Soft shadow line under the string (readability over busy zone art).
+        val ribbonColor = if (traversed) StoryGold else accentColor.copy(alpha = 0.62f)
+        // Dark underlay: separates the road from any scenery behind it.
         drawPath(
             path = curve,
-            color = StageCurtainEdge.copy(alpha = 0.65f),
+            color = StageCurtainEdge.copy(alpha = 0.55f),
+            style = Stroke(width = 26.dp.toPx(), cap = StrokeCap.Round)
+        )
+        // The road ribbon itself.
+        drawPath(
+            path = curve,
+            color = ribbonColor,
+            style = Stroke(width = 18.dp.toPx(), cap = StrokeCap.Round)
+        )
+        // Bright centre line (gold roads glow; upcoming roads get a soft sheen).
+        drawPath(
+            path = curve,
+            color = if (traversed) Color(0xFFFFE9A8).copy(alpha = 0.85f) else Color.White.copy(alpha = 0.16f),
             style = Stroke(width = 5.5.dp.toPx(), cap = StrokeCap.Round)
         )
-        // The string itself.
-        drawPath(
-            path = curve,
-            color = stringColor,
-            style = Stroke(width = 2.4.dp.toPx(), cap = StrokeCap.Round)
-        )
-        // Knot bead at the join with the neighbouring row.
+        // Animated flow: dashes streaming along the approach to the current
+        // stage — the line itself tells the player where to go next.
+        if (flow) {
+            val dashPx = 9.dp.toPx()
+            val gapPx = 13.dp.toPx()
+            val phase = (flowPhase * 70f) % (dashPx + gapPx)
+            drawPath(
+                path = curve,
+                color = Color(0xFFFFF3C4).copy(alpha = 0.95f),
+                style = Stroke(
+                    width = 3.2.dp.toPx(),
+                    cap = StrokeCap.Round,
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashPx, gapPx), phase)
+                )
+            )
+        }
+        // Stepping bead at the join with the neighbouring row.
         drawCircle(
-            color = stringColor,
-            radius = 4.dp.toPx(),
+            color = ribbonColor,
+            radius = 5.dp.toPx(),
             center = Offset(edgeX, edgeY)
         )
         drawCircle(
-            color = Color.White.copy(alpha = 0.8f),
-            radius = 1.5.dp.toPx(),
+            color = Color.White.copy(alpha = 0.85f),
+            radius = 2.dp.toPx(),
             center = Offset(edgeX, edgeY)
         )
     }
 
-    if (nextXRatio != null) drawHalf(nextXRatio, toTop = true, traversed = isNextSegmentTraversed)
-    if (prevXRatio != null) drawHalf(prevXRatio, toTop = false, traversed = isPrevSegmentTraversed)
+    if (nextXRatio != null) drawHalf(nextXRatio, toTop = true, traversed = isNextSegmentTraversed, flow = animateNextFlow)
+    if (prevXRatio != null) drawHalf(prevXRatio, toTop = false, traversed = isPrevSegmentTraversed, flow = animatePrevFlow)
 }
 
 

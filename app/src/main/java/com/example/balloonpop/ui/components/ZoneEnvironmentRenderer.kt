@@ -73,8 +73,11 @@ object ZoneEnvironmentRenderer {
 
         // ----------------------------------------------------
         // LAYER 2: Thematic River / Water / Chasm Flow
+        // Pass 16: DISABLED — the fixed full-screen river band wandered on its
+        // own route and read as a SECOND track beside the real level path.
+        // One track only: the unified road through the nodes (CampaignScreen).
         // ----------------------------------------------------
-        drawThemedWaterway(theme, w, h, riverFlow)
+        // drawThemedWaterway(theme, w, h, riverFlow)
 
         // ----------------------------------------------------
         // LAYER 3: Midground Environment Illustrations
