@@ -123,7 +123,7 @@ fun StageIntroRibbon(
                             )
                         }
                         Text(
-                            text = "START! 🎯",
+                            text = "START!",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFA6F750)
@@ -285,7 +285,7 @@ fun VictoryStageDialog(
             // Pass 9: Steady Hands objective bonus message
             if (steadyHandsBonusEarned > 0) {
                 Text(
-                    text = "🎯 Steady Hands bonus: +$steadyHandsBonusEarned coins (only $steadyHandsMissedCount missed!)",
+                    text = "Steady Hands bonus: +$steadyHandsBonusEarned coins (only $steadyHandsMissedCount missed!)",
                     fontSize = DesignTokens.SizeCaption,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFD97706),
@@ -297,7 +297,7 @@ fun VictoryStageDialog(
             // is promised right here on the win screen.
             if (winStreak >= 2) {
                 Text(
-                    text = "🔥 Win streak x$winStreak — next stage gets +5s!",
+                    text = "Win streak x$winStreak — next stage gets +5s!",
                     fontSize = DesignTokens.SizeCaption,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFB7791F),
@@ -572,7 +572,7 @@ fun FailedStageDialog(
             // assist is announced, not silently applied.
             if (assistUnlocked) {
                 Text(
-                    text = "💛 Popster's Help unlocked: +10s and a free Freeze on your next try!",
+                    text = "Popster's Help unlocked: +10s and a free Freeze on your next try!",
                     fontSize = DesignTokens.SizeCaption,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFB7791F),

@@ -175,7 +175,7 @@ fun MiniPetMapCompanion(
                 .padding(horizontal = 8.dp, vertical = 2.dp)
         ) {
             Text(
-                text = "${pet.name} 🐾",
+                text = pet.name,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Black,
                 color = pet.primaryColor,
@@ -201,11 +201,11 @@ fun MiniPetInGameHud(
 
     LaunchedEffect(combo) {
         if (combo >= 5) {
-            petReactionText = "🔥 ULTRA!"
+            petReactionText = "ULTRA!"
             delay(1800L)
             petReactionText = null
         } else if (combo >= 2) {
-            petReactionText = "✨ ${combo}x!"
+            petReactionText = "${combo}x!"
             delay(1400L)
             petReactionText = null
         }
@@ -213,7 +213,7 @@ fun MiniPetInGameHud(
 
     LaunchedEffect(isBossLevel) {
         if (isBossLevel) {
-            petReactionText = "👑 BOSS!"
+            petReactionText = "BOSS!"
             delay(2500L)
             petReactionText = null
         }

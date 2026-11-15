@@ -710,7 +710,7 @@ fun FloatingCloud(
             .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = "☁️", fontSize = 16.sp)
+        ToyIcon(glyph = ToyGlyph.SPARKLE, size = 17.dp, tint = Color(0xFF63C70A))
     }
 }
 
@@ -739,7 +739,7 @@ fun ResumeCountdownOverlay(
         3 -> listOf(Color(0xFFA6F750), Color(0xFF63C70A)) to "3"
         2 -> listOf(Color(0xFFFFB703), Color(0xFFFB8500)) to "2"
         1 -> listOf(Color(0xFFC93A5E), Color(0xFFE11D48)) to "1"
-        else -> listOf(Color(0xFF22C55E), Color(0xFF15803D)) to "GO! 🎈"
+        else -> listOf(Color(0xFF22C55E), Color(0xFF15803D)) to "GO!"
     }
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -880,7 +880,7 @@ fun StageIntroSplash(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(text = "🎈", fontSize = 18.sp)
+                    ToyIcon(glyph = ToyGlyph.BALLOON, size = 19.dp, tint = Color(0xFFFF7BAC))
                     Text(
                         text = "POP $targetPops BALLOONS TO WIN!",
                         fontSize = 14.sp,
@@ -900,7 +900,7 @@ fun StageIntroSplash(
                         color = Color(0xFFA6F750)
                     )
                     Text(
-                        text = "💨 Max Misses: $maxMissesAllowed",
+                        text = "Max Misses: $maxMissesAllowed",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFB3B3)
@@ -916,7 +916,7 @@ fun StageIntroSplash(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "⚠️ Miss > $maxMissesAllowed balloons = Game Over!",
+                        text = "Miss > $maxMissesAllowed balloons = Game Over!",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFFFFB3B3),

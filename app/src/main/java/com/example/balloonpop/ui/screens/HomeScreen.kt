@@ -625,7 +625,7 @@ fun HomeScreen(
                 contentAlignment = Alignment.Center
             ) {
                 AmberDialogFrame(
-                    title = "🎈 HOW TO PLAY 🎈",
+                    title = "HOW TO PLAY",
                     frameGradient = listOf(Color(0xFF1E172F), Color(0xFF140F22), Color(0xFF0C0916)),
                     borderColor = DesignTokens.SecondaryAccent,
                     onClose = { showHowToPlay = false }
@@ -636,25 +636,25 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
                     ) {
                         HowToPlayRow(
-                            icon = "🎈",
+                            icon = ToyGlyph.BALLOON,
                             title = "1. Tap Balloons to Pop",
                             description = "Tap balloons before they float off-screen. Pop consecutive balloons to build combos and earn big bonus points!",
                             accentColor = Color(0xFFC93A5E)
                         )
                         HowToPlayRow(
-                            icon = "💣",
+                            icon = ToyGlyph.BOMB,
                             title = "2. Avoid Hazard Bombs",
                             description = "Do NOT tap skull balloons or bombs! Hitting a hazard costs a heart life.",
                             accentColor = DesignTokens.DangerRed
                         )
                         HowToPlayRow(
-                            icon = "🔨",
+                            icon = ToyGlyph.HAMMER,
                             title = "3. Tap Hammers & Skills",
                             description = "Tap the screen with your hammer to smash clusters! Activate the 5s Hammer Slide skill to drag and wipe out everything!",
                             accentColor = DesignTokens.PrimaryBrandBright
                         )
                         HowToPlayRow(
-                            icon = "💨",
+                            icon = ToyGlyph.DASH,
                             title = "4. Don't Miss Balloons!",
                             description = "Each level has a strict time limit and a maximum number of missed balloons. If more balloons escape than allowed, it's automatic Game Over!",
                             accentColor = DesignTokens.SecondaryAccent
@@ -663,7 +663,7 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.height(DesignTokens.Space4))
 
                         JellyButton(
-                            text = "GOT IT! LET'S PLAY 🎮",
+                            text = "GOT IT! LET'S PLAY",
                             onClick = {
                                 showHowToPlay = false
                                 onOpenCampaign()
@@ -802,7 +802,7 @@ private fun HomeIconActionButton(
 
 @Composable
 private fun HowToPlayRow(
-    icon: String,
+    icon: ToyGlyph,
     title: String,
     description: String,
     accentColor: Color
@@ -825,7 +825,7 @@ private fun HowToPlayRow(
                 .border(1.dp, accentColor, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = icon, fontSize = 18.sp)
+            ToyIcon(glyph = icon, size = 19.dp, tint = accentColor)
         }
 
         Column(modifier = Modifier.weight(1f)) {

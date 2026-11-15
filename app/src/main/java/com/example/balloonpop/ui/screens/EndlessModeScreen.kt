@@ -238,7 +238,7 @@ fun EndlessModeScreen(
                                 .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space4)
                         ) {
                             Text(
-                                text = "🏆 BEST: $highScore",
+                                text = "BEST: $highScore",
                                 fontFamily = Baloo2FontFamily,
                                 fontSize = DesignTokens.TypeTierCaption,
                                 fontWeight = FontWeight.Bold,
@@ -598,7 +598,7 @@ private fun EndlessModeCard(
                             .padding(horizontal = 10.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = if (bestScore > 0) "🏆 BEST ${String.format("%,d", bestScore)}" else "🏆 BEST —",
+                            text = if (bestScore > 0) "BEST ${String.format("%,d", bestScore)}" else "BEST —",
                             fontFamily = Baloo2FontFamily,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.ExtraBold,

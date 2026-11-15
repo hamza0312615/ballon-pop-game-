@@ -24,6 +24,8 @@ import com.example.balloonpop.ui.components.JellyButton
 import com.example.balloonpop.ui.components.JellyColorVariant
 import com.example.balloonpop.ui.components.MascotCharacter
 import com.example.balloonpop.ui.components.MascotMood
+import com.example.balloonpop.ui.components.ToyGlyph
+import com.example.balloonpop.ui.components.ToyIcon
 
 /**
  * Custom Challenge Creator Dialog.
@@ -45,7 +47,7 @@ fun CustomChallengeDialog(
     var maxMisses by remember { mutableIntStateOf(initialMaxMisses) }
 
     AmberDialogFrame(
-        title = "⚡ CUSTOM LEVEL LAB ⚡",
+        title = "CUSTOM LEVEL LAB",
         frameGradient = listOf(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF0F172A)),
         borderColor = Color(0xFF818CF8),
         onClose = onClose
@@ -124,7 +126,7 @@ fun CustomChallengeDialog(
 
             // 1. Time Limit Selector (Seconds)
             ParameterAdjuster(
-                icon = "⏱️",
+                icon = ToyGlyph.CLOCK,
                 title = "TIME LIMIT",
                 unit = "Seconds",
                 value = timeSeconds,
@@ -135,7 +137,7 @@ fun CustomChallengeDialog(
 
             // 2. Target Balloons to Pop
             ParameterAdjuster(
-                icon = "🎈",
+                icon = ToyGlyph.BALLOON,
                 title = "TARGET BALLOONS",
                 unit = "Balloons to Pop",
                 value = targetPops,
@@ -146,7 +148,7 @@ fun CustomChallengeDialog(
 
             // 3. Max Missed Balloons Allowed
             ParameterAdjuster(
-                icon = "💨",
+                icon = ToyGlyph.DASH,
                 title = "MAX MISSED BALLOONS",
                 unit = "Allowed Misses",
                 value = maxMisses,
@@ -166,7 +168,7 @@ fun CustomChallengeDialog(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "⚠️ SCENARIO: Pop $targetPops balloons in ${timeSeconds}s.\nIf you miss more than $maxMisses balloons, GAME OVER!",
+                    text = "SCENARIO: Pop $targetPops balloons in ${timeSeconds}s.\nIf you miss more than $maxMisses balloons, GAME OVER!",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Black,
                     color = Color(0xFFFFB3B3),
@@ -191,7 +193,7 @@ fun CustomChallengeDialog(
 
 @Composable
 private fun ParameterAdjuster(
-    icon: String,
+    icon: ToyGlyph,
     title: String,
     unit: String,
     value: Int,
@@ -213,7 +215,7 @@ private fun ParameterAdjuster(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(text = icon, fontSize = 20.sp)
+            ToyIcon(glyph = icon, size = 21.dp, tint = accentColor)
             Column {
                 Text(
                     text = title,

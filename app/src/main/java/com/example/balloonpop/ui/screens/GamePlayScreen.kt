@@ -371,7 +371,7 @@ fun GamePlayScreen(
                             val objectiveTag = when (objectiveType) {
                                 StageObjectiveType.COLOUR_FOCUS -> "Focus: Only 🔴🔵"
                                 StageObjectiveType.NO_MISS_BONUS -> "Goal: ≤2 Miss (+30🪙)"
-                                StageObjectiveType.BOMB_SURVIVAL -> "💣 Bomb Survival"
+                                StageObjectiveType.BOMB_SURVIVAL -> "Bomb Survival"
                                 else -> ""
                             }
                             Text(
@@ -400,7 +400,7 @@ fun GamePlayScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = if (isDanger) Color(0xFFFF5252) else Color(0xFFFFC531)
                                 )
-                                Text(text = "⚠️", fontSize = 11.sp)
+                                ToyIcon(glyph = ToyGlyph.WARNING, size = 12.dp, tint = Color(0xFFFFC531))
                             }
                         }
                     }
@@ -451,7 +451,7 @@ fun GamePlayScreen(
                                     .border(1.5.dp, Color(0xFFC084FC), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(text = "🕒", fontSize = 15.sp)
+                                ToyIcon(glyph = ToyGlyph.CLOCK, size = 16.dp, tint = Color.White)
                             }
 
                             Text(
@@ -523,7 +523,7 @@ fun GamePlayScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(text = "🎈✨", fontSize = 16.sp)
+                    ToyIcon(glyph = ToyGlyph.BALLOON, size = 17.dp, tint = Color(0xFFFF7BAC))
                     Text(
                         text = "Pop 3 of the same colour for a combo!",
                         fontFamily = Baloo2FontFamily,
@@ -552,7 +552,7 @@ fun GamePlayScreen(
                     .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
                 Text(
-                    text = "🏁 FINISH & SAVE",
+                    text = "FINISH & SAVE",
                     fontFamily = Baloo2FontFamily,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Black,
@@ -638,7 +638,7 @@ fun GamePlayScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(text = "🏆", fontSize = 13.sp)
+                    ToyIcon(glyph = ToyGlyph.TROPHY, size = 14.dp, tint = Color(0xFFFFC531))
                     Text(
                         text = "NEW HIGH SCORE: ${String.format("%,d", score)} PTS!",
                         fontFamily = Baloo2FontFamily,
@@ -702,16 +702,16 @@ fun GamePlayScreen(
             ) {
                 if (isHammerSlideActive && hammerSlideTimeRemaining > 0f) {
                     PowerupBadge(
-                        icon = "🔨⚡",
+                        icon = ToyGlyph.HAMMER,
                         label = "HAMMER SLIDE ${String.format(java.util.Locale.US, "%.1f", hammerSlideTimeRemaining)}s",
                         color = Color(0xFFFFD700)
                     )
                 }
                 if (isFreezeActive) {
-                    PowerupBadge(icon = "❄️", label = "SLOW MOTION", color = Color(0xFFA6F750))
+                    PowerupBadge(icon = ToyGlyph.SNOWFLAKE, label = "SLOW MOTION", color = Color(0xFFA6F750))
                 }
                 if (isMultiplierActive) {
-                    PowerupBadge(icon = "⭐", label = "2X POINTS", color = Color(0xFFFFC531))
+                    PowerupBadge(icon = ToyGlyph.STAR, label = "2X POINTS", color = Color(0xFFFFC531))
                 }
             }
         }
@@ -774,7 +774,7 @@ fun GamePlayScreen(
                 val bombCount = boosterCounts["booster_color_bomb"] ?: 3
                 val bombCd = boosterCooldowns["booster_color_bomb"] ?: 0f
                 GameOrbButton(
-                    icon = "💣",
+                    icon = ToyGlyph.BOMB,
                     label = "BOMB",
                     count = bombCount,
                     coins = coins,
@@ -793,7 +793,7 @@ fun GamePlayScreen(
                 val thunderCount = boosterCounts["booster_thunder"] ?: 3
                 val thunderCd = boosterCooldowns["booster_thunder"] ?: 0f
                 GameOrbButton(
-                    icon = "⚡",
+                    icon = ToyGlyph.BOLT,
                     label = "LIGHTNING",
                     count = thunderCount,
                     coins = coins,
@@ -812,7 +812,7 @@ fun GamePlayScreen(
                 val freezeCount = boosterCounts["booster_freeze"] ?: 3
                 val freezeCd = boosterCooldowns["booster_freeze"] ?: 0f
                 GameOrbButton(
-                    icon = "❄️",
+                    icon = ToyGlyph.SNOWFLAKE,
                     label = "FREEZE",
                     count = freezeCount,
                     coins = coins,
@@ -831,7 +831,7 @@ fun GamePlayScreen(
                 val hammerCount = boosterCounts["booster_hammer"] ?: 3
                 val hammerCd = boosterCooldowns["booster_hammer"] ?: 0f
                 GameOrbButton(
-                    icon = "🔨",
+                    icon = ToyGlyph.HAMMER,
                     label = "HAMMER",
                     count = hammerCount,
                     coins = coins,
@@ -850,7 +850,7 @@ fun GamePlayScreen(
                 val vortexCount = boosterCounts["booster_vortex"] ?: 3
                 val vortexCd = boosterCooldowns["booster_vortex"] ?: 0f
                 GameOrbButton(
-                    icon = "🌀",
+                    icon = ToyGlyph.SPIRAL,
                     label = "VORTEX",
                     count = vortexCount,
                     coins = coins,
@@ -951,7 +951,7 @@ fun GamePlayScreen(
                                     .border(2.dp, Color(0xFFFFFBEB), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(text = "⭐", fontSize = 28.sp)
+                                ToyIcon(glyph = ToyGlyph.STAR, size = 30.dp, tint = Color(0xFFFFC531))
                             }
 
                             // Title: ॥ GAME PAUSED ॥
@@ -1007,7 +1007,7 @@ fun GamePlayScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 testTag = "pause_settings_button",
                                 leading = {
-                                    Text(text = "⚙️", fontSize = 18.sp, color = Color.White, modifier = Modifier.padding(end = 10.dp))
+                                    ToyIcon(glyph = ToyGlyph.GEAR, size = 19.dp, tint = Color.White, modifier = Modifier.padding(end = 10.dp))
                                 }
                             )
 
@@ -1019,7 +1019,7 @@ fun GamePlayScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 testTag = "restart_game_button",
                                 leading = {
-                                    Text(text = "🔄", fontSize = 18.sp, color = Color.White, modifier = Modifier.padding(end = 10.dp))
+                                    ToyIcon(glyph = ToyGlyph.REFRESH, size = 19.dp, tint = Color.White, modifier = Modifier.padding(end = 10.dp))
                                 }
                             )
 
@@ -1031,7 +1031,7 @@ fun GamePlayScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 testTag = "quit_game_button",
                                 leading = {
-                                    Text(text = "🏠", fontSize = 18.sp, color = Color.White, modifier = Modifier.padding(end = 10.dp))
+                                    ToyIcon(glyph = ToyGlyph.HOME, size = 19.dp, tint = Color.White, modifier = Modifier.padding(end = 10.dp))
                                 }
                             )
 
@@ -1221,18 +1221,18 @@ private fun BoosterBuyDialog(
 }
 
 @Composable
-private fun PowerupBadge(icon: String, label: String, color: Color) {
+private fun PowerupBadge(icon: ToyGlyph, label: String, color: Color) {
     Row(
         modifier = Modifier
             .shadow(4.dp, RoundedCornerShape(18.dp))
             .clip(RoundedCornerShape(18.dp))
-            .background(Color(0xCC0F172A))
+            .background(Color(0xCC2A1450))
             .border(1.5.dp, color, RoundedCornerShape(18.dp))
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Text(text = icon, fontSize = 13.sp)
+        ToyIcon(glyph = icon, size = 14.dp, tint = color)
         Text(text = label, fontSize = 11.sp, fontWeight = FontWeight.Black, color = color)
     }
 }
@@ -1516,7 +1516,7 @@ private fun BossBattleHealthBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(text = "👑", fontSize = 18.sp)
+                    ToyIcon(glyph = ToyGlyph.CROWN, size = 19.dp, tint = Color(0xFFFFC531))
                     Text(
                         text = "TITAN BOSS ENCOUNTER",
                         fontSize = DesignTokens.SizeMicro,
@@ -1567,7 +1567,7 @@ private fun BossBattleHealthBar(
  */
 @Composable
 private fun GameOrbButton(
-    icon: String,
+    icon: ToyGlyph,
     label: String,
     count: Int,
     coins: Int,
@@ -1662,7 +1662,7 @@ private fun GameOrbButton(
                     }
                 }
 
-                Text(text = icon, fontSize = 24.sp)
+                ToyIcon(glyph = icon, size = 26.dp, tint = Color.White)
             }
 
             // Fat count badge in Toy Orange with gold/white rim

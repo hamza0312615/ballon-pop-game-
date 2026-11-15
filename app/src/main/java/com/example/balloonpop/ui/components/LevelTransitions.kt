@@ -245,7 +245,7 @@ fun HighScoreCelebrationBadge(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(text = "🏆", fontSize = 24.sp)
+            ToyIcon(glyph = ToyGlyph.TROPHY, size = 26.dp, tint = Color(0xFFFFC531))
             Text(
                 text = "NEW ALL-TIME RECORD!",
                 fontSize = 15.sp,
@@ -253,7 +253,7 @@ fun HighScoreCelebrationBadge(
                 color = Color(0xFFFFE29A),
                 letterSpacing = 1.sp
             )
-            Text(text = "👑", fontSize = 20.sp)
+            ToyIcon(glyph = ToyGlyph.CROWN, size = 22.dp, tint = Color(0xFFFFC531))
         }
 
         val diff = (newScore - previousHighScore).coerceAtLeast(0)
@@ -383,7 +383,7 @@ fun StagePathBridge(
                         .border(1.5.dp, Color.White, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "⭐", fontSize = 13.sp)
+                    ToyIcon(glyph = ToyGlyph.STAR, size = 14.dp, tint = Color(0xFFFFC531))
                 }
             }
         }
@@ -425,7 +425,7 @@ fun StagePathBridge(
                     .padding(end = 4.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
-                Text(text = "🎈", fontSize = 14.sp)
+                ToyIcon(glyph = ToyGlyph.BALLOON, size = 15.dp, tint = Color(0xFFFF7BAC))
             }
         }
 
@@ -561,7 +561,7 @@ fun LevelTransitionPortal(
                     .padding(horizontal = 16.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = if (isBossStage) "👑 BOSS STAGE • LEVEL $toLevel" else "⭐ STAGE $toLevel OF 200",
+                    text = if (isBossStage) "BOSS STAGE • LEVEL $toLevel" else "STAGE $toLevel OF 200",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Black,
                     color = Color.White,
@@ -575,7 +575,7 @@ fun LevelTransitionPortal(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(text = "🏝️", fontSize = 22.sp)
+                    ToyIcon(glyph = ToyGlyph.SUN, size = 24.dp, tint = Color(0xFFFFC531))
                     Text(
                         text = "Zone ${zone.zoneNumber}: ${zone.name}",
                         fontSize = 17.sp,
@@ -602,9 +602,9 @@ fun LevelTransitionPortal(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    GoalBadge(icon = "🎯", label = "Target", value = "$targetPops Pops")
-                    GoalBadge(icon = "⏱️", label = "Time", value = "${timeLimit}s")
-                    GoalBadge(icon = "💨", label = "Max Miss", value = "$maxMissesAllowed")
+                    GoalBadge(icon = ToyGlyph.TARGET, label = "Target", value = "$targetPops Pops")
+                    GoalBadge(icon = ToyGlyph.CLOCK, label = "Time", value = "${timeLimit}s")
+                    GoalBadge(icon = ToyGlyph.DASH, label = "Max Miss", value = "$maxMissesAllowed")
                 }
 
                 if (isBossStage) {
@@ -617,7 +617,7 @@ fun LevelTransitionPortal(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "⚡ MEGA BOSS BALLOON INCOMING! ⚡",
+                            text = "MEGA BOSS BALLOON INCOMING!",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFF3E8FF)
@@ -633,7 +633,7 @@ fun LevelTransitionPortal(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "⚡ BONUS STAGE! HIGH VALUE BALLOONS! ⚡",
+                            text = "BONUS STAGE! HIGH VALUE BALLOONS!",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFFEF3C7)
@@ -679,9 +679,9 @@ fun LevelTransitionPortal(
 }
 
 @Composable
-private fun GoalBadge(icon: String, label: String, value: String) {
+private fun GoalBadge(icon: ToyGlyph, label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = icon, fontSize = 18.sp)
+        ToyIcon(glyph = icon, size = 20.dp, tint = Color(0xFFFFC531))
         Text(text = label, fontSize = 10.sp, color = Color(0xFFCDB8EC), fontWeight = FontWeight.Bold)
         Text(text = value, fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Black)
     }

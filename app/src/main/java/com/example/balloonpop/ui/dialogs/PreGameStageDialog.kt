@@ -232,7 +232,7 @@ fun PreGameStageDialog(
                         }
                         if (winStreak >= 2) {
                             Text(
-                                text = "🔥 Win streak x$winStreak: +5s bonus!",
+                                text = "Win streak x$winStreak: +5s bonus!",
                                 fontFamily = NunitoFontFamily,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,

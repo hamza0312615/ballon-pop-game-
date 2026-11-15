@@ -40,6 +40,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.balloonpop.model.*
+import com.example.balloonpop.ui.components.ToyGlyph
+import com.example.balloonpop.ui.components.ToyIcon
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.CosmosIndigo
 import com.example.balloonpop.ui.theme.CosmosNavy
@@ -54,15 +56,15 @@ import com.example.balloonpop.ui.theme.ToyWoodHighlight
 import com.example.balloonpop.ui.theme.ToyWoodFloor
 import com.example.balloonpop.ui.theme.ToyWoodFloorDark
 
-enum class ShopTab(val label: String, val icon: String) {
-    BOOSTERS("Boosters", "⚡"),
-    THEMES("Themes", "🎨"),
-    HAMMERS("Hammers", "🔨"),
-    FRAMES("Frames", "🖼️"),
-    BLADES("Blades", "⚔️"),
-    FLAMES("Flames", "🔥"),
-    SKINS("Skins", "🎈"),
-    DIAMONDS("Gems", "💎")
+enum class ShopTab(val label: String, val icon: ToyGlyph) {
+    BOOSTERS("Boosters", ToyGlyph.BOLT),
+    THEMES("Themes", ToyGlyph.PALETTE),
+    HAMMERS("Hammers", ToyGlyph.HAMMER),
+    FRAMES("Frames", ToyGlyph.FRAME),
+    BLADES("Blades", ToyGlyph.SWORD),
+    FLAMES("Flames", ToyGlyph.FLAME),
+    SKINS("Skins", ToyGlyph.BALLOON),
+    DIAMONDS("Gems", ToyGlyph.GEM)
 }
 
 // Pass 4 uniform shop grid: EVERY purchasable card (boosters, cosmetics and
@@ -225,7 +227,7 @@ fun ShopScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = "🪙", fontSize = 16.sp)
+                            ToyIcon(glyph = ToyGlyph.COIN, size = 17.dp, tint = Color(0xFFFFC531))
                             Text(
                                 text = String.format("%,d", coins),
                                 fontFamily = Baloo2FontFamily,
@@ -256,7 +258,7 @@ fun ShopScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = "💎", fontSize = 16.sp)
+                            ToyIcon(glyph = ToyGlyph.GEM, size = 17.dp, tint = Color(0xFF7DD3FC))
                             Text(
                                 text = String.format("%,d", gems),
                                 fontFamily = Baloo2FontFamily,
@@ -491,7 +493,7 @@ fun ShopScreen(
                                     CosmeticItemCard(
                                         title = theme.name,
                                         description = "Theme visual atmosphere",
-                                        icon = "🎨",
+                                        icon = ToyGlyph.PALETTE,
                                         iconBgColor = theme.gradientColors.firstOrNull() ?: Color(0xFF0F172A),
                                         previewBrush = Brush.verticalGradient(theme.gradientColors),
                                         priceCoins = if (theme.currency == CurrencyType.COINS) theme.cost else 0,
@@ -519,7 +521,7 @@ fun ShopScreen(
                                     CosmeticItemCard(
                                         title = hammer.name,
                                         description = hammer.description,
-                                        icon = "🔨",
+                                        icon = ToyGlyph.HAMMER,
                                         iconBgColor = Color(0xFFF59E0B),
                                         priceCoins = if (hammer.currency == CurrencyType.COINS) hammer.cost else 0,
                                         priceGems = if (hammer.currency == CurrencyType.GEMS) hammer.cost else 0,
@@ -546,7 +548,7 @@ fun ShopScreen(
                                     CosmeticItemCard(
                                         title = frame.name,
                                         description = frame.description,
-                                        icon = "🖼️",
+                                        icon = ToyGlyph.FRAME,
                                         iconBgColor = Color(0xFFA6F750),
                                         priceCoins = if (frame.currency == CurrencyType.COINS) frame.cost else 0,
                                         priceGems = if (frame.currency == CurrencyType.GEMS) frame.cost else 0,
@@ -573,7 +575,7 @@ fun ShopScreen(
                                     CosmeticItemCard(
                                         title = blade.name,
                                         description = blade.description,
-                                        icon = "⚔️",
+                                        icon = ToyGlyph.SWORD,
                                         iconBgColor = Color(0xFF7EE82E),
                                         priceCoins = if (blade.currency == CurrencyType.COINS) blade.cost else 0,
                                         priceGems = if (blade.currency == CurrencyType.GEMS) blade.cost else 0,
@@ -600,7 +602,7 @@ fun ShopScreen(
                                     CosmeticItemCard(
                                         title = flame.name,
                                         description = flame.description,
-                                        icon = "🔥",
+                                        icon = ToyGlyph.FLAME,
                                         iconBgColor = Color(0xFFF97316),
                                         priceCoins = if (flame.currency == CurrencyType.COINS) flame.cost else 0,
                                         priceGems = if (flame.currency == CurrencyType.GEMS) flame.cost else 0,
@@ -630,7 +632,7 @@ fun ShopScreen(
                                     CosmeticItemCard(
                                         title = skin.name,
                                         description = skin.description,
-                                        icon = skin.icon,
+                                        icon = ToyGlyph.BALLOON,
                                         iconBgColor = skin.palette.first(),
                                         priceCoins = if (skin.currency == CurrencyType.COINS) skin.cost else 0,
                                         priceGems = if (skin.currency == CurrencyType.GEMS) skin.cost else 0,
@@ -741,7 +743,7 @@ private fun ShopCategoryTile(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(horizontal = DesignTokens.Space8)
         ) {
-            Text(text = tab.icon, fontSize = 22.sp, maxLines = 1)
+            ToyIcon(glyph = tab.icon, size = 23.dp, tint = if (isSelected) Color(0xFFFEF08A) else Color(0xFFF5EEFF))
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = tab.label,
@@ -1041,7 +1043,7 @@ private fun BoosterItemCard(
 private fun CosmeticItemCard(
     title: String,
     description: String,
-    icon: String,
+    icon: ToyGlyph,
     iconBgColor: Color,
     priceCoins: Int,
     priceGems: Int,

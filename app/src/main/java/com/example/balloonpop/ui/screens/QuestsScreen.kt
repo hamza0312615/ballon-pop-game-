@@ -189,7 +189,7 @@ fun QuestsScreen(
                     item {
                         Column(modifier = Modifier.padding(top = 10.dp)) {
                             Text(
-                                text = "🏆 ACHIEVEMENTS",
+                                text = "ACHIEVEMENTS",
                                 fontFamily = Baloo2FontFamily,
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Black,
@@ -306,7 +306,7 @@ private fun AchievementItemCard(
                 )
                 when {
                     isClaimed -> Text(
-                        text = "✅ CLAIMED",
+                        text = "CLAIMED ✓",
                         fontFamily = NunitoFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Black,
@@ -331,7 +331,7 @@ private fun AchievementItemCard(
                         )
                     }
                     else -> Text(
-                        text = "🔒 IN PROGRESS",
+                        text = "IN PROGRESS",
                         fontFamily = NunitoFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,

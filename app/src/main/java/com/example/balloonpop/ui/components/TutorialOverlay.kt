@@ -55,10 +55,10 @@ fun TutorialOverlay(
         listOf(
             TutorialStepData(
                 stepIndex = 0,
-                title = "Welcome, Balloon Popper! 🎈",
+                title = "Welcome, Balloon Popper!",
                 subtitle = "STAGE GOAL",
                 description = "Your mission is to pop the target number of balloons before time expires. Tap or swipe to slice through them!",
-                targetAreaLabel = "🎯 Focus on Balloon Target",
+                targetAreaLabel = "Focus on Balloon Target",
                 arrowDirection = ArrowDirection.TOP_LEFT,
                 mascotMood = MascotMood.JOYFUL
             ),
@@ -73,19 +73,19 @@ fun TutorialOverlay(
             ),
             TutorialStepData(
                 stepIndex = 2,
-                title = "Tactical Boosters! ⚡",
+                title = "Tactical Boosters!",
                 subtitle = "POWER ITEMS",
                 description = "Tap Thunder Zap to defuse bombs safely, Color Bomb to blast matching balloons, or Freeze to slow time!",
-                targetAreaLabel = "⚡ Use Tactical Boosters",
+                targetAreaLabel = "Use Tactical Boosters",
                 arrowDirection = ArrowDirection.BOTTOM_LEFT,
                 mascotMood = MascotMood.JOYFUL
             ),
             TutorialStepData(
                 stepIndex = 3,
-                title = "Hero Blade Skill! ⚔️",
+                title = "Hero Blade Skill!",
                 subtitle = "SPECIAL POWER",
                 description = "Popping balloons charges your skill energy gauge. When it's full, unleash your Hero Skill to wipe the screen!",
-                targetAreaLabel = "⚔️ Tap Hero Skill Button",
+                targetAreaLabel = "Tap Hero Skill Button",
                 arrowDirection = ArrowDirection.BOTTOM_RIGHT,
                 mascotMood = MascotMood.HAPPY
             )
@@ -308,7 +308,7 @@ fun TutorialOverlay(
                     }
 
                     JellyButton(
-                        text = if (currentStep == totalSteps - 1) "LET'S POP! 🎈" else "Next ▶",
+                        text = if (currentStep == totalSteps - 1) "LET'S POP!" else "Next ▶",
                         onClick = onNext,
                         height = 46.dp,
                         fontSize = 16,

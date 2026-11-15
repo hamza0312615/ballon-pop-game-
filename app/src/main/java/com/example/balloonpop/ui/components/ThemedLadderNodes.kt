@@ -177,9 +177,10 @@ fun ThemedLadderTileNode(
 
         // Hard spike flaming badge
         if (isHardSpike && isUnlocked) {
-            Text(
-                text = "🔥",
-                fontSize = 15.sp,
+            ToyIcon(
+                glyph = ToyGlyph.FLAME,
+                size = 16.dp,
+                tint = Color(0xFFFF7A3D),
                 modifier = Modifier
                     .align(Alignment.Center)
                     .offset(x = (-27).dp, y = (-27).dp)
@@ -188,9 +189,10 @@ fun ThemedLadderTileNode(
 
         // Boss crown badge on the orb's top-right shoulder.
         if (isBoss) {
-            Text(
-                text = "👑",
-                fontSize = 15.sp,
+            ToyIcon(
+                glyph = ToyGlyph.CROWN,
+                size = 16.dp,
+                tint = Color(0xFFFFC531),
                 modifier = Modifier
                     .align(Alignment.Center)
                     .offset(x = 27.dp, y = (-27).dp)
@@ -222,11 +224,10 @@ fun ThemedLadderTileNode(
                     .offset(y = starBob.dp)
             ) {
                 repeat(3) { starIdx ->
-                    Text(
-                        text = "★",
-                        fontSize = if (starIdx == 1) 15.sp else 12.sp,
-                        fontWeight = FontWeight.Black,
-                        color = if (starIdx < earnedStars) {
+                    ToyIcon(
+                        glyph = ToyGlyph.STAR,
+                        size = if (starIdx == 1) 15.dp else 12.dp,
+                        tint = if (starIdx < earnedStars) {
                             DesignTokens.StarGoldFilled
                         } else {
                             DesignTokens.StarEmptyGray
@@ -372,9 +373,10 @@ fun ThemedLadderActiveHeroNode(
 
         // Boss crown badge.
         if (isBoss) {
-            Text(
-                text = "👑",
-                fontSize = 16.sp,
+            ToyIcon(
+                glyph = ToyGlyph.CROWN,
+                size = 17.dp,
+                tint = Color(0xFFFFC531),
                 modifier = Modifier
                     .align(Alignment.Center)
                     .offset(x = 30.dp, y = (-30).dp)

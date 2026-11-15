@@ -385,7 +385,7 @@ fun CampaignScreen(
                         .testTag("star_road_open_button")
                 ) {
                     Text(
-                        text = "⭐ STAR ROAD • $totalStars",
+                        text = "STAR ROAD • $totalStars",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFFFFC93C)
@@ -601,13 +601,13 @@ fun CampaignScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "⭐ STAR ROAD",
+                            text = "STAR ROAD",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Black,
                             color = Color(0xFFFFC93C)
                         )
                         Text(
-                            text = "$totalStars ⭐ total",
+                            text = "$totalStars total",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
@@ -627,7 +627,7 @@ fun CampaignScreen(
                         text = if (nextStarMilestone != null) {
                             "Next chest in ${nextStarMilestone.starsRequired - totalStars} ★"
                         } else {
-                            "All chests earned — legend! 👑"
+                            "All chests earned — legend!"
                         },
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -665,7 +665,7 @@ fun CampaignScreen(
                                 }
                                 when {
                                     isClaimed -> Text(
-                                        text = "✅ CLAIMED",
+                                        text = "CLAIMED ✓",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
                                         color = Color(0xFFCDB8EC)
@@ -689,9 +689,10 @@ fun CampaignScreen(
                                             color = Color.White
                                         )
                                     }
-                                    else -> Text(
-                                        text = "🔒",
-                                        fontSize = 14.sp
+                                    else -> ToyIcon(
+                                        glyph = ToyGlyph.LOCK,
+                                        size = 15.dp,
+                                        tint = Color(0xFFCDB8EC)
                                     )
                                 }
                             }
@@ -792,7 +793,7 @@ private fun ModernCampaignTopStatusBar(
         ) {
             // Hearts Capsule
             GlassmorphicResourceCapsule(
-                icon = "❤️",
+                icon = ToyGlyph.HEART,
                 value = "$lives/$maxLives",
                 textColor = Color(0xFFFFF1F2),
                 showAdd = true,
@@ -805,7 +806,7 @@ private fun ModernCampaignTopStatusBar(
 
             // Coins Capsule
             GlassmorphicResourceCapsule(
-                icon = "🪙",
+                icon = ToyGlyph.COIN,
                 value = String.format("%,d", coins),
                 textColor = Color(0xFFFFD54F),
                 showAdd = true,
@@ -819,7 +820,7 @@ private fun ModernCampaignTopStatusBar(
 
             // Gems Capsule
             GlassmorphicResourceCapsule(
-                icon = "💎",
+                icon = ToyGlyph.GEM,
                 value = String.format("%,d", gems),
                 textColor = Color(0xFF67E8F9),
                 showAdd = true,
@@ -835,7 +836,7 @@ private fun ModernCampaignTopStatusBar(
 
 @Composable
 private fun GlassmorphicResourceCapsule(
-    icon: String,
+    icon: ToyGlyph,
     value: String,
     textColor: Color,
     showAdd: Boolean,
@@ -892,7 +893,7 @@ private fun GlassmorphicResourceCapsule(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(text = icon, fontSize = 13.sp)
+        ToyIcon(glyph = icon, size = 14.dp, tint = textColor)
 
         Text(
             text = value,
@@ -1104,7 +1105,7 @@ private fun ModernZoneHeaderCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(text = "🗺️", fontSize = 10.sp)
+                    ToyIcon(glyph = ToyGlyph.MAP, size = 11.dp, tint = Color.White)
                 }
             }
         }
@@ -1185,7 +1186,7 @@ private fun ModernSecondaryNavRow(
     ) {
         // 1. World Map Segment Pill (Cyan tint)
         ModernNavSegment(
-            icon = "🗺️",
+            icon = ToyGlyph.MAP,
             label = "Map",
             tintColor = Color(0x28A6F750),
             borderColor = Color(0x88A6F750),
@@ -1200,7 +1201,7 @@ private fun ModernSecondaryNavRow(
 
         // 2. Stars Earned Segment Pill (Gold tint)
         ModernNavSegment(
-            icon = "⭐",
+            icon = ToyGlyph.STAR,
             label = "$starsEarned / $totalStars",
             tintColor = Color(0x28FFD700),
             borderColor = Color(0x88FFD700),
@@ -1212,7 +1213,7 @@ private fun ModernSecondaryNavRow(
 
         // 3. Daily Spin Segment Pill (Sky Blue tint with pulsing notification dot)
         ModernNavSegment(
-            icon = "🎡",
+            icon = ToyGlyph.WHEEL,
             label = "Spin",
             tintColor = Color(0x28A6F750),
             borderColor = Color(0x88A6F750),
@@ -1253,14 +1254,14 @@ private fun ModernSecondaryNavRow(
                 .testTag("campaign_settings_btn"),
             contentAlignment = Alignment.Center
         ) {
-            Text(text = "⚙️", fontSize = 15.sp)
+            ToyIcon(glyph = ToyGlyph.GEAR, size = 16.dp, tint = Color.White)
         }
     }
 }
 
 @Composable
 private fun ModernNavSegment(
-    icon: String,
+    icon: ToyGlyph,
     label: String,
     tintColor: Color,
     borderColor: Color,
@@ -1299,7 +1300,7 @@ private fun ModernNavSegment(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(text = icon, fontSize = 12.sp)
+            ToyIcon(glyph = icon, size = 13.dp, tint = textColor)
             Text(
                 text = label,
                 fontSize = 11.sp,

@@ -23,11 +23,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.balloonpop.ui.components.ToyGlyph
+import com.example.balloonpop.ui.components.ToyIcon
 
 data class LeaderboardPlayer(
     val rank: Int,
     val name: String,
-    val avatarEmoji: String,
+    val avatarGlyph: ToyGlyph,
     val avatarBgColor: Color,
     val score: Int,
     val level: Int,
@@ -42,17 +44,17 @@ fun RanksScreen(
     modifier: Modifier = Modifier
 ) {
     val players = listOf(
-        LeaderboardPlayer(1, "Sophia", "👑", Color(0xFFFFD700), 54200, 98),
-        LeaderboardPlayer(2, "Lucas", "⚡", Color(0xFFC0C0C0), 48900, 92),
-        LeaderboardPlayer(3, "Oliver", "🎯", Color(0xFFCD7F32), 43400, 85),
-        LeaderboardPlayer(4, "Emma", "🌸", Color(0xFFEC4899), 39100, 78),
-        LeaderboardPlayer(5, "Noah", "🚀", Color(0xFFA6F750), 34800, 71),
-        LeaderboardPlayer(6, "Maya", "🍭", Color(0xFFB26BFF), 31200, 68),
-        LeaderboardPlayer(7, "Ethan", "🔥", Color(0xFFFF5252), 27500, 62),
-        LeaderboardPlayer(8, "Ava", "⭐", Color(0xFFFFC531), 24100, 56),
-        LeaderboardPlayer(9, "Leo", "🎈", Color(0xFF10B981), 21300, 50),
-        LeaderboardPlayer(10, "Zoe", "✨", Color(0xFF6366F1), 18900, 46),
-        LeaderboardPlayer(42, "You", "😎", Color(0xFFC93A5E), currentScore.coerceAtLeast(12450), currentLevel, isCurrentUser = true)
+        LeaderboardPlayer(1, "Sophia", ToyGlyph.CROWN, Color(0xFFFFD700), 54200, 98),
+        LeaderboardPlayer(2, "Lucas", ToyGlyph.BOLT, Color(0xFFC0C0C0), 48900, 92),
+        LeaderboardPlayer(3, "Oliver", ToyGlyph.TARGET, Color(0xFFCD7F32), 43400, 85),
+        LeaderboardPlayer(4, "Emma", ToyGlyph.FLOWER, Color(0xFFEC4899), 39100, 78),
+        LeaderboardPlayer(5, "Noah", ToyGlyph.ROCKET, Color(0xFFA6F750), 34800, 71),
+        LeaderboardPlayer(6, "Maya", ToyGlyph.CANDY, Color(0xFFB26BFF), 31200, 68),
+        LeaderboardPlayer(7, "Ethan", ToyGlyph.FLAME, Color(0xFFFF5252), 27500, 62),
+        LeaderboardPlayer(8, "Ava", ToyGlyph.STAR, Color(0xFFFFC531), 24100, 56),
+        LeaderboardPlayer(9, "Leo", ToyGlyph.BALLOON, Color(0xFF10B981), 21300, 50),
+        LeaderboardPlayer(10, "Zoe", ToyGlyph.SPARKLE, Color(0xFF6366F1), 18900, 46),
+        LeaderboardPlayer(42, "You", ToyGlyph.SUN, Color(0xFFC93A5E), currentScore.coerceAtLeast(12450), currentLevel, isCurrentUser = true)
     )
 
     Column(
@@ -75,7 +77,7 @@ fun RanksScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = "🏆", fontSize = 26.sp)
+                ToyIcon(glyph = ToyGlyph.TROPHY, size = 28.dp, tint = Color(0xFFFFC531))
                 Column {
                     Text(
                         text = "POP CHAMPIONSHIPS",
@@ -84,7 +86,7 @@ fun RanksScreen(
                         color = Color.White
                     )
                     Text(
-                        text = "👑 SKY DIAMOND LEAGUE • Season 12",
+                        text = "SKY DIAMOND LEAGUE • Season 12",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFC531)
@@ -131,7 +133,7 @@ fun RanksScreen(
                 color = Color.White
             )
             Text(
-                text = "Top 10 win 500 💎",
+                text = "Top 10 win 500 gems",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFFFDE047)
@@ -174,7 +176,7 @@ fun RanksScreen(
                         .background(Color.White.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = userPlayer.avatarEmoji, fontSize = 20.sp)
+                    ToyIcon(glyph = userPlayer.avatarGlyph, size = 21.dp, tint = userPlayer.avatarBgColor)
                 }
                 Column {
                     Text(
@@ -193,7 +195,7 @@ fun RanksScreen(
             }
 
             Text(
-                text = "${String.format("%,d", userPlayer.score)} 🎈",
+                text = String.format("%,d", userPlayer.score),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Black,
                 color = Color(0xFFFFD700)
@@ -260,7 +262,7 @@ private fun LeaderboardRow(player: LeaderboardPlayer) {
                     .background(player.avatarBgColor.copy(alpha = 0.25f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(text = player.avatarEmoji, fontSize = 16.sp)
+                ToyIcon(glyph = player.avatarGlyph, size = 17.dp, tint = player.avatarBgColor)
             }
 
             Column {
@@ -280,7 +282,7 @@ private fun LeaderboardRow(player: LeaderboardPlayer) {
         }
 
         Text(
-            text = "${String.format("%,d", player.score)} 🎈",
+            text = String.format("%,d", player.score),
             fontSize = 13.sp,
             fontWeight = FontWeight.Black,
             color = Color(0xFFFFC531)
