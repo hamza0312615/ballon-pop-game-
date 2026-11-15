@@ -96,6 +96,9 @@ fun GameCanvas(
     var cachedFreezeBrush by remember { mutableStateOf<Brush?>(null) }
     var cachedMultBrush by remember { mutableStateOf<Brush?>(null) }
     var cachedRayBrushes by remember { mutableStateOf<List<Brush>>(emptyList()) }
+    // Pass 17: playfield frame border brush (static per size + frame colours)
+    var cachedFrameBrush by remember { mutableStateOf<Brush?>(null) }
+    var cachedFrameKey by remember { mutableStateOf(0) }
 
     Canvas(
         modifier = modifier
@@ -124,7 +127,7 @@ fun GameCanvas(
         val tick = frameTick
 
         // Update cached background brushes when size or level changes
-        if (size.width != cachedWidth || size.height != cachedHeight || cachedBgBrush == null) {
+        if (size.width != cachedWidth || size.height != cachedHeight || cachedBgBrush == null || cachedFrameKey != equippedFrame.borderColors.hashCode()) {
             cachedWidth = size.width
             cachedHeight = size.height
             val themeColors = if (currentLevel > 0) {
@@ -165,6 +168,14 @@ fun GameCanvas(
                 center = Offset(size.width / 2f, size.height / 2f),
                 radius = size.maxDimension / 1.5f
             )
+            cachedFrameBrush = if (equippedFrame.borderColors.size >= 2) {
+                Brush.linearGradient(
+                    colors = equippedFrame.borderColors,
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, size.height)
+                )
+            } else null
+            cachedFrameKey = equippedFrame.borderColors.hashCode()
             cachedRayBrushes = (0..4).map { i ->
                 val rayAngle = (22f + i * 14f) * (kotlin.math.PI.toFloat() / 180f)
                 val rayLength = size.height * 0.95f
@@ -643,7 +654,7 @@ fun GameCanvas(
         }
 
         // 9. Draw Equipped Aesthetic Playfield Frame
-        drawAestheticFrame(equippedFrame)
+        drawAestheticFrame(equippedFrame, cachedFrameBrush)
 
         drawContext.canvas.restore()
     }
@@ -1375,7 +1386,7 @@ private fun DrawScope.drawHammerStrike(strike: HammerStrikeEffect) {
     }
 }
 
-private fun DrawScope.drawAestheticFrame(frame: PlayFrame) {
+private fun DrawScope.drawAestheticFrame(frame: PlayFrame, frameBrush: Brush? = null) {
     val w = size.width
     val h = size.height
     val inset = 12f
@@ -1384,7 +1395,7 @@ private fun DrawScope.drawAestheticFrame(frame: PlayFrame) {
     val colors = frame.borderColors
     if (colors.size >= 2) {
         drawRoundRect(
-            brush = Brush.linearGradient(
+            brush = frameBrush ?: Brush.linearGradient(
                 colors = colors,
                 start = Offset(0f, 0f),
                 end = Offset(w, h)

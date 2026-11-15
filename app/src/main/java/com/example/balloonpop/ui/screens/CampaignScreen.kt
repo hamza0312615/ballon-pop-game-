@@ -1411,6 +1411,11 @@ private fun VerticalLevelLadder(
                 val stars = completedLevels[node.stageNumber] ?: 0
                 val prevNode = nodes.getOrNull(node.levelIndex - 1)
                 val nextNode = nodes.getOrNull(node.levelIndex + 1)
+                // Pass 17: this row carries the lower half of the active segment
+                // when the node above it is the current stage.
+                val animateNextFlow = nextNode != null &&
+                    nextNode.stageNumber == currentUnlockedLevel &&
+                    node.stageNumber < currentUnlockedLevel
 
                 BoxWithConstraints(
                     modifier = Modifier
@@ -1433,11 +1438,12 @@ private fun VerticalLevelLadder(
                             isNextSegmentTraversed = nextNode != null &&
                                 isUnlocked && nextNode.stageNumber <= currentUnlockedLevel,
                             accentColor = theme.primaryAccent,
-                            flowPhase = particleTime,
+                            // Pass 17: only the two rows touching the active
+                            // segment receive live time — every other row's
+                            // road is static and stops redrawing each tick.
+                            flowPhase = if (isCurrent || animateNextFlow) particleTime else 0f,
                             animatePrevFlow = isCurrent,
-                            animateNextFlow = nextNode != null &&
-                                nextNode.stageNumber == currentUnlockedLevel &&
-                                node.stageNumber < currentUnlockedLevel
+                            animateNextFlow = animateNextFlow
                         )
                     }
 

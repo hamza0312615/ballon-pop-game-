@@ -26,6 +26,29 @@ import kotlin.math.sqrt
  */
 object ZoneEnvironmentRenderer {
 
+    // Pass 17: static-geometry brush caches — the map backdrop redraws on
+    // every scroll/particle tick, and rebuilding these same gradients each
+    // time was pure waste. Keyed by zone + pixel height; tiny and bounded.
+    private val skyBrushCache = HashMap<Int, Brush>()
+    private fun skyBrush(theme: ZoneVisualTheme, h: Float): Brush {
+        val key = theme.zoneId * 100000 + h.toInt()
+        skyBrushCache[key]?.let { return it }
+        if (skyBrushCache.size > 24) skyBrushCache.clear()
+        val brush = Brush.verticalGradient(theme.bgSkyGradient)
+        skyBrushCache[key] = brush
+        return brush
+    }
+
+    private val beamBrushCache = HashMap<Int, Brush>()
+    private fun beamBrush(index: Int, h: Float, colors: List<Color>): Brush {
+        val key = h.toInt() * 10 + index
+        beamBrushCache[key]?.let { return it }
+        if (beamBrushCache.size > 24) beamBrushCache.clear()
+        val brush = Brush.verticalGradient(colors, startY = 0f, endY = h * 0.65f)
+        beamBrushCache[key] = brush
+        return brush
+    }
+
     /**
      * Renders the complete multi-layer scenic background for the given zone.
      */
@@ -48,7 +71,7 @@ object ZoneEnvironmentRenderer {
         // ----------------------------------------------------
         // LAYER 1: Deep Sky & Atmospheric Background
         // ----------------------------------------------------
-        drawRect(brush = Brush.verticalGradient(theme.bgSkyGradient))
+        drawRect(brush = skyBrush(theme, h))
 
         when {
             isSakura -> drawSakuraDistantLayer(w, h, scrollOffset, riverFlow)
@@ -290,7 +313,7 @@ object ZoneEnvironmentRenderer {
                 1 -> listOf(Color(0x3338BDF8), Color(0x05A855F7), Color.Transparent)
                 else -> listOf(Color(0x33F472B6), Color(0x05E879F9), Color.Transparent)
             }
-            drawPath(beamPath, Brush.verticalGradient(beamColors, startY = 0f, endY = h * 0.65f))
+            drawPath(beamPath, beamBrush(b, h, beamColors))
         }
 
         // Geometric crystal constellations
