@@ -709,7 +709,10 @@ data class QuestItem(
     val rewardCoins: Int,
     val rewardGems: Int,
     val category: QuestCategory = QuestCategory.DAILY,
-    val icon: String = "🎯"
+    val icon: String = "🎯",
+    // Pass 18: real player-facing description (QuestsScreen used to
+    // synthesise placeholder text like "Goal: 40 points or actions").
+    val description: String = ""
 )
 
 data class AchievementItem(
@@ -1490,17 +1493,27 @@ object GameConstants {
 
     val DEFAULT_QUESTS = listOf(
         // Rotating Daily Challenges
-        QuestItem("quest_pop_50", "Pop 40 Balloons", 40, 200, 1, QuestCategory.DAILY, "🎈"),
-        QuestItem("quest_combo_5", "Reach 5x Combo", 5, 250, 2, QuestCategory.DAILY, "🔥"),
-        QuestItem("quest_spin_wheel", "Spin the Daily Wheel", 1, 200, 2, QuestCategory.DAILY, "🎡"),
-        QuestItem("quest_stage_clear_3star", "Clear Any Stage with 3 Stars", 1, 350, 3, QuestCategory.DAILY, "⭐"),
-        QuestItem("quest_special_pop_10", "Pop 10 Special/Golden Balloons", 10, 300, 3, QuestCategory.DAILY, "🪙"),
+        QuestItem("quest_pop_50", "Pop 40 Balloons", 40, 200, 1, QuestCategory.DAILY, "🎈",
+            description = "Pop 40 balloons in any mode. Every pop counts — campaign stages and endless runs alike."),
+        QuestItem("quest_combo_5", "Reach 5x Combo", 5, 250, 2, QuestCategory.DAILY, "🔥",
+            description = "Chain pops without missing to build a 5x combo multiplier in a single run."),
+        QuestItem("quest_spin_wheel", "Spin the Daily Wheel", 1, 200, 2, QuestCategory.DAILY, "🎡",
+            description = "Take one spin on the Daily Wheel — your free daily spin counts."),
+        QuestItem("quest_stage_clear_3star", "Clear Any Stage with 3 Stars", 1, 350, 3, QuestCategory.DAILY, "⭐",
+            description = "Finish any campaign stage with a perfect 3-star rating: hit the pop target with misses to spare."),
+        QuestItem("quest_special_pop_10", "Pop 10 Special/Golden Balloons", 10, 300, 3, QuestCategory.DAILY, "🪙",
+            description = "Pop 10 special balloons — golden, rainbow, striped and other bonus types all count."),
         // Weekly Hero Challenges
-        QuestItem("quest_pop_200", "Pop 250 Total Balloons", 250, 800, 8, QuestCategory.WEEKLY, "💥"),
-        QuestItem("quest_combo_10", "Unleash a 10x Mega Combo", 10, 1000, 10, QuestCategory.WEEKLY, "⚡"),
-        QuestItem("quest_stage_5", "Conquer 5 Campaign Stages", 5, 600, 6, QuestCategory.WEEKLY, "🗺️"),
-        QuestItem("quest_stage_10", "Conquer 10 Campaign Stages", 10, 1200, 15, QuestCategory.WEEKLY, "🏆"),
-        QuestItem("quest_stars_15", "Collect 15 Campaign Stars", 15, 1500, 20, QuestCategory.WEEKLY, "🌟")
+        QuestItem("quest_pop_200", "Pop 250 Total Balloons", 250, 800, 8, QuestCategory.WEEKLY, "💥",
+            description = "Pop 250 balloons across all modes this week. Progress stacks from every run."),
+        QuestItem("quest_combo_10", "Unleash a 10x Mega Combo", 10, 1000, 10, QuestCategory.WEEKLY, "⚡",
+            description = "Reach a 10x combo multiplier in one run — pop fast, don't miss, and use freeze to protect the chain."),
+        QuestItem("quest_stage_5", "Conquer 5 Campaign Stages", 5, 600, 6, QuestCategory.WEEKLY, "🗺️",
+            description = "Clear 5 different campaign stages on the Star Road map."),
+        QuestItem("quest_stage_10", "Conquer 10 Campaign Stages", 10, 1200, 15, QuestCategory.WEEKLY, "🏆",
+            description = "Clear 10 different campaign stages — that's a whole zone of the Star Road."),
+        QuestItem("quest_stars_15", "Collect 15 Campaign Stars", 15, 1500, 20, QuestCategory.WEEKLY, "🌟",
+            description = "Earn 15 stars from campaign stages. Replay cleared stages with fewer misses to upgrade their stars.")
     )
 
     val ACHIEVEMENTS = listOf(

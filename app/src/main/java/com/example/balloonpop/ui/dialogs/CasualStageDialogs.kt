@@ -497,6 +497,13 @@ fun FailedStageDialog(
     // Pass 8: kindness assist — true when this fail unlocked (or an earlier
     // fail already set) Popster's Help for this stage.
     assistUnlocked: Boolean = false,
+    // Pass 18: endless runs get their own fail dialog — Endless Classic has
+    // no timer, so the campaign "+15s" continue offers were meaningless
+    // there. Endless shows "Run Over!", the final score, and plain
+    // Continue pills (the revive itself still restores lives/misses in
+    // GameViewModel.playOnRevive).
+    endlessMode: Boolean = false,
+    score: Int = 0,
     onPlayOn: () -> Unit,
     onRetry: () -> Unit,
     onWatchAdToRevive: (() -> Unit)? = null,
@@ -513,12 +520,25 @@ fun FailedStageDialog(
         cardSlideY.animateTo(0f, tween(320, easing = FastOutSlowInEasing))
     }
 
-    val resultLine = when (reason) {
-        GameOverReason.MISSED_LIMIT -> "Missed $missedCount of $maxMissesAllowed"
-        GameOverReason.TIME_EXPIRED -> "Needed $missingPops more pops"
-        GameOverReason.BOMB_DETONATION -> "A bomb popped!"
-        GameOverReason.LIVES_DEPLETED -> "Out of lives"
-        GameOverReason.MANUAL_QUIT -> "Run saved — nice popping!"
+    val resultLine = if (endlessMode) {
+        // Pass 18: endless result lines are score-based (there is no pop
+        // target to be "missing" in an endless run).
+        val scoreText = "Final score: %,d".format(score)
+        when (reason) {
+            GameOverReason.LIVES_DEPLETED -> "Out of lives · $scoreText"
+            GameOverReason.TIME_EXPIRED -> "Time up · $scoreText"
+            GameOverReason.BOMB_DETONATION -> "A bomb popped! · $scoreText"
+            GameOverReason.MANUAL_QUIT -> "Run saved — nice popping! · $scoreText"
+            GameOverReason.MISSED_LIMIT -> "Missed $missedCount of $maxMissesAllowed · $scoreText"
+        }
+    } else {
+        when (reason) {
+            GameOverReason.MISSED_LIMIT -> "Missed $missedCount of $maxMissesAllowed"
+            GameOverReason.TIME_EXPIRED -> "Needed $missingPops more pops"
+            GameOverReason.BOMB_DETONATION -> "A bomb popped!"
+            GameOverReason.LIVES_DEPLETED -> "Out of lives"
+            GameOverReason.MANUAL_QUIT -> "Run saved — nice popping!"
+        }
     }
 
     Box(
@@ -543,8 +563,9 @@ fun FailedStageDialog(
         ) {
             // Pass 6: the card now OPENS with an unmistakable headline —
             // the recording's fail dialog never actually said it was one.
+            // Pass 18: endless runs say "Run Over!" — there is no level.
             Text(
-                text = "Level Failed!",
+                text = if (endlessMode) "Run Over!" else "Level Failed!",
                 fontFamily = Baloo2FontFamily,
                 fontSize = DesignTokens.SizeH1,
                 fontWeight = FontWeight.Black,
@@ -569,8 +590,9 @@ fun FailedStageDialog(
             )
 
             // Pass 8: visible kindness — after 3 fails on this stage the
-            // assist is announced, not silently applied.
-            if (assistUnlocked) {
+            // assist is announced, not silently applied. (Campaign-only:
+            // the assist grants stage time, which endless runs don't use.)
+            if (assistUnlocked && !endlessMode) {
                 Text(
                     text = "Popster's Help unlocked: +10s and a free Freeze on your next try!",
                     fontSize = DesignTokens.SizeCaption,
@@ -586,14 +608,16 @@ fun FailedStageDialog(
                 horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8)
             ) {
                 RevivePill(
-                    text = "⏱ +15s \u00B7 100 coins",
+                    // Pass 18: endless continues don't promise seconds —
+                    // they restore your lives and clear the miss count.
+                    text = if (endlessMode) "↻ Continue \u00B7 100 coins" else "⏱ +15s \u00B7 100 coins",
                     onClick = onPlayOn,
                     testTag = "failed_play_on_button",
                     modifier = Modifier.weight(1f)
                 )
                 if (onWatchAdToRevive != null) {
                     RevivePill(
-                        text = "▶ +15s \u00B7 Free (Ad)",
+                        text = if (endlessMode) "▶ Continue \u00B7 Free (Ad)" else "▶ +15s \u00B7 Free (Ad)",
                         onClick = onWatchAdToRevive,
                         testTag = "failed_watch_ad_revive_button",
                         modifier = Modifier.weight(1f)
