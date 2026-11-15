@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.balloonpop.model.GameConstants
 import com.example.balloonpop.model.WheelSegment
 import com.example.balloonpop.ui.components.CurrencyArt
 import com.example.balloonpop.ui.components.DailyFortuneWheelHubArt
@@ -69,6 +70,13 @@ fun DailyWheelScreen(
     modifier: Modifier = Modifier
 ) {
     var timerDisplay by remember { mutableStateOf("") }
+
+    // Pass 18: reward-card visibility (the prize itself is granted by the
+    // ViewModel; this only controls the confirmation card below).
+    var rewardDismissed by remember { mutableStateOf(false) }
+    LaunchedEffect(wonSegment) {
+        if (wonSegment != null) rewardDismissed = false
+    }
 
     LaunchedEffect(remainingMillis) {
         var rem = remainingMillis
@@ -349,6 +357,76 @@ fun DailyWheelScreen(
                 )
             }
         }
+
+        // Pass 18: reward confirmation. The ViewModel grants the prize the
+        // moment the spin lands and sets wonSegment — previously nothing on
+        // this screen ever showed it, so a landed prize looked like nothing
+        // happened. The prize is already in the balance; COLLECT just
+        // dismisses the card.
+        if (wonSegment != null && !isSpinning && !rewardDismissed) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x990B0620)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.82f)
+                        .shadow(20.dp, RoundedCornerShape(24.dp), spotColor = Color(0xFFFFD700))
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color(0xFF2A1650))
+                        .border(2.dp, Color(0xFFFFD54F), RoundedCornerShape(24.dp))
+                        .padding(horizontal = 24.dp, vertical = 22.dp)
+                ) {
+                    Text(
+                        text = "🎉 YOU WON!",
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFFFFD54F)
+                    )
+                    Text(
+                        text = wonSegment.label,
+                        fontFamily = Baloo2FontFamily,
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "Added to your balance",
+                        fontFamily = NunitoFontFamily,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFC4B5FD)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 6.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFFFFE082), Color(0xFFF59E0B))
+                                )
+                            )
+                            .clickable { rewardDismissed = true }
+                            .padding(horizontal = 36.dp, vertical = 12.dp)
+                            .testTag("wheel_reward_collect_btn"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "COLLECT",
+                            fontFamily = Baloo2FontFamily,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color(0xFF5B2E00)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -418,14 +496,17 @@ private fun FortuneWheelDisc(
     rotation: Float,
     modifier: Modifier = Modifier
 ) {
-    val segments = listOf(
-        WheelSegmentItem("750\ncoins", Color(0xFFFF5D8F), isCoin = true),
-        WheelSegmentItem("1500\ncoins", Color(0xFF2F6DB3), isCoin = true),
-        WheelSegmentItem("25\ngems", Color(0xFFFFC93C), isCoin = false),
-        WheelSegmentItem("250\ncoins", Color(0xFF9D4EDD), isCoin = true),
-        WheelSegmentItem("500\ncoins", Color(0xFF3B82F6), isCoin = true),
-        WheelSegmentItem("10\ngems", Color(0xFF7C4DBD), isCoin = false)
-    )
+    // Pass 18: build the disc from the SAME GameConstants.WHEEL_SEGMENTS
+    // list the ViewModel draws the winner from. The old hardcoded list was
+    // in a different order, so the segment under the pointer never matched
+    // the prize actually granted.
+    val segments = GameConstants.WHEEL_SEGMENTS.map { seg ->
+        if (seg.coins > 0) {
+            WheelSegmentItem("%,d\ncoins".format(seg.coins), seg.color, isCoin = true)
+        } else {
+            WheelSegmentItem("${seg.gems}\ngems", seg.color, isCoin = false)
+        }
+    }
 
     Canvas(modifier = modifier.rotate(rotation)) {
         val w = size.width

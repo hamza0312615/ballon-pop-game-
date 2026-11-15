@@ -152,10 +152,14 @@ fun EndlessModeScreen(
                 verticalArrangement = Arrangement.spacedBy(DesignTokens.Space12),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Top Row: Back Button & 3 Glass Resource Capsules
+                // Top Row: Back Button only.
+                // Pass 18: the 3 local glass resource capsules (hearts/coins/
+                // gems) were removed — the global TopBar already shows the
+                // same values on this screen, and the two bars disagreed
+                // (global "3/5" hearts vs a local single heart).
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Back button
@@ -174,30 +178,6 @@ fun EndlessModeScreen(
                             contentDescription = "Back",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    // 3 Glass Resource Capsules (Hearts, Coins, Gems)
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space8),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Hearts Capsule
-                        EndlessGlassResourceCapsule(
-                            type = "HEART",
-                            amount = lives
-                        )
-
-                        // Coins Capsule
-                        EndlessGlassResourceCapsule(
-                            type = "COIN",
-                            amount = coins
-                        )
-
-                        // Gems Capsule
-                        EndlessGlassResourceCapsule(
-                            type = "GEM",
-                            amount = gems
                         )
                     }
                 }
@@ -402,49 +382,6 @@ fun EndlessModeScreen(
                     )
                 }
             }
-        }
-    }
-}
-
-/**
- * Top Glass Resource Capsule for Hearts, Coins, and Gems.
- */
-@Composable
-private fun EndlessGlassResourceCapsule(
-    type: String,
-    amount: Int,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(DesignTokens.ShapeMedium)
-            .background(Color(0xCC0D1326))
-            .border(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
-                    listOf(Color(0x44FFFFFF), Color(0x11FFFFFF))
-                ),
-                shape = DesignTokens.ShapeMedium
-            )
-            .padding(horizontal = DesignTokens.Space12, vertical = DesignTokens.Space4),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(DesignTokens.Space4)
-        ) {
-            com.example.balloonpop.ui.components.CurrencyArt(
-                type = type,
-                modifier = Modifier.size(16.dp)
-            )
-            Text(
-                text = String.format("%,d", amount),
-                fontFamily = Baloo2FontFamily,
-                fontSize = DesignTokens.TypeTierBody,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 1
-            )
         }
     }
 }
