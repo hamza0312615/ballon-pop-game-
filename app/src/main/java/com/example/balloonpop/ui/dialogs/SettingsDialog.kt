@@ -41,7 +41,9 @@ import com.example.balloonpop.ui.components.ToySwitch
 enum class SettingsSection(val label: String, val icon: ToyGlyph) {
     AUDIO_HAPTICS("Audio", ToyGlyph.SPEAKER),
     GRAPHICS_PERF("Graphics", ToyGlyph.BOLT),
-    CODEX_GUIDE("Codex", ToyGlyph.BOOK),
+    // Pass 18: this tab is a balloon-types reference, not a code entry —
+    // the label now says what it actually shows.
+    CODEX_GUIDE("Guide", ToyGlyph.BOOK),
     PRIVACY_POLICY("Play & Safety", ToyGlyph.SHIELD),
     DATA_MANAGEMENT("Data", ToyGlyph.WARNING)
 }
@@ -264,7 +266,11 @@ fun SettingsDialog(
 
             // Footer Version Info
             Text(
-                text = "Balloon Pop Pro v2.1.0 • Smooth 60-120 FPS Engine",
+                // Pass 18: real product name + real build version
+                // (versionName "1.4", app/build.gradle.kts); the old string
+                // claimed a different product, a wrong version, and an
+                // unprovable "60-120 FPS" figure.
+                text = "Balloon Pop Deluxe v1.4 • Smooth high-FPS gameplay",
                 fontSize = 10.sp,
                 color = Color(0xFFB79BDB),
                 textAlign = TextAlign.Center
@@ -369,6 +375,10 @@ private fun AudioHapticsSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(
+                            // Pass 18: weighted so the label column wraps inside
+                            // the card instead of pushing the switch off the
+                            // right edge on narrow/wide-preview widths.
+                            modifier = Modifier.weight(1f).padding(end = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -436,6 +446,7 @@ private fun AudioHapticsSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(
+                            modifier = Modifier.weight(1f).padding(end = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -570,6 +581,7 @@ private fun AudioHapticsSection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(
+                            modifier = Modifier.weight(1f).padding(end = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -840,8 +852,9 @@ private fun GraphicsPerfSection(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         listOf(
-                            Triple("ULTRA", "Ultra", "120 FPS Max FX"),
-                            Triple("BALANCED", "Smooth", "60 FPS Standard"),
+                            // Pass 18: honest tier labels — no fixed FPS promises.
+                            Triple("ULTRA", "Ultra", "Max FX"),
+                            Triple("BALANCED", "Smooth", "Standard FX"),
                             Triple("BATTERY_SAVER", "Eco", "Low Particle")
                         ).forEach { (modeKey, modeTitle, modeDesc) ->
                             val isSelected = graphicsQuality == modeKey

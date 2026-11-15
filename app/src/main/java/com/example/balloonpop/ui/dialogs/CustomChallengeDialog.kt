@@ -3,6 +3,8 @@ package com.example.balloonpop.ui.dialogs
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -88,8 +90,14 @@ fun CustomChallengeDialog(
             }
 
             // Quick Preset Buttons
+            // Pass 18: horizontally scrollable with natural-width chips —
+            // the old weight(1f) row squeezed all three presets into the
+            // dialog width and the first/last chips were clipped at the
+            // frame edges. Every chip is now fully reachable by swiping.
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 PresetChip(
@@ -99,8 +107,7 @@ fun CustomChallengeDialog(
                         timeSeconds = 15
                         targetPops = 23
                         maxMisses = 4
-                    },
-                    modifier = Modifier.weight(1f)
+                    }
                 )
                 PresetChip(
                     label = "15 in 10s (3 miss)",
@@ -109,8 +116,7 @@ fun CustomChallengeDialog(
                         timeSeconds = 10
                         targetPops = 15
                         maxMisses = 3
-                    },
-                    modifier = Modifier.weight(1f)
+                    }
                 )
                 PresetChip(
                     label = "35 in 25s (5 miss)",
@@ -119,8 +125,7 @@ fun CustomChallengeDialog(
                         timeSeconds = 25
                         targetPops = 35
                         maxMisses = 5
-                    },
-                    modifier = Modifier.weight(1f)
+                    }
                 )
             }
 
@@ -306,7 +311,11 @@ private fun PresetChip(
             fontSize = 9.sp,
             fontWeight = FontWeight.Black,
             color = if (isSelected) Color.White else Color(0xFFCDB8EC),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            // Pass 18: single line — the chip sizes to its full label
+            // inside the scrollable row instead of wrapping/clipping.
+            maxLines = 1,
+            softWrap = false
         )
     }
 }
