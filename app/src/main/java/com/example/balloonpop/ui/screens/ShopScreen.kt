@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,10 +71,13 @@ enum class ShopTab(val label: String, val icon: ToyGlyph) {
 // Pass 4 uniform shop grid: EVERY purchasable card (boosters, cosmetics and
 // gem packs) uses these exact sizes, so a grid row can never mix card heights,
 // art sizes or button heights, and no text can push a card taller.
-private val ShopCardHeight = 260.dp
+// Pass 18: the subtitle slot grows from 2 lines to 4 (26.dp -> 52.dp) and the
+// card grows by the same 26.dp — descriptions were being cut mid-word with
+// no way to read the rest.
+private val ShopCardHeight = 286.dp
 private val ShopCardArtHeight = 72.dp
 private val ShopCardTitleHeight = 36.dp
-private val ShopCardSubtitleHeight = 26.dp
+private val ShopCardSubtitleHeight = 52.dp
 private val ShopCardPricePillHeight = 22.dp
 private val ShopBuyButtonHeight = 48.dp
 
@@ -115,11 +119,26 @@ fun ShopScreen(
     onClaimDiamondPack: (DiamondStorePack) -> Unit,
     onWatchAdForCoins: () -> Unit = {},
     bannerMessage: String?,
+    // Pass 18: lets the shop auto-dismiss the banner (see LaunchedEffect
+    // below) so banner behaviour is identical on every tab.
+    onClearBanner: () -> Unit = {},
     onClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableStateOf(ShopTab.THEMES) }
     var selectedIapPack by remember { mutableStateOf<DiamondStorePack?>(null) }
+
+    // Pass 18: the banner is the single global bannerMessage rendered in one
+    // fixed slot for all tabs — it could never actually differ per tab in
+    // code; the apparent inconsistency was lifetime (a gameplay message
+    // persisted into the shop until navigation cleared it). Auto-clearing
+    // after a few seconds makes presence consistent everywhere.
+    LaunchedEffect(bannerMessage) {
+        if (bannerMessage != null) {
+            delay(3500L)
+            onClearBanner()
+        }
+    }
 
     // Pass 10: Theatrical violet stage wall with warm spotlight & wooden shelves
     val cosmicBg = Brush.verticalGradient(
@@ -874,7 +893,7 @@ private fun UniformShopCard(
                 )
             }
 
-            // Description / amount: fixed 2-line slot, soft lilac text
+            // Description / amount: fixed 4-line slot (Pass 18), soft lilac text
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -888,7 +907,7 @@ private fun UniformShopCard(
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFE2D4F0),
                     textAlign = TextAlign.Center,
-                    maxLines = 2,
+                    maxLines = 4,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 13.sp
                 )

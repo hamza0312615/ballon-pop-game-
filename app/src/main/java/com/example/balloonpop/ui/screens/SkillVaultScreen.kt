@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.balloonpop.model.GameConstants
@@ -131,69 +132,9 @@ fun SkillVaultScreen(
                     )
                 }
 
-                // Currency Capsules
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Coin Capsule
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xE6141220))
-                            .border(
-                                width = 1.dp,
-                                brush = Brush.verticalGradient(
-                                    listOf(Color(0xFFF59E0B), Color(0xFF78350F))
-                                ),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            com.example.balloonpop.ui.components.CurrencyArt("COIN", modifier = Modifier.size(16.dp))
-                            Text(
-                                text = String.format("%,d", coins),
-                                fontFamily = Baloo2FontFamily,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFEF3C7)
-                            )
-                        }
-                    }
-
-                    // Gem Capsule
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xE6141220))
-                            .border(
-                                width = 1.dp,
-                                brush = Brush.verticalGradient(
-                                    listOf(Color(0xFFB26BFF), Color(0xFF581C87))
-                                ),
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            com.example.balloonpop.ui.components.CurrencyArt("GEM", modifier = Modifier.size(16.dp))
-                            Text(
-                                text = String.format("%,d", gems),
-                                fontFamily = Baloo2FontFamily,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFF3E8FF)
-                            )
-                        }
-                    }
-                }
+                // Pass 18: the local coin/gem capsules were removed — the
+                // global TopBar already shows coins/gems on this screen, so
+                // the values appeared twice (and could disagree).
             }
 
             // 2. Chiseled Golden Header Lockup
@@ -416,20 +357,30 @@ private fun VaultSkillCard(
                         )
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    // Pass 18: weighted + end padding + capped lines — the
+                    // long Hammer Slide description previously ran under
+                    // the EQUIPPED badge on the right.
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                    ) {
                         Text(
                             text = "${skill.name} LVL $currentLevel",
                             fontFamily = Baloo2FontFamily,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = skill.description,
                             fontFamily = NunitoFontFamily,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFFF5EEFF)
+                            color = Color(0xFFF5EEFF),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
