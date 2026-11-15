@@ -405,7 +405,9 @@ fun CampaignScreen(
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
-                            .padding(end = 6.dp)
+                            // Pass 18: 12.dp inset keeps the whole chevron
+                            // (plus its shadow) on-screen at the map edge.
+                            .padding(end = 12.dp)
                             .size(38.dp)
                             .shadow(6.dp, CircleShape, spotColor = Color(0xFFA6F750))
                             .clip(CircleShape)
@@ -432,7 +434,7 @@ fun CampaignScreen(
                     Box(
                         modifier = Modifier
                             .align(Alignment.CenterStart)
-                            .padding(start = 6.dp)
+                            .padding(start = 12.dp)
                             .size(38.dp)
                             .shadow(6.dp, CircleShape, spotColor = Color(0xFFA6F750))
                             .clip(CircleShape)
@@ -1100,8 +1102,11 @@ private fun ModernZoneHeaderCard(
                     Text(
                         text = "— ${theme.subtitle} —",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = theme.titleAccentColor.copy(alpha = 0.75f),
+                        // Pass 18: full-strength accent + Bold — the 75%
+                        // alpha SemiBold subtitle was washing out against
+                        // the zone artwork.
+                        fontWeight = FontWeight.Bold,
+                        color = theme.titleAccentColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1402,7 +1407,11 @@ private fun VerticalLevelLadder(
             state = listState,
             reverseLayout = true,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = 12.dp)
+            // Pass 18: with reverseLayout the BOTTOM padding is what lands
+            // at the visual top of the ladder — 68.dp there lifts the
+            // summit (Star Road) node clear of the "STAR ROAD - n" pill
+            // that overlays the top of the map.
+            contentPadding = PaddingValues(top = 12.dp, bottom = 68.dp)
         ) {
             items(nodes, key = { it.stageNumber }) { node ->
                 val isUnlocked = node.stageNumber <= currentUnlockedLevel
