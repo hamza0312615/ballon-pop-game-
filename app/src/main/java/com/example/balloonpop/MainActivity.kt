@@ -129,6 +129,10 @@ class MainActivity : ComponentActivity() {
                                     coins = uiState.coins,
                                     gems = uiState.gems,
                                     lives = uiState.lives,
+                                    // Pass 18: the real lives cap is 3 (initGameSession
+                                    // and the HEART balloon both cap at 3) — the bar
+                                    // showed "3/5" from TopBar's old default of 5.
+                                    maxLives = 3,
                                     onOpenShop = { viewModel.navigateTo(CurrentScreen.SHOP) },
                                     onOpenSettings = { viewModel.openSettings() }
                                 )
@@ -297,6 +301,10 @@ class MainActivity : ComponentActivity() {
                                                 )
                                             },
                                             bannerMessage = uiState.bannerMessage,
+                                            // Pass 18: let the shop auto-dismiss the
+                                            // banner after a few seconds so it behaves
+                                            // identically on every tab.
+                                            onClearBanner = { viewModel.clearBannerMessage() },
                                             onClose = {
                                                 viewModel.clearBannerMessage()
                                                 viewModel.navigateTo(CurrentScreen.HOME)
@@ -311,24 +319,29 @@ class MainActivity : ComponentActivity() {
                                             dailyStreakDay = uiState.dailyStreakDay,
                                             remainingMillis = viewModel.getDailySpinRemainingMillis(),
                                             onSpinFree = {
-                                                // Pass 5 (audit L5): the free spin is granted ONLY
-                                                // when the rewarded ad was actually watched and the
-                                                // reward earned. Previously onDismiss also granted
-                                                // it, so closing the ad instantly (or the ad failing
-                                                // to load) paid out a free jackpot spin.
-                                                AdMobManager.showRewardedAd(
-                                                    this@MainActivity,
-                                                    onRewardEarned = {
-                                                        viewModel.spinFortuneWheel(isFreeSpin = true)
-                                                    }
-                                                )
+                                                // Pass 18: the free daily spin now runs
+                                                // directly. Pass 5 gated it behind a
+                                                // rewarded ad, but that made the whole
+                                                // wheel dead whenever ads no-filled
+                                                // (playtest: two spins, zero prizes, spin
+                                                // never consumed). The anti-abuse intent
+                                                // is preserved by the ViewModel's own
+                                                // 24h cooldown (isDailySpinReady +
+                                                // timestamp), which still gates this
+                                                // button. Ads remain the way to earn
+                                                // EXTRA spins while on cooldown (below).
+                                                viewModel.spinFortuneWheel(isFreeSpin = true)
                                             },
                                             onSpinInstant = { viewModel.spinFortuneWheel(isFreeSpin = false) },
                                             onWatchAdForSpin = {
                                                 AdMobManager.showRewardedAd(
                                                     this@MainActivity,
                                                     onRewardEarned = {
-                                                        viewModel.spinFortuneWheel(isFreeSpin = true)
+                                                        // Pass 18: bypassCooldown — the ad
+                                                        // is the payment for this extra spin;
+                                                        // without it the ViewModel bounced
+                                                        // the spin off the 24h cooldown.
+                                                        viewModel.spinFortuneWheel(isFreeSpin = true, bypassCooldown = true)
                                                     }
                                                 )
                                             },

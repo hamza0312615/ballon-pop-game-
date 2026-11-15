@@ -61,9 +61,15 @@ object AdMobManager {
 
     /**
      * True only for debuggable (debug) builds. Gates every use of the Google
-     * test ad units: in a release build the test-unit fallback below can
-     * never trigger, even if a caller passes isFallback = true — the loaders
-     * clamp the choice back to the production unit.
+     * test ad units: in a release build the test units can never be chosen,
+     * even if a caller passes isFallback = true — the loaders clamp the
+     * choice back to the production unit.
+     *
+     * Pass 18: debuggable builds now request the TEST units FIRST (they
+     * used to load production first and only fall back to test after a
+     * no-fill, which made every ad flow untestable whenever production had
+     * no fill — e.g. on emulators). Release behaviour is unchanged:
+     * production units only.
      */
     private fun isDebuggable(context: Context): Boolean {
         return (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
@@ -139,8 +145,10 @@ object AdMobManager {
         if (appOpenAd != null || isAppOpenLoading) return
         isAppOpenLoading = true
 
-        // Test units are reachable ONLY in debuggable builds (see class doc).
-        val useTestUnits = isFallback && isDebuggable(context)
+        // Pass 18: debuggable builds go straight to the Google TEST units;
+        // release builds always use production (see isDebuggable doc). The
+        // isFallback parameter is retained for call-site compatibility.
+        val useTestUnits = isDebuggable(context)
         val adUnitId = if (useTestUnits) TEST_APP_OPEN_ID else PROD_APP_OPEN_ID
         lastAppOpenStatus = "Loading ($adUnitId)..."
         Log.d(TAG, "Loading App Open Ad using ID: $adUnitId")
@@ -168,15 +176,13 @@ object AdMobManager {
                         appOpenAd = null
                         lastAppOpenStatus = "Failed: ${error.code} (${error.message})"
                         Log.w(TAG, "App Open Ad failed ($adUnitId): code=${error.code}, message=${error.message}")
-
-                        if (!isFallback && isDebuggable(context) && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
-                            Log.i(TAG, "Debug build: falling back to Google Test App Open ad unit...")
-                            loadAppOpenAd(context, isFallback = true)
-                        } else {
-                            val waiter = appOpenWaitCallback
-                            appOpenWaitCallback = null
-                            waiter?.invoke()
-                        }
+                        // Pass 18: no recursive fallback any more — debug
+                        // builds already requested the test unit first.
+                        // Error 3 here is plain no-fill; always release the
+                        // waiter so the splash flow never hangs.
+                        val waiter = appOpenWaitCallback
+                        appOpenWaitCallback = null
+                        waiter?.invoke()
                     }
                 }
             )
@@ -275,8 +281,9 @@ object AdMobManager {
         if (interstitialAd != null || isInterstitialLoading) return
         isInterstitialLoading = true
 
-        // Test units are reachable ONLY in debuggable builds (see class doc).
-        val useTestUnits = isFallback && isDebuggable(context)
+        // Pass 18: debuggable builds go straight to the Google TEST units;
+        // release builds always use production (see isDebuggable doc).
+        val useTestUnits = isDebuggable(context)
         val adUnitId = if (useTestUnits) TEST_INTERSTITIAL_ID else PROD_INTERSTITIAL_ID
         lastInterstitialStatus = "Loading ($adUnitId)..."
         Log.d(TAG, "Loading Interstitial Ad using ID: $adUnitId")
@@ -300,11 +307,9 @@ object AdMobManager {
                         interstitialAd = null
                         lastInterstitialStatus = "Failed: ${error.code} (${error.message})"
                         Log.w(TAG, "Interstitial Ad failed ($adUnitId): code=${error.code}, message=${error.message}")
-
-                        if (!isFallback && isDebuggable(context) && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
-                            Log.i(TAG, "Debug build: falling back to Google Test Interstitial unit...")
-                            loadInterstitialAd(context, isFallback = true)
-                        }
+                        // Pass 18: no recursive fallback — debug builds
+                        // already requested the test unit first; error 3
+                        // here is plain no-fill.
                     }
                 }
             )
@@ -377,8 +382,9 @@ object AdMobManager {
         }
         isRewardedLoading = true
 
-        // Test units are reachable ONLY in debuggable builds (see class doc).
-        val useTestUnits = isFallback && isDebuggable(context)
+        // Pass 18: debuggable builds go straight to the Google TEST units;
+        // release builds always use production (see isDebuggable doc).
+        val useTestUnits = isDebuggable(context)
         val adUnitId = if (useTestUnits) TEST_REWARDED_ID else PROD_REWARDED_ID
         lastRewardedStatus = "Loading ($adUnitId)..."
         Log.d(TAG, "Loading Rewarded Ad using ID: $adUnitId")
@@ -403,13 +409,11 @@ object AdMobManager {
                         rewardedAd = null
                         lastRewardedStatus = "Failed: ${error.code} (${error.message})"
                         Log.w(TAG, "Rewarded Ad failed ($adUnitId): code=${error.code}, message=${error.message}")
-
-                        if (!isFallback && isDebuggable(context) && (error.code == AdRequest.ERROR_CODE_NO_FILL || error.code == 0 || error.code == 3)) {
-                            Log.i(TAG, "Debug build: falling back to Google Test Rewarded Ad unit...")
-                            loadRewardedAd(context, isFallback = true, onLoaded = onLoaded)
-                        } else {
-                            onLoaded?.invoke()
-                        }
+                        // Pass 18: no recursive fallback — debug builds
+                        // already requested the test unit first; error 3
+                        // here is plain no-fill. Always fire onLoaded so
+                        // callers waiting on the load can proceed.
+                        onLoaded?.invoke()
                     }
                 }
             )
