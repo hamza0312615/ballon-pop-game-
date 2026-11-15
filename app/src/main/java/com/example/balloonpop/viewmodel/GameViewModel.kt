@@ -211,6 +211,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var spawnIntervalSeconds = 0.75f
     // Pass 14: seconds of active play since the last Balloon Rush wave.
     private var rushAccumulator = 0f
+    // Pass 18: the pending "hide the rush banner" timer, so a stale timer
+    // can never hide a fresh banner early.
+    private var rushBannerJob: Job? = null
+    // Pass 18: horizontal centre (0..1 of canvas width) of the most recent
+    // spawn formation, so consecutive formations don't stack in one lane.
+    private var lastFormationCenterRatio = -1f
     private var freezeTimeRemaining = 0f
     // Pass 8 juice: hit-stop — while > 0, balloon motion and the spawner
     // pause for a beat (bomb detonations, gold-rush burst completions).
@@ -1269,6 +1275,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         goldRushParticleAccumulator = 0f
         spawnAccumulator = 0f
         rushAccumulator = 0f
+        rushBannerJob?.cancel()
+        rushBannerJob = null
+        lastFormationCenterRatio = -1f
         spawnIntervalSeconds = when {
             state.gameMode == GameMode.CAMPAIGN -> {
                 // Calibrate spawn tempo so target balloon count spawns comfortably within the time limit
@@ -1323,7 +1332,37 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
+        // Pass 18: seed the field so a stage never opens on an empty
+        // playfield (playtest: "almost empty for the first seconds").
+        seedInitialField()
+
         startTimer()
+    }
+
+    /**
+     * Pass 18: schedule two formations immediately and lift their balloons
+     * into the visible field at staggered heights, so the first seconds of
+     * a stage already meet the Pass 14 density floor instead of waiting
+     * for balloons to rise from below the screen.
+     */
+    private fun seedInitialField() {
+        if (canvasWidth <= 0f || canvasHeight <= 0f) return
+        repeat(2) { triggerNextFormation() }
+        synchronized(pendingSpawns) {
+            val n = pendingSpawns.size
+            if (n == 0) return
+            val seeded = pendingSpawns.mapIndexed { i, p ->
+                val frac = if (n == 1) 0.5f else i.toFloat() / (n - 1)
+                val targetY = canvasHeight * (0.88f - 0.55f * frac)
+                if (p.isRingFormation) {
+                    p.copy(delayRemaining = 0f, y = targetY, ringCenterY = targetY)
+                } else {
+                    p.copy(delayRemaining = 0f, y = targetY)
+                }
+            }
+            pendingSpawns.clear()
+            pendingSpawns.addAll(seeded)
+        }
     }
 
     private fun startTimer() {
@@ -1539,14 +1578,19 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // Pass 14: Balloon Rush — every ~18s of active play a bonus formation
         // bursts in under a banner. Event peaks are what stretch sessions:
         // there is always a next rush to play toward. Zen stays calm by design.
+        // Pass 18: the banner now stays up 2.6s (was 1.6s — with the slide-in
+        // animation that left ~1s of readable time, and a full 43-minute
+        // playtest never caught it once). The hide timer is also job-guarded
+        // so it can only ever hide the banner that scheduled it.
         if (!hitStopped && state.gameState == GameState.PLAYING && state.gameMode != GameMode.ZEN) {
             rushAccumulator += dtSeconds
             if (rushAccumulator >= 18f) {
                 rushAccumulator = 0f
                 triggerNextFormation()
                 _uiState.update { it.copy(showRushBanner = true) }
-                viewModelScope.launch {
-                    delay(1600L)
+                rushBannerJob?.cancel()
+                rushBannerJob = viewModelScope.launch {
+                    delay(2600L)
                     _uiState.update { it.copy(showRushBanner = false) }
                 }
             }
@@ -1788,6 +1832,21 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         scheduleFormation(formation, recipe)
     }
 
+    /**
+     * Pass 18: pick a formation centre as a ratio of canvas width, biased
+     * away from the previous formation's lane. Playtest showed formations
+     * stacking in one spot (tight overlapping clumps) while other parts of
+     * the field stayed empty for long stretches.
+     */
+    private fun pickFormationCenterRatio(minRatio: Float, maxRatio: Float): Float {
+        var r = minRatio + Random.nextFloat() * (maxRatio - minRatio)
+        if (lastFormationCenterRatio >= 0f && kotlin.math.abs(r - lastFormationCenterRatio) < 0.18f) {
+            r = (1f - r).coerceIn(minRatio, maxRatio)
+        }
+        lastFormationCenterRatio = r
+        return r
+    }
+
     private fun scheduleFormation(formation: SpawnFormation, recipe: StageRecipe?) {
         val skin = equippedBalloonSkin()
         when (formation) {
@@ -1799,18 +1858,22 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     skin.palette.random()
                 }
-                val cx = (radiusBase() + 30f + Random.nextFloat() * (canvasWidth - radiusBase() * 2f - 60f).coerceAtLeast(100f))
+                val cx = canvasWidth * pickFormationCenterRatio(0.15f, 0.85f)
                 val cy = canvasHeight + radiusBase() + 30f
                 val clusterSpeed = computeBaseSpeed(BalloonType.STANDARD)
+                // Pass 18: spread the bunch by balloon size — the old fixed
+                // 150x130px box was smaller than two balloon diameters, so
+                // cluster balloons spawned stacked on top of each other.
+                val spreadR = radiusBase()
 
                 synchronized(pendingSpawns) {
                     for (i in 0 until count) {
-                        val ox = (Random.nextFloat() - 0.5f) * 150f
-                        val oy = (Random.nextFloat() - 0.5f) * 130f
+                        val ox = (Random.nextFloat() - 0.5f) * spreadR * 3.4f
+                        val oy = (Random.nextFloat() - 0.5f) * spreadR * 2.4f
                         val r = computeBalloonRadius(BalloonType.STANDARD)
                         pendingSpawns.add(
                             PendingSpawn(
-                                delayRemaining = i * 0.04f,
+                                delayRemaining = i * 0.06f,
                                 x = (cx + ox).coerceIn(r + 15f, canvasWidth - r - 15f),
                                 y = cy + oy,
                                 radius = r,
@@ -1855,7 +1918,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             SpawnFormation.RING -> {
                 // RING: 8 balloons in a circle drifting up together
-                val cx = canvasWidth * (0.35f + Random.nextFloat() * 0.30f)
+                // Pass 18: centre range widened (was the middle 30% of the
+                // width only) and lane-varied via pickFormationCenterRatio.
+                val cx = canvasWidth * pickFormationCenterRatio(0.28f, 0.72f)
                 val cy = canvasHeight + 115f
                 val ringSpeed = computeBaseSpeed(BalloonType.STANDARD)
                 val targetR = 135f
@@ -1889,7 +1954,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             }
             SpawnFormation.BOMB_DODGE -> {
                 // BOMB DODGE: 6 normal balloons arranged around 1 bomb balloon (never before stage 4)
-                val cx = canvasWidth * (0.35f + Random.nextFloat() * 0.30f)
+                val cx = canvasWidth * pickFormationCenterRatio(0.28f, 0.72f)
                 val cy = canvasHeight + 120f
                 val dodgeSpeed = computeBaseSpeed(BalloonType.STANDARD)
                 val surroundR = 125f
@@ -1931,14 +1996,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             SpawnFormation.GOLD_RUSH -> {
                 // GOLD RUSH: a short burst of 4–6 golden balloons (rare, celebratory)
                 val count = Random.nextInt(5, 8)
-                val cx = canvasWidth * (0.30f + Random.nextFloat() * 0.40f)
+                val cx = canvasWidth * pickFormationCenterRatio(0.25f, 0.75f)
                 val cy = canvasHeight + 90f
                 val goldSpeed = computeBaseSpeed(BalloonType.GOLDEN)
+                // Pass 18: spread scaled to balloon size (was a fixed
+                // 180x120px box, smaller than two balloon diameters).
+                val spreadR = radiusBase()
 
                 synchronized(pendingSpawns) {
                     for (i in 0 until count) {
-                        val ox = (Random.nextFloat() - 0.5f) * 180f
-                        val oy = (Random.nextFloat() - 0.5f) * 120f
+                        val ox = (Random.nextFloat() - 0.5f) * spreadR * 3.2f
+                        val oy = (Random.nextFloat() - 0.5f) * spreadR * 2.2f
                         val r = computeBalloonRadius(BalloonType.GOLDEN)
                         pendingSpawns.add(
                             PendingSpawn(
@@ -3541,11 +3609,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         return getDailySpinRemainingMillis() == 0L
     }
 
-    fun spinFortuneWheel(isFreeSpin: Boolean = true) {
+    // Pass 18: bypassCooldown is for the rewarded-ad extra spin — the ad is
+    // the payment, so the 24h free-spin cooldown must not block it (it did:
+    // the ad path called spinFortuneWheel(isFreeSpin = true) and always
+    // bounced off the cooldown check below, so ad spins never landed).
+    fun spinFortuneWheel(isFreeSpin: Boolean = true, bypassCooldown: Boolean = false) {
         if (_uiState.value.isWheelSpinning) return
 
         val isReady = isDailySpinReady()
-        if (isFreeSpin && !isReady) {
+        if (isFreeSpin && !bypassCooldown && !isReady) {
             _uiState.update { it.copy(bannerMessage = "Daily spin is on cooldown! Use Instant Spin.") }
             return
         }
@@ -3577,15 +3649,26 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val totalSegments = GameConstants.WHEEL_SEGMENTS.size
             val winningIndex = Random.nextInt(totalSegments)
             val segmentAngle = 360f / totalSegments
-            val targetRotation = 360f * 5 + (winningIndex * segmentAngle) + (segmentAngle / 2f)
 
-            val current = _uiState.value.wheelRotation % 360f
-            val diff = targetRotation
+            // Pass 18: land the winning segment CENTRED under the top
+            // pointer. The disc draws segment i centred at angle
+            // i*segmentAngle - 90 (pointer at -90) and the disc rotates
+            // clockwise by wheelRotation, so the final rotation must be
+            // ≡ -winningIndex*segmentAngle (mod 360). The old math targeted
+            // winningIndex*segmentAngle + segmentAngle/2, which parked the
+            // pointer on a segment BOUNDARY — the disc never showed the
+            // prize that was actually granted.
+            val startRotation = _uiState.value.wheelRotation
+            val targetMod = (360f - winningIndex * segmentAngle) % 360f
+            val startMod = ((startRotation % 360f) + 360f) % 360f
+            var delta = targetMod - startMod
+            if (delta <= 0f) delta += 360f
+            val totalDelta = 360f * 5 + delta
             val steps = 80
             for (i in 0..steps) {
                 val t = i.toFloat() / steps
                 val ease = 1f - kotlin.math.cos((t * Math.PI) / 2).toFloat()
-                val rot = current + diff * ease
+                val rot = startRotation + totalDelta * ease
                 _uiState.update { it.copy(wheelRotation = rot) }
                 if (i % 4 == 0) sound.playWheelTick()
                 delay(20L)
