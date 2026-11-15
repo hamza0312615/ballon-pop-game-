@@ -48,6 +48,8 @@ import androidx.compose.ui.window.Dialog
 import com.example.balloonpop.ui.components.CurrencyArt
 import com.example.balloonpop.ui.components.JewelButton
 import com.example.balloonpop.ui.components.JewelButtonStyle
+import com.example.balloonpop.ui.components.ToyGlyph
+import com.example.balloonpop.ui.components.ToyIcon
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.CreamSurface
 import com.example.balloonpop.ui.theme.DesignTokens
@@ -128,7 +130,7 @@ fun DailyGiftsDialog(
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "🎁 DAILY GIFTS 🎁",
+                            text = "DAILY GIFTS",
                             fontFamily = Baloo2FontFamily,
                             fontSize = 22.sp,
                             fontWeight = FontWeight.Black,
@@ -348,8 +350,8 @@ private fun DayGiftCard(
                     when (def.iconType) {
                         "coin" -> CurrencyArt(currencyType = "coin", modifier = Modifier.size(28.dp))
                         "gem" -> CurrencyArt(currencyType = "gem", modifier = Modifier.size(28.dp))
-                        "freeze" -> Text(text = "❄️", fontSize = 24.sp)
-                        else -> Text(text = "🎁", fontSize = 24.sp)
+                        "freeze" -> ToyIcon(glyph = ToyGlyph.SNOWFLAKE, size = 26.dp, tint = Color(0xFF7DD3FC))
+                        else -> ToyIcon(glyph = ToyGlyph.GIFT, size = 26.dp, tint = Color(0xFFFFC531))
                     }
                 }
             }
@@ -432,7 +434,10 @@ private fun Day7FeaturedCard(
                         Text(text = "✓", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Color.White)
                     }
                 } else {
-                    Text(text = "👑🎁", fontSize = 32.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        ToyIcon(glyph = ToyGlyph.CROWN, size = 32.dp, tint = Color(0xFFFFC531))
+                        ToyIcon(glyph = ToyGlyph.GIFT, size = 32.dp, tint = Color(0xFFFF7BAC))
+                    }
                 }
 
                 Column {

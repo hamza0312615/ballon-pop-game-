@@ -33,14 +33,26 @@ import com.example.balloonpop.audio.MusicTheme
 import com.example.balloonpop.notification.DailyNotificationHelper
 import com.example.balloonpop.model.BalloonType
 import com.example.balloonpop.ui.theme.*
+import com.example.balloonpop.ui.components.ToyGlyph
+import com.example.balloonpop.ui.components.ToyIcon
+import com.example.balloonpop.ui.components.ToySliderThumb
+import com.example.balloonpop.ui.components.ToySwitch
 
-enum class SettingsSection(val label: String, val icon: String) {
-    AUDIO_HAPTICS("Audio", "🔊"),
-    GRAPHICS_PERF("Graphics", "⚡"),
-    CODEX_GUIDE("Codex", "📖"),
-    PRIVACY_POLICY("Play & Safety", "🛡️"),
-    DATA_MANAGEMENT("Data", "⚠️")
+enum class SettingsSection(val label: String, val icon: ToyGlyph) {
+    AUDIO_HAPTICS("Audio", ToyGlyph.SPEAKER),
+    GRAPHICS_PERF("Graphics", ToyGlyph.BOLT),
+    CODEX_GUIDE("Codex", ToyGlyph.BOOK),
+    PRIVACY_POLICY("Play & Safety", ToyGlyph.SHIELD),
+    DATA_MANAGEMENT("Data", ToyGlyph.WARNING)
 }
+
+// Pass 12: music theme chips carry a drawn glyph, not an emoji prefix.
+private data class MusicThemeOption(
+    val theme: MusicTheme,
+    val glyph: ToyGlyph,
+    val label: String,
+    val accent: Color
+)
 
 @Composable
 fun SettingsDialog(
@@ -106,7 +118,7 @@ fun SettingsDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(text = "⚙️", fontSize = 24.sp)
+                    ToyIcon(glyph = ToyGlyph.GEAR, size = 26.dp, tint = Color(0xFFA6F750))
                     Text(
                         text = "SETTINGS & PRO HUB",
                         fontSize = 17.sp,
@@ -186,7 +198,7 @@ fun SettingsDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = sec.icon, fontSize = 16.sp)
+                            ToyIcon(glyph = sec.icon, size = 18.dp, tint = textC)
                             Text(
                                 text = sec.label,
                                 fontWeight = FontWeight.Bold,
@@ -277,7 +289,7 @@ fun SettingsDialog(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(text = "⚠️", fontSize = 32.sp)
+                    ToyIcon(glyph = ToyGlyph.WARNING, size = 38.dp, tint = Color(0xFFFFC531))
                     Text(
                         text = "RESET ALL PROGRESS?",
                         fontSize = 18.sp,
@@ -320,6 +332,7 @@ fun SettingsDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AudioHapticsSection(
     isSoundMuted: Boolean,
@@ -359,7 +372,7 @@ private fun AudioHapticsSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = if (isSoundMuted) "🔇" else "🔊", fontSize = 20.sp)
+                            ToyIcon(glyph = if (isSoundMuted) ToyGlyph.SPEAKER_OFF else ToyGlyph.SPEAKER, size = 22.dp, tint = Color(0xFFA6F750))
                             Column {
                                 Text(
                                     text = if (isSoundMuted) "Master Muted" else "Audio Enabled",
@@ -374,13 +387,9 @@ private fun AudioHapticsSection(
                                 )
                             }
                         }
-                        Switch(
+                        ToySwitch(
                             checked = !isSoundMuted,
                             onCheckedChange = { onToggleMute() },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFFA6F750),
-                                checkedTrackColor = Color(0xFF2A1450)
-                            ),
                             modifier = Modifier.testTag("mute_toggle_switch")
                         )
                     }
@@ -408,6 +417,7 @@ private fun AudioHapticsSection(
                                     activeTrackColor = Color(0xFF63C70A),
                                     inactiveTrackColor = Color(0xFF55277D)
                                 ),
+                                thumb = { ToySliderThumb() },
                                 modifier = Modifier.testTag("sound_volume_slider")
                             )
                         }
@@ -429,7 +439,7 @@ private fun AudioHapticsSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = if (isSfxMuted || isSoundMuted) "🔕" else "🎈", fontSize = 20.sp)
+                            ToyIcon(glyph = if (isSfxMuted || isSoundMuted) ToyGlyph.BELL_OFF else ToyGlyph.BALLOON, size = 22.dp, tint = Color(0xFFFF7BAC))
                             Column {
                                 Text(
                                     text = if (isSfxMuted || isSoundMuted) "SFX Muted" else "SFX Enabled",
@@ -444,7 +454,7 @@ private fun AudioHapticsSection(
                                 )
                             }
                         }
-                        Switch(
+                        ToySwitch(
                             checked = !isSfxMuted && !isSoundMuted,
                             onCheckedChange = {
                                 if (onToggleSfxMute != null) {
@@ -453,10 +463,6 @@ private fun AudioHapticsSection(
                                     soundManager.toggleSfxMute()
                                 }
                             },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFFA6F750),
-                                checkedTrackColor = Color(0xFF2A1450)
-                            ),
                             modifier = Modifier.testTag("sfx_mute_toggle_switch")
                         )
                     }
@@ -486,6 +492,7 @@ private fun AudioHapticsSection(
                                     activeTrackColor = Color(0xFF63C70A),
                                     inactiveTrackColor = Color(0xFF55277D)
                                 ),
+                                thumb = { ToySliderThumb() },
                                 modifier = Modifier.testTag("sfx_volume_slider")
                             )
                         }
@@ -513,7 +520,9 @@ private fun AudioHapticsSection(
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA6F750).copy(alpha = 0.4f)),
                                 contentPadding = PaddingValues(horizontal = 6.dp)
                             ) {
-                                Text("🎈 Pop", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                ToyIcon(glyph = ToyGlyph.BALLOON, size = 14.dp, tint = Color(0xFFA6F750))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Pop", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                             OutlinedButton(
                                 onClick = { soundManager.playMenuClick() },
@@ -526,7 +535,9 @@ private fun AudioHapticsSection(
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA6F750).copy(alpha = 0.4f)),
                                 contentPadding = PaddingValues(horizontal = 6.dp)
                             ) {
-                                Text("🔔 Click", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                ToyIcon(glyph = ToyGlyph.BELL, size = 14.dp, tint = Color(0xFFA6F750))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Click", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                             OutlinedButton(
                                 onClick = { soundManager.playZap() },
@@ -539,7 +550,9 @@ private fun AudioHapticsSection(
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f)),
                                 contentPadding = PaddingValues(horizontal = 6.dp)
                             ) {
-                                Text("⚡ Zap", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                ToyIcon(glyph = ToyGlyph.BOLT, size = 14.dp, tint = Color(0xFFFFD700))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Zap", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -560,7 +573,7 @@ private fun AudioHapticsSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = if (isMusicMuted || isSoundMuted) "🔇" else "🎵", fontSize = 20.sp)
+                            ToyIcon(glyph = if (isMusicMuted || isSoundMuted) ToyGlyph.SPEAKER_OFF else ToyGlyph.MUSIC, size = 22.dp, tint = Color(0xFFFFC531))
                             Column {
                                 Text(
                                     text = if (isMusicMuted || isSoundMuted) "Music Muted" else "Synth Music Enabled",
@@ -575,7 +588,7 @@ private fun AudioHapticsSection(
                                 )
                             }
                         }
-                        Switch(
+                        ToySwitch(
                             checked = !isMusicMuted && !isSoundMuted,
                             onCheckedChange = {
                                 if (onToggleMusicMute != null) {
@@ -584,10 +597,6 @@ private fun AudioHapticsSection(
                                     soundManager.toggleMusicMute()
                                 }
                             },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFFB26BFF),
-                                checkedTrackColor = Color(0xFF2E1065)
-                            ),
                             modifier = Modifier.testTag("music_mute_toggle_switch")
                         )
                     }
@@ -617,6 +626,7 @@ private fun AudioHapticsSection(
                                     activeTrackColor = Color(0xFF9333EA),
                                     inactiveTrackColor = Color(0xFF55277D)
                                 ),
+                                thumb = { ToySliderThumb() },
                                 modifier = Modifier.testTag("music_volume_slider")
                             )
                         }
@@ -631,11 +641,11 @@ private fun AudioHapticsSection(
                         )
 
                         val themes = listOf(
-                            Triple(MusicTheme.MEADOW_JOY, "🌸 Meadow Joy", Color(0xFF10B981)),
-                            Triple(MusicTheme.COSMIC_DREAM, "🌌 Cosmic Dream", Color(0xFF8B5CF6)),
-                            Triple(MusicTheme.TROPICAL_BOP, "🌴 Tropical Bop", Color(0xFFF59E0B)),
-                            Triple(MusicTheme.CYBER_PULSE, "⚡ Clockwork Pulse", Color(0xFFA6F750)),
-                            Triple(MusicTheme.BOSS_ANTHEM, "👑 Boss Anthem", Color(0xFFFF5252))
+                            MusicThemeOption(MusicTheme.MEADOW_JOY, ToyGlyph.FLOWER, "Meadow Joy", Color(0xFF10B981)),
+                            MusicThemeOption(MusicTheme.COSMIC_DREAM, ToyGlyph.STAR, "Cosmic Dream", Color(0xFF8B5CF6)),
+                            MusicThemeOption(MusicTheme.TROPICAL_BOP, ToyGlyph.SUN, "Tropical Bop", Color(0xFFF59E0B)),
+                            MusicThemeOption(MusicTheme.CYBER_PULSE, ToyGlyph.BOLT, "Clockwork Pulse", Color(0xFFA6F750)),
+                            MusicThemeOption(MusicTheme.BOSS_ANTHEM, ToyGlyph.CROWN, "Boss Anthem", Color(0xFFFF5252))
                         )
 
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -644,7 +654,7 @@ private fun AudioHapticsSection(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    rowThemes.forEach { (thm, label, accentColor) ->
+                                    rowThemes.forEach { (thm, glyph, label, accentColor) ->
                                         val isCurrent = currentMusicTheme == thm
                                         Box(
                                             modifier = Modifier
@@ -652,11 +662,11 @@ private fun AudioHapticsSection(
                                                 .clip(RoundedCornerShape(10.dp))
                                                 .background(
                                                     if (isCurrent) accentColor.copy(alpha = 0.25f)
-                                                    else Color(0xFF161626)
+                                                    else Color(0xFF2A1450)
                                                 )
                                                 .border(
                                                     1.dp,
-                                                    if (isCurrent) accentColor else Color(0xFF2A2A3E),
+                                                    if (isCurrent) accentColor else Color(0xFF4A2470),
                                                     RoundedCornerShape(10.dp)
                                                 )
                                                 .clickable {
@@ -670,6 +680,7 @@ private fun AudioHapticsSection(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                                             ) {
+                                                ToyIcon(glyph = glyph, size = 13.dp, tint = accentColor)
                                                 Text(
                                                     text = label,
                                                     fontSize = 11.sp,
@@ -706,7 +717,7 @@ private fun AudioHapticsSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = "📳", fontSize = 20.sp)
+                            ToyIcon(glyph = ToyGlyph.VIBRATE, size = 22.dp, tint = Color(0xFFB26BFF))
                             Text(
                                 text = "Device Vibration",
                                 fontSize = 14.sp,
@@ -721,15 +732,11 @@ private fun AudioHapticsSection(
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
-                    Switch(
-                        checked = isVibrationEnabled,
-                        onCheckedChange = { onToggleVibration(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFFA6F750),
-                            checkedTrackColor = Color(0xFF2A1450)
-                        ),
-                        modifier = Modifier.testTag("vibration_toggle_switch")
-                    )
+                    ToySwitch(
+                            checked = isVibrationEnabled,
+                            onCheckedChange = { onToggleVibration(it) },
+                            modifier = Modifier.testTag("vibration_toggle_switch")
+                        )
                 }
             }
         }
@@ -754,7 +761,7 @@ private fun AudioHapticsSection(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text(text = "🔔", fontSize = 20.sp)
+                                ToyIcon(glyph = ToyGlyph.BELL, size = 22.dp, tint = Color(0xFFFFC531))
                                 Text(
                                     text = "Daily Rewards Reminder",
                                     fontSize = 14.sp,
@@ -769,16 +776,12 @@ private fun AudioHapticsSection(
                                 modifier = Modifier.padding(top = 2.dp)
                             )
                         }
-                        Switch(
+                        ToySwitch(
                             checked = isNotifEnabled,
                             onCheckedChange = {
                                 isNotifEnabled = it
                                 DailyNotificationHelper.setNotificationEnabled(context, it)
                             },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color(0xFFFF2A55),
-                                checkedTrackColor = Color(0xFF4A101C)
-                            ),
                             modifier = Modifier.testTag("notification_toggle_switch")
                         )
                     }
@@ -799,7 +802,7 @@ private fun AudioHapticsSection(
                             .testTag("send_test_notification_btn")
                     ) {
                         Text(
-                            text = if (testSent) "✓ TEST NOTIFICATION SENT!" else "🔔 SEND TEST NOTIFICATION NOW",
+                            text = if (testSent) "✓ TEST NOTIFICATION SENT!" else "SEND TEST NOTIFICATION NOW",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             color = if (testSent) Color(0xFF86EFAC) else Color(0xFFFF85A1)
@@ -837,9 +840,9 @@ private fun GraphicsPerfSection(
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         listOf(
-                            Triple("ULTRA", "🚀 Ultra", "120 FPS Max FX"),
-                            Triple("BALANCED", "⚖️ Smooth", "60 FPS Standard"),
-                            Triple("BATTERY_SAVER", "🔋 Eco", "Low Particle")
+                            Triple("ULTRA", "Ultra", "120 FPS Max FX"),
+                            Triple("BALANCED", "Smooth", "60 FPS Standard"),
+                            Triple("BATTERY_SAVER", "Eco", "Low Particle")
                         ).forEach { (modeKey, modeTitle, modeDesc) ->
                             val isSelected = graphicsQuality == modeKey
                             Box(
@@ -858,6 +861,16 @@ private fun GraphicsPerfSection(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    ToyIcon(
+                                        glyph = when (modeKey) {
+                                            "ULTRA" -> ToyGlyph.BOLT
+                                            "BALANCED" -> ToyGlyph.GAUGE
+                                            else -> ToyGlyph.BATTERY
+                                        },
+                                        size = 17.dp,
+                                        tint = if (isSelected) Color(0xFFA6F750) else Color(0xFFCDB8EC)
+                                    )
+                                    Spacer(modifier = Modifier.height(3.dp))
                                     Text(
                                         text = modeTitle,
                                         fontSize = 11.sp,
@@ -889,7 +902,7 @@ private fun GraphicsPerfSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = "⚡", fontSize = 20.sp)
+                            ToyIcon(glyph = ToyGlyph.BOLT, size = 22.dp, tint = Color(0xFFFFC531))
                             Text(
                                 text = "Dynamic Camera Shake",
                                 fontSize = 14.sp,
@@ -904,15 +917,11 @@ private fun GraphicsPerfSection(
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
-                    Switch(
-                        checked = isScreenShakeEnabled,
-                        onCheckedChange = { onToggleScreenShake(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFFA6F750),
-                            checkedTrackColor = Color(0xFF2A1450)
-                        ),
-                        modifier = Modifier.testTag("shake_toggle_switch")
-                    )
+                    ToySwitch(
+                            checked = isScreenShakeEnabled,
+                            onCheckedChange = { onToggleScreenShake(it) },
+                            modifier = Modifier.testTag("shake_toggle_switch")
+                        )
                 }
             }
         }
@@ -929,7 +938,7 @@ private fun GraphicsPerfSection(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(text = "🎯", fontSize = 20.sp)
+                            ToyIcon(glyph = ToyGlyph.TARGET, size = 22.dp, tint = Color(0xFFFF5252))
                             Text(
                                 text = "Wide Hit Detection (+30%)",
                                 fontSize = 14.sp,
@@ -944,15 +953,11 @@ private fun GraphicsPerfSection(
                             modifier = Modifier.padding(top = 2.dp)
                         )
                     }
-                    Switch(
-                        checked = isWideAssistEnabled,
-                        onCheckedChange = { onToggleWideAssist(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color(0xFFA6F750),
-                            checkedTrackColor = Color(0xFF2A1450)
-                        ),
-                        modifier = Modifier.testTag("assist_toggle_switch")
-                    )
+                    ToySwitch(
+                            checked = isWideAssistEnabled,
+                            onCheckedChange = { onToggleWideAssist(it) },
+                            modifier = Modifier.testTag("assist_toggle_switch")
+                        )
                 }
             }
         }
@@ -976,13 +981,22 @@ private fun CodexGuideSection() {
         }
 
         val codexItems = listOf(
-            Triple("🎈 Standard Balloon", "+10 pts", "Regular balloon with character emotions. Pop quickly to build combos!"),
-            Triple("⭐ Golden Balloon", "+50 pts • +5🪙", "Gleaming golden star balloon. Grants bonus gold coins on pop!"),
-            Triple("🌈 Rainbow Balloon", "+30 pts • +2🪙", "Prismatic balloon with high combo power and instant coins."),
-            Triple("❄️ Freeze Balloon", "❄️ Slow-Mo 4s", "Instant deep freeze! Slows all rising balloons by 65% for easy combo chains."),
-            Triple("⭐ Multiplier Balloon", "⭐ 2X Score 5s", "Doubles all points and combo rewards for 5 seconds."),
-            Triple("❤️ Heart Balloon", "+1 Life / +10 pts", "Restores 1 missing heart life or gives bonus points if full."),
-            Triple("💥 Bomb Balloon", "⚠️ Danger! -1 Life", "Avoid hitting! Causes severe shockwave and deducts 1 life heart.")
+            Triple("Standard Balloon", "+10 pts", "Regular balloon with character emotions. Pop quickly to build combos!"),
+            Triple("Golden Balloon", "+50 pts • +5🪙", "Gleaming golden star balloon. Grants bonus gold coins on pop!"),
+            Triple("Rainbow Balloon", "+30 pts • +2🪙", "Prismatic balloon with high combo power and instant coins."),
+            Triple("Freeze Balloon", "Slow-Mo 4s", "Instant deep freeze! Slows all rising balloons by 65% for easy combo chains."),
+            Triple("Multiplier Balloon", "2X Score 5s", "Doubles all points and combo rewards for 5 seconds."),
+            Triple("Heart Balloon", "+1 Life / +10 pts", "Restores 1 missing heart life or gives bonus points if full."),
+            Triple("Bomb Balloon", "Danger! -1 Life", "Avoid hitting! Causes severe shockwave and deducts 1 life heart.")
+        )
+
+        val codexGlyphs = listOf(
+            ToyGlyph.BALLOON, ToyGlyph.STAR, ToyGlyph.RAINBOW, ToyGlyph.SNOWFLAKE,
+            ToyGlyph.STAR, ToyGlyph.HEART, ToyGlyph.BOMB
+        )
+        val codexTints = listOf(
+            Color(0xFFFF7BAC), Color(0xFFFFC531), Color.White, Color(0xFF7DD3FC),
+            Color(0xFFFFC531), Color(0xFFFF5252), Color(0xFFCDB8EC)
         )
 
         items(codexItems.size) { index ->
@@ -1002,7 +1016,13 @@ private fun CodexGuideSection() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            ToyIcon(glyph = codexGlyphs[index], size = 17.dp, tint = codexTints[index])
+                            Text(text = title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
@@ -1033,7 +1053,7 @@ private fun PrivacyAndGooglePlaySection() {
         SettingCard(title = "GOOGLE PLAY POLICY COMPLIANCE") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(text = "🛡️", fontSize = 16.sp)
+                    ToyIcon(glyph = ToyGlyph.SHIELD, size = 18.dp, tint = Color(0xFF7EE82E))
                     Text(
                         text = "100% Policy Certified & Vetted",
                         fontSize = 13.sp,
@@ -1057,7 +1077,7 @@ private fun PrivacyAndGooglePlaySection() {
         SettingCard(title = "DATA SAFETY & PRIVACY GUARANTEE") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(text = "🔒", fontSize = 16.sp)
+                    ToyIcon(glyph = ToyGlyph.LOCK, size = 18.dp, tint = Color(0xFFA6F750))
                     Text(
                         text = "Zero Data Collection",
                         fontSize = 13.sp,
@@ -1080,7 +1100,7 @@ private fun PrivacyAndGooglePlaySection() {
         SettingCard(title = "FAMILY & AGE APPROPRIATE") {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(text = "👶", fontSize = 16.sp)
+                    ToyIcon(glyph = ToyGlyph.PERSON, size = 18.dp, tint = Color(0xFFFFC531))
                     Text(
                         text = "Designed for Families & All Ages",
                         fontSize = 13.sp,
@@ -1101,7 +1121,7 @@ private fun PrivacyAndGooglePlaySection() {
         SettingCard(title = "ANTI-CHEAT & DATA INTEGRITY SECURITY") {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(text = "🛡️", fontSize = 16.sp)
+                    ToyIcon(glyph = ToyGlyph.SHIELD, size = 18.dp, tint = Color(0xFF7EE82E))
                     Text(
                         text = "Active Tamper-Proof Protection",
                         fontSize = 13.sp,
@@ -1153,12 +1173,12 @@ private fun PrivacyAndGooglePlaySection() {
                             // Safely catch if no browser installed
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2A1450)),
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().testTag("view_privacy_web_btn")
                 ) {
                     Text(
-                        text = "🌐 View Google Privacy Policies & Guidelines",
+                        text = "View Google Privacy Policies & Guidelines",
                         fontSize = 12.sp,
                         color = Color(0xFFA6F750),
                         fontWeight = FontWeight.SemiBold
@@ -1193,7 +1213,7 @@ private fun DataManagementSection(
                     color = Color(0xFFCDB8EC)
                 )
                 Text(
-                    text = "Status: Clean & Synchronized ✅",
+                    text = "Status: Clean & Synchronized ✓",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF7EE82E)
@@ -1215,7 +1235,7 @@ private fun DataManagementSection(
                     modifier = Modifier.fillMaxWidth().testTag("open_reset_dialog_button")
                 ) {
                     Text(
-                        text = "🗑️ RESET ALL GAME PROGRESS",
+                        text = "RESET ALL GAME PROGRESS",
                         fontWeight = FontWeight.Black,
                         fontSize = 13.sp,
                         color = Color.White

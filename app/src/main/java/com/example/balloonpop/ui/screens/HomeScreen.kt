@@ -45,6 +45,8 @@ import com.example.balloonpop.ui.components.JellyButton
 import com.example.balloonpop.ui.components.JellyColorVariant
 import com.example.balloonpop.ui.dialogs.DailyGiftsDialog
 import com.example.balloonpop.ui.components.TopBar
+import com.example.balloonpop.ui.components.ToyGlyph
+import com.example.balloonpop.ui.components.ToyIcon
 import com.example.balloonpop.ui.dialogs.CustomChallengeDialog
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.balloonpop.ui.theme.Baloo2FontFamily
@@ -581,7 +583,7 @@ fun HomeScreen(
                             )
                             HomeIconActionButton(
                                 iconContent = {
-                                    Text(text = "🎁", fontSize = 22.sp)
+                                    ToyIcon(glyph = ToyGlyph.GIFT, size = 24.dp, tint = Color(0xFFFFC531))
                                 },
                                 label = "Gifts",
                                 accentColor = ToyGold,
