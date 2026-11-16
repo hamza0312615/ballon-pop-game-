@@ -90,7 +90,12 @@ fun GamePlayScreen(
     winStreak: Int = 0,
     assistUnlocked: Boolean = false,
     onTriggerBooster: (InGameBooster) -> Unit = {},
-    onBuyBooster: (String) -> Unit = {},
+    // Pass 21: Boolean result lets the buy dialog stay open when a purchase
+    // fails instead of silently closing.
+    onBuyBooster: (String) -> Boolean = { false },
+    // Pass 21: tells the ViewModel the buy dialog opened/closed, so the run
+    // freezes while the player decides (boosterBuyOpen in UiState).
+    onBoosterBuyOpenChange: (Boolean) -> Unit = {},
     coins: Int = 0,
     equippedSkillId: String = "skill_slice",
     skillEnergy: Float = 100f,
@@ -148,6 +153,28 @@ fun GamePlayScreen(
     // Pass 4: tapping a 0-charge booster opens the one-tap coin buy dialog
     // instead of triggering (and instead of leaving the level for the shop).
     var boosterBuyTarget by remember { mutableStateOf<InGameBooster?>(null) }
+
+    // Pass 21: freeze the run while the buy dialog is open. The ViewModel
+    // hold follows boosterBuyTarget exactly — set when the dialog opens,
+    // released on buy, "Not now", back press and outside tap (every one of
+    // those paths nulls the target).
+    LaunchedEffect(boosterBuyTarget) {
+        onBoosterBuyOpenChange(boosterBuyTarget != null)
+    }
+    // Pass 21: if the run ever leaves PLAYING while the dialog is up (e.g.
+    // the stage ended in the same instant the orb was tapped), drop the
+    // target so the dialog — and its freeze — cannot reappear on revive or
+    // leak into the next stage.
+    LaunchedEffect(gameState) {
+        if (gameState != GameState.PLAYING && boosterBuyTarget != null) {
+            boosterBuyTarget = null
+        }
+    }
+    // Pass 21: last-resort release if this screen leaves composition with
+    // the dialog still open.
+    DisposableEffect(Unit) {
+        onDispose { onBoosterBuyOpenChange(false) }
+    }
 
     val context = LocalContext.current
     val activity = context as? Activity
@@ -920,8 +947,13 @@ fun GamePlayScreen(
                 booster = buyTarget,
                 coins = coins,
                 onBuy = {
-                    onBuyBooster(buyTarget.id)
-                    boosterBuyTarget = null
+                    // Pass 21: close only on a successful purchase. On
+                    // failure the dialog stays open — its balance line and
+                    // the BUY button's NEED state show the player why —
+                    // instead of the tap being silently eaten.
+                    if (onBuyBooster(buyTarget.id)) {
+                        boosterBuyTarget = null
+                    }
                 },
                 onDismiss = { boosterBuyTarget = null }
             )

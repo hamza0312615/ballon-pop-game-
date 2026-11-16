@@ -435,6 +435,7 @@ class MainActivity : ComponentActivity() {
                                             assistUnlocked = uiState.assistUnlocked,
                                             onTriggerBooster = { booster -> viewModel.triggerInGameBooster(booster) },
                                             onBuyBooster = { boosterId -> viewModel.buyBooster(boosterId) },
+                                            onBoosterBuyOpenChange = { open -> viewModel.setBoosterBuyOpen(open) },
                                             coins = uiState.coins,
                                             equippedSkillId = uiState.equippedSkillId,
                                             skillEnergy = uiState.skillEnergy,

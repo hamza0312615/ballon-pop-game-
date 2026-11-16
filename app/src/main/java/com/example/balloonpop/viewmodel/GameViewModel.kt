@@ -147,6 +147,12 @@ data class UiState(
     val showComboHintBanner: Boolean = false,
     // Pass 14: Balloon Rush event banner (bonus formation every ~18s).
     val showRushBanner: Boolean = false,
+    // Pass 21: true while the in-game booster buy dialog is open. The frame
+    // step and the stage timer both check it and freeze, so the run waits
+    // while the player decides whether to buy. gameState deliberately stays
+    // PLAYING — flipping to PAUSED would unmount the dialog, which renders
+    // only while PLAYING, and would pop the pause overlay up behind it.
+    val boosterBuyOpen: Boolean = false,
     // Pass 8: win-streak fuel (persisted) + kindness-assist flag for the
     // stage currently being attempted (drives the fail-dialog help line).
     val winStreak: Int = 0,
@@ -1111,6 +1117,16 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(gameState = GameState.PLAYING) }
     }
 
+    // Pass 21: hold/release for the booster buy dialog freeze. Driven by
+    // GamePlayScreen whenever its boosterBuyTarget changes; also cleared
+    // defensively in initGameSession so the hold can never leak into a
+    // new run.
+    fun setBoosterBuyOpen(open: Boolean) {
+        if (_uiState.value.boosterBuyOpen != open) {
+            _uiState.update { it.copy(boosterBuyOpen = open) }
+        }
+    }
+
     fun pauseGame() {
         sound.playClick()
         musicPlayer.pause()
@@ -1336,7 +1352,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 previousHighScore = sessionBaselineHighScore,
                 showComboHintBanner = false,
                 showRushBanner = false,
-                assistUnlocked = false
+                assistUnlocked = false,
+                // Pass 21: a new run never starts under the buy-dialog hold.
+                boosterBuyOpen = false
             )
         }
 
@@ -1380,7 +1398,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             timerJob = viewModelScope.launch {
                 while (_uiState.value.gameState == GameState.PLAYING || _uiState.value.gameState == GameState.PAUSED) {
                     delay(1000L)
-                    if (_uiState.value.gameState == GameState.PLAYING && !com.example.balloonpop.ads.AdMobManager.isAdShowing) {
+                    // Pass 21: boosterBuyOpen freezes the countdown while
+                    // the buy dialog is open (same pattern as isAdShowing).
+                    // The while condition is unchanged, so the loop survives
+                    // the hold and resumes ticking when the dialog closes.
+                    if (_uiState.value.gameState == GameState.PLAYING && !com.example.balloonpop.ads.AdMobManager.isAdShowing && !_uiState.value.boosterBuyOpen) {
                         val current = _uiState.value.timeLeft
                         if (current > 1) {
                             _uiState.update { it.copy(timeLeft = current - 1) }
@@ -1416,7 +1438,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun stepFrame(dtSeconds: Float) {
         val state = _uiState.value
-        if (state.gameState != GameState.PLAYING || com.example.balloonpop.ads.AdMobManager.isAdShowing) return
+        // Pass 21: boosterBuyOpen freezes the whole frame step (spawns,
+        // balloon motion, misses, cooldowns) while the buy dialog is open.
+        if (state.gameState != GameState.PLAYING || com.example.balloonpop.ads.AdMobManager.isAdShowing || state.boosterBuyOpen) return
 
         val step = dtSeconds * 60f // Normalized to 60fps unit
 
@@ -3029,14 +3053,17 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun buyBooster(boosterId: String, withGems: Boolean = false) {
+    // Pass 21: returns true when the purchase actually went through, so a
+    // caller (the in-game buy dialog) can keep the dialog open on failure
+    // instead of silently closing and eating the tap.
+    fun buyBooster(boosterId: String, withGems: Boolean = false): Boolean {
         // Pass 4: prices come from the single BoosterPrices constants place and
         // the purchase itself goes through the repository's one purchase path,
         // so balance + inventory can never drift apart between shop & gameplay.
         val coinPrice = BoosterPrices.COIN_PRICE
         val gemPrice = BoosterPrices.GEM_PRICE
 
-        if (withGems) {
+        return if (withGems) {
             if (repository.purchaseBoosterWithGems(boosterId, gemPrice)) {
                 _uiState.update {
                     it.copy(
@@ -3045,8 +3072,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
                 sound.playRewardClaim()
+                true
             } else {
                 _uiState.update { it.copy(bannerMessage = "Need $gemPrice 💎 to buy this booster!") }
+                false
             }
         } else {
             if (repository.purchaseBoosterWithCoins(boosterId, coinPrice)) {
@@ -3057,8 +3086,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
                 sound.playRewardClaim()
+                true
             } else {
                 _uiState.update { it.copy(bannerMessage = "Need $coinPrice 🪙 to buy this booster!") }
+                false
             }
         }
     }
