@@ -340,7 +340,13 @@ data class StageRecipe(
     val goldRushChance: Float,
     val objectiveType: StageObjectiveType = StageObjectiveType.STANDARD,
     val focusColors: List<Color> = emptyList(),
-    val focusColorNames: List<String> = emptyList()
+    val focusColorNames: List<String> = emptyList(),
+    // Pass 22: the factor getRecipe scaled this stage's target/time/misses
+    // by on the lengthening curve (1f = unscaled; stage 1 is always 1f).
+    // Exposed so CAMPAIGN_LEVELS can rescale the score-based star
+    // thresholds by the same factor and keep 2★/3★ difficulty identical
+    // to the pre-Pass-22 tuning.
+    val durationScale: Float = 1f
 )
 
 object StageRecipes {
@@ -508,6 +514,25 @@ object StageRecipes {
             }
         }
 
+        // Pass 22 — longer stages ("play more time to win"): scale target,
+        // time and misses by ONE per-level factor, so each stage's required
+        // pops-per-second and misses-per-minute stay exactly as tuned while
+        // the total stage length grows smoothly with progress. Stage 1 is
+        // untouched (factor 1.0); the factor reaches ~1.6x by stage 100 and
+        // ~2.3x by stage 200. Time is hard-capped at 180s so no stage can
+        // run past three minutes — when the cap binds (final celebration
+        // stages), target and misses scale by the capped ratio instead, so
+        // the rates still hold. Nothing else needs retuning: the campaign
+        // spawn interval is derived from timeLeft/targetPops in
+        // GameViewModel.initGameSession and that ratio is unchanged, and
+        // Balloon Rush fires per ~18s of active play with no per-stage cap,
+        // so longer stages simply earn more rushes.
+        val rawDurationScale = 1f + (safeLvl - 1) * 0.0065f
+        val scaledTimeLimit = (timeLimit * rawDurationScale).roundToInt().coerceAtMost(180)
+        val durationScale = scaledTimeLimit.toFloat() / timeLimit.toFloat()
+        val scaledTargetPops = (targetPops * durationScale).roundToInt().coerceAtLeast(targetPops)
+        val scaledMaxMisses = (maxMisses * durationScale).roundToInt().coerceAtLeast(maxMisses)
+
         // Pass 8 FTUE kindness: stage 1 must be comfortably winnable on the
         // first-ever attempt — target drops to ~65% of the recipe value (12
         // pops: a real stage, reachable in about half the timer by a total
@@ -515,11 +540,11 @@ object StageRecipes {
         // is 55s). Stage 1 also cannot be failed by misses (see
         // GameViewModel.onMissBalloon).
         val finalTargetPops = if (safeLvl == 1) {
-            (targetPops * 0.65f).roundToInt().coerceAtLeast(5)
+            (scaledTargetPops * 0.65f).roundToInt().coerceAtLeast(5)
         } else {
-            targetPops
+            scaledTargetPops
         }
-        val finalTimeLimit = if (safeLvl == 1) maxOf(timeLimit, 60) else timeLimit
+        val finalTimeLimit = if (safeLvl == 1) maxOf(scaledTimeLimit, 60) else scaledTimeLimit
 
         return StageRecipe(
             level = safeLvl,
@@ -528,14 +553,15 @@ object StageRecipes {
             role = role,
             targetPops = finalTargetPops,
             timeLimit = finalTimeLimit,
-            maxMisses = maxMisses,
+            maxMisses = scaledMaxMisses,
             unlockedBalloonTypes = unlockedTypes,
             allowedFormations = allowedFormations,
             specialChance = specialChance,
             goldRushChance = goldRushChance,
             objectiveType = objectiveType,
             focusColors = focusColors,
-            focusColorNames = focusColorNames
+            focusColorNames = focusColorNames,
+            durationScale = durationScale
         )
     }
 
@@ -1460,7 +1486,18 @@ object GameConstants {
         CampaignLevel(
             level = lvl,
             targetPops = recipe.targetPops,
-            targetScore = if (isBossStage) 1500 + lvl * 350 else 500 + recipe.targetPops * 40,
+            // Pass 22: stars are score-based (2★ at targetScore, 3★ at
+            // 1.3x — see GameViewModel.stageClear), and a clear on a
+            // lengthened stage earns proportionally more score, so both
+            // branches are rescaled by the recipe's durationScale to keep
+            // the score-per-pop needed for 2★/3★ unchanged. The boss
+            // branch never referenced targetPops before, so without this
+            // it would silently have become far easier as targets grew.
+            targetScore = if (isBossStage) {
+                ((1500 + lvl * 350) * recipe.durationScale).roundToInt()
+            } else {
+                (500f * recipe.durationScale).roundToInt() + recipe.targetPops * 40
+            },
             timeLimit = recipe.timeLimit,
             maxBombs = if (lvl < 4) 0 else if (isBossStage) (lvl / 8).coerceIn(2, 6) else (lvl / 10).coerceIn(1, 8),
             rewardCoins = if (isBossStage) baseCoins + 1000 else baseCoins,
