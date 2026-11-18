@@ -182,7 +182,7 @@ class MainActivity : ComponentActivity() {
                                                 // "never before the first fun". The persisted
                                                 // completed-levels count is read via GameRepository
                                                 // (the ViewModel's instance) right at this call site.
-                                                if (viewModel.repository.getCompletedLevels().isNotEmpty()) {
+                                                if (viewModel.repository.getCompletedLevels().isNotEmpty() || viewModel.repository.recordLaunchAndGetCount() >= 2) {
                                                     AdMobManager.showAppOpenAd(this@MainActivity) {
                                                         viewModel.navigateTo(CurrentScreen.HOME)
                                                     }
@@ -467,6 +467,7 @@ class MainActivity : ComponentActivity() {
                                             onFinishLevelTransition = { viewModel.finishLevelTransition() },
                                             showComboHintBanner = uiState.showComboHintBanner,
                                             showRushBanner = uiState.showRushBanner,
+                                            rushBannerIsGold = uiState.rushBannerIsGold,
                                             objectiveType = uiState.currentObjectiveType,
                                             focusColors = uiState.currentFocusColors,
                                             steadyHandsBonusEarned = uiState.steadyHandsBonusEarned,

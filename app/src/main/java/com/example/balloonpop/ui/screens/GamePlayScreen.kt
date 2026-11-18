@@ -126,6 +126,7 @@ fun GamePlayScreen(
     showComboHintBanner: Boolean = false,
     // Pass 14: Balloon Rush event banner
     showRushBanner: Boolean = false,
+    rushBannerIsGold: Boolean = false,
     // Pass 9: Stage Objective Variety & Steady Hands Bonus
     objectiveType: StageObjectiveType = StageObjectiveType.STANDARD,
     focusColors: List<Color> = emptyList(),
@@ -182,11 +183,11 @@ fun GamePlayScreen(
     // Pass 8 (research §5 ad policy): interstitials fire ONLY after a
     // stage WIN — never after a loss (Lose + Ad stacks a second negative
     // on frustration and is the genre's top churn pattern) — and never
-    // before stage 10. The manager still enforces the 180s cooldown and
+    // before stage 5. The manager still enforces the 180s cooldown and
     // 60s post-ad gap, preloads the next unit after each show, and no-ops
     // when no ad is ready.
     LaunchedEffect(gameState) {
-        if (gameState == GameState.LEVELCLEAR && gameMode == GameMode.CAMPAIGN && currentLevel >= 10) {
+        if (gameState == GameState.LEVELCLEAR && gameMode == GameMode.CAMPAIGN && currentLevel >= 5) {
             activity?.let { AdMobManager.showInterstitialAd(it) }
         }
     }
@@ -395,6 +396,32 @@ fun GamePlayScreen(
                             }
                         }
 
+                        // Pass 23: goal progress bar — the player SEES the
+                        // stage filling up, not just a counter number.
+                        if (gameMode == GameMode.CAMPAIGN && targetPops > 0) {
+                            val goalProgress = (poppedCount.toFloat() / targetPops.toFloat()).coerceIn(0f, 1f)
+                            val animatedGoalProgress by animateFloatAsState(targetValue = goalProgress, label = "goalProgress")
+                            Box(
+                                modifier = Modifier
+                                    .width(96.dp)
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(Color.White.copy(alpha = 0.18f))
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .fillMaxWidth(animatedGoalProgress)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(
+                                            Brush.horizontalGradient(
+                                                listOf(Color(0xFF63C70A), Color(0xFFA6F750))
+                                            )
+                                        )
+                                )
+                            }
+                        }
+
                         // Objective type subtitle tag if not standard
                         if (gameMode == GameMode.CAMPAIGN && objectiveType != StageObjectiveType.STANDARD) {
                             val objectiveTag = when (objectiveType) {
@@ -580,23 +607,31 @@ fun GamePlayScreen(
                     .clip(DesignTokens.ShapePill)
                     .background(
                         Brush.horizontalGradient(
-                            listOf(
-                                Color(0xFF63C70A),
-                                Color(0xFFA6F750),
-                                Color(0xFF63C70A)
-                            )
+                            if (rushBannerIsGold) {
+                                listOf(
+                                    Color(0xFFFFC531),
+                                    Color(0xFFFFE29A),
+                                    Color(0xFFFFC531)
+                                )
+                            } else {
+                                listOf(
+                                    Color(0xFF63C70A),
+                                    Color(0xFFA6F750),
+                                    Color(0xFF63C70A)
+                                )
+                            }
                         )
                     )
-                    .border(2.dp, Color(0xFF4A9605), DesignTokens.ShapePill)
+                    .border(2.dp, if (rushBannerIsGold) Color(0xFFB97E0A) else Color(0xFF4A9605), DesignTokens.ShapePill)
                     .padding(horizontal = 18.dp, vertical = 8.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ToyIcon(glyph = ToyGlyph.BALLOON, size = 17.dp, tint = Color(0xFF2A1450))
+                    ToyIcon(glyph = if (rushBannerIsGold) ToyGlyph.COIN else ToyGlyph.BALLOON, size = 17.dp, tint = Color(0xFF2A1450))
                     Text(
-                        text = "BALLOON RUSH!",
+                        text = if (rushBannerIsGold) "GOLD WAVE!" else "BALLOON RUSH!",
                         fontFamily = Baloo2FontFamily,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Black,

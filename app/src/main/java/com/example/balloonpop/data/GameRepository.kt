@@ -161,6 +161,15 @@ class GameRepository(context: Context) {
     fun setEquippedTheme(themeId: String) = prefs.edit().putString("bp_eq_theme", themeId).apply()
 
     // Campaign Levels (Up to 200 Stages)
+    // Pass 23: plain per-launch counter (outside the signed payload) —
+    // lets the App Open ad start from the second ever launch instead of
+    // waiting for a first stage completion, so ads are actually seen.
+    fun recordLaunchAndGetCount(): Int {
+        val next = prefs.getInt("bp_launch_count", 0) + 1
+        prefs.edit().putInt("bp_launch_count", next).apply()
+        return next
+    }
+
     fun getCompletedLevels(): Map<Int, Int> {
         val result = mutableMapOf<Int, Int>()
         for (i in 1..SecurityGuard.MAX_CAMPAIGN_LEVEL) {

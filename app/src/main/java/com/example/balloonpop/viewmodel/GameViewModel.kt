@@ -147,6 +147,8 @@ data class UiState(
     val showComboHintBanner: Boolean = false,
     // Pass 14: Balloon Rush event banner (bonus formation every ~18s).
     val showRushBanner: Boolean = false,
+    // Pass 23: true when the event banner is a GOLD WAVE, not a Balloon Rush
+    val rushBannerIsGold: Boolean = false,
     // Pass 21: true while the in-game booster buy dialog is open. The frame
     // step and the stage timer both check it and freeze, so the run waits
     // while the player decides whether to buy. gameState deliberately stays
@@ -217,6 +219,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private var spawnIntervalSeconds = 0.75f
     // Pass 14: seconds of active play since the last Balloon Rush wave.
     private var rushAccumulator = 0f
+    // Pass 23: within-stage escalation + event alternation state
+    private var stageElapsedSeconds = 0f
+    private var rushEventCount = 0
     // Pass 18: the pending "hide the rush banner" timer, so a stale timer
     // can never hide a fresh banner early.
     private var rushBannerJob: Job? = null
@@ -1297,6 +1302,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         goldRushParticleAccumulator = 0f
         spawnAccumulator = 0f
         rushAccumulator = 0f
+        stageElapsedSeconds = 0f
+        rushEventCount = 0
         rushBannerJob?.cancel()
         rushBannerJob = null
         lastFormationCenterRatio = -1f
@@ -1352,6 +1359,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 previousHighScore = sessionBaselineHighScore,
                 showComboHintBanner = false,
                 showRushBanner = false,
+                rushBannerIsGold = false,
                 assistUnlocked = false,
                 // Pass 21: a new run never starts under the buy-dialog hold.
                 boosterBuyOpen = false
@@ -1615,15 +1623,31 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // playtest never caught it once). The hide timer is also job-guarded
         // so it can only ever hide the banner that scheduled it.
         if (!hitStopped && state.gameState == GameState.PLAYING && state.gameMode != GameMode.ZEN) {
+            stageElapsedSeconds += dtSeconds
             rushAccumulator += dtSeconds
             if (rushAccumulator >= 18f) {
                 rushAccumulator = 0f
-                triggerNextFormation()
-                _uiState.update { it.copy(showRushBanner = true) }
+                rushEventCount++
+                // Pass 23: alternate the mid-stage event — odd events are the
+                // Balloon Rush (density burst), even events a GOLD WAVE (a
+                // golden formation worth bonus coins). One event every ~18s
+                // of the same kind made long stages feel repetitive.
+                val goldWave = rushEventCount % 2 == 0
+                if (goldWave) {
+                    val evtRecipe = if (state.gameMode == GameMode.CAMPAIGN && state.currentLevel > 0) {
+                        StageRecipes.getRecipe(state.currentLevel)
+                    } else {
+                        null
+                    }
+                    scheduleFormation(SpawnFormation.GOLD_RUSH, evtRecipe)
+                } else {
+                    triggerNextFormation()
+                }
+                _uiState.update { it.copy(showRushBanner = true, rushBannerIsGold = goldWave) }
                 rushBannerJob?.cancel()
                 rushBannerJob = viewModelScope.launch {
                     delay(2600L)
-                    _uiState.update { it.copy(showRushBanner = false) }
+                    _uiState.update { it.copy(showRushBanner = false, rushBannerIsGold = false) }
                 }
             }
         }
@@ -1648,7 +1672,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         // 6. Update Balloons (motion, scale-in, ring expansion, sway tilt, and gold rush sparkle trail)
         // Pass 8: during hit-stop the whole motion update is skipped —
         // balloons hang frozen for the beat while rendering continues.
-        val speedFactor = if (freezeTimeRemaining > 0f) 0.35f else 1.0f
+        // Pass 23: within-stage escalation — balloons rise up to +30%
+        // faster by the end of a long stage (+6% per 15s), so stages build
+        // tension instead of repeating one flat rhythm.
+        val intensityMult = 1f + (stageElapsedSeconds / 15f * 0.06f).coerceAtMost(0.30f)
+        val speedFactor = (if (freezeTimeRemaining > 0f) 0.35f else 1.0f) * intensityMult
         if (!hitStopped) synchronized(balloons) {
             val it = balloons.iterator()
             while (it.hasNext()) {
@@ -2137,11 +2165,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             mode == GameMode.TIME_RUSH -> 6.2f + Random.nextFloat() * 3.0f
             mode == GameMode.ARCADE -> 5.5f + Random.nextFloat() * 3.0f
             mode == GameMode.ZEN -> 2.6f + Random.nextFloat() * 1.5f
-            else -> 4.8f + (lvl * 0.05f).coerceAtMost(4.5f) + Random.nextFloat() * 2.8f
+            else -> 5.2f + (lvl * 0.05f).coerceAtMost(4.5f) + Random.nextFloat() * 3.2f
         }
         return when {
-            mode == GameMode.CAMPAIGN && lvl <= 2 -> rawSpeed * 0.70f
-            mode == GameMode.CAMPAIGN && lvl <= 20 -> rawSpeed * 0.85f
+            mode == GameMode.CAMPAIGN && lvl <= 2 -> rawSpeed * 0.78f
+            mode == GameMode.CAMPAIGN && lvl <= 20 -> rawSpeed * 0.90f
             else -> rawSpeed
         }
     }
