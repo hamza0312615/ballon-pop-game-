@@ -41,6 +41,7 @@ import com.example.balloonpop.ui.theme.Baloo2FontFamily
 import com.example.balloonpop.ui.theme.DesignTokens
 import com.example.balloonpop.ui.theme.HeroLimeBottom
 import com.example.balloonpop.ui.theme.HeroLimeShelf
+import com.example.balloonpop.ui.theme.HeroLimeText
 import com.example.balloonpop.ui.theme.HeroLimeTop
 import com.example.balloonpop.ui.theme.ToyOrangeBottom
 import com.example.balloonpop.ui.theme.ToyOrangeShelf
@@ -63,11 +64,11 @@ enum class JewelButtonStyle(
     val textColor: Color
 ) {
     // HERO CTA: Lime Green (PLAY / NEXT / CLAIM / REVIVE)
-    SUNSET(HeroLimeTop, HeroLimeBottom, HeroLimeShelf, Color.White),
+    SUNSET(HeroLimeTop, HeroLimeBottom, HeroLimeShelf, HeroLimeText),
     // Toy Orange (Secondary actions & prizes)
     GOLD(ToyOrangeTop, ToyOrangeBottom, ToyOrangeShelf, Color.White),
     // Toy Cyan / Sky (Settings & info)
-    SKY(Color(0xFFA6F750), Color(0xFF63C70A), Color(0xFF0369A1), Color.White),
+    SKY(Color(0xFFA6F750), Color(0xFF63C70A), Color(0xFF0369A1), HeroLimeText),
     // Toy Green
     MINT(Color(0xFF4ADE80), Color(0xFF16A34A), Color(0xFF15803D), Color.White),
     // Toy Red (Danger / retry / discount)

@@ -1496,7 +1496,7 @@ object GameConstants {
             targetScore = if (isBossStage) {
                 ((1500 + lvl * 350) * recipe.durationScale).roundToInt()
             } else {
-                (500f * recipe.durationScale).roundToInt() + recipe.targetPops * 40
+                (350f * recipe.durationScale).roundToInt() + recipe.targetPops * 30
             },
             timeLimit = recipe.timeLimit,
             maxBombs = if (lvl < 4) 0 else if (isBossStage) (lvl / 8).coerceIn(2, 6) else (lvl / 10).coerceIn(1, 8),

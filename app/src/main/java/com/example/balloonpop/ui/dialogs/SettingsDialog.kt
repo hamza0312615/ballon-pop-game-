@@ -364,7 +364,9 @@ private fun AudioHapticsSection(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(12.dp),
-        contentPadding = PaddingValues(bottom = 16.dp)
+        // Pass 24: 48.dp bottom clearance so the last row (Music Volume
+        // slider) scrolls fully clear of the dialog footer.
+        contentPadding = PaddingValues(bottom = 48.dp)
     ) {
         // --- 1. Master Audio ---
         item {
